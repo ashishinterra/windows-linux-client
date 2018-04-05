@@ -5,8 +5,8 @@
 
 Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 
-KeyTalk Windows client support Windows 7, Windows 8 and Windows 10.
-KeyTalk Linux client supports Debian 8 x64, Debian 9 x64 and Ubuntu 16.04 x64.
+  - KeyTalk Windows client support Windows 7, Windows 8 and Windows 10.
+  - KeyTalk Linux client supports Debian 8 x64, Debian 9 x64 and Ubuntu 16.04 x64.
 
 ## Building KeyTalk Linux Client
 
@@ -19,7 +19,7 @@ The reason for creating two separate development environments is incompatibility
 
 
 ### Setup base system
-Install Debian 8 x64 and Debian 9 x64.
+Install Debian 8 x64 to build for Debian 8/Ubuntu 16.04 or Debian 9 x64 to build for Debian 9.
 - 10 GB disk space
 - 512 MB RAM
 
