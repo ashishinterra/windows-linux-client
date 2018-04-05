@@ -11,7 +11,7 @@ KeyTalk Linux client supports Debian 8 x64, Debian 9 x64 and Ubuntu 16.04 x64.
 ## Building KeyTalk Linux Client
 
 
-We will create two development encironments:
+We will create two development environments:
   - Debian 8-based for building KeyTalk clients for Debian 8 and Ubuntu 16.04
   - Debian 9-based for building KeyTalk clients for Debian 9
 
