@@ -89,7 +89,7 @@ def log(msg):
 class KeyTalkProtocol(object):
 
     def __init__(self):
-        self.version = conf.RCDP_VERSION_2_0
+        self.version = conf.RCDP_VERSION_2_1
         self.conn = None
         self.cookie = None
 
@@ -98,7 +98,7 @@ class KeyTalkProtocol(object):
     #
 
     @staticmethod
-    def _parse_response(conn, request_name, expected_status):
+    def _parse_rcdp_response(conn, request_name, expected_status):
         response = conn.getresponse()
         response_payload = response.read().decode()
         if response.status != 200:
@@ -134,6 +134,17 @@ class KeyTalkProtocol(object):
 
         cookie = response.getheader('set-cookie', None)
         return (payload, cookie)
+
+    @staticmethod
+    def _request_simple_url(url):
+        debug("Opening URL " + url)
+        try:
+            with urllib.request.urlopen(url) as response:
+                payload = response.read()
+                return payload
+        except Exception as e:
+            log("Error opening URL {}. {}".format(url, e))
+            return None
 
     @staticmethod
     def _is_true(dict, key):
@@ -323,7 +334,9 @@ class KeyTalkProtocol(object):
 
     def _request(self, action, params={}, send_cookie=True):
         url = "/{}/{}/{}?{}".format(conf.RCDPV2_HTTP_REQUEST_URI_PREFIX,
-                                    self.version, action, urllib.parse.urlencode(params))
+                                    self.version,
+                                    action,
+                                    urllib.parse.urlencode(params))
         if VERBOSE:
             self.conn.set_debuglevel(1)
         if send_cookie:
@@ -373,7 +386,7 @@ class KeyTalkProtocol(object):
         request_params = {
             conf.RCDPV2_REQUEST_PARAM_NAME_CALLER_APP_DESCRIPTION: 'Test KeyTalk Python client'}
         self._request(conf.RCDPV2_REQUEST_HELLO, request_params, send_cookie=False)
-        response_payload, cookie = KeyTalkProtocol._parse_response(
+        response_payload, cookie = KeyTalkProtocol._parse_rcdp_response(
             conn, conf.RCDPV2_REQUEST_HELLO, conf.RCDPV2_RESPONSE_HELLO)
         if response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_VERSION] != self.version:
             raise Exception(
@@ -384,14 +397,14 @@ class KeyTalkProtocol(object):
         request_params = {conf.RCDPV2_REQUEST_PARAM_NAME_CALLER_UTC:
                           datetime.datetime.utcnow().isoformat() + 'Z'}
         self._request(conf.RCDPV2_REQUEST_HANDSHAKE, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_response(
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_HANDSHAKE, conf.RCDPV2_RESPONSE_HANDSHAKE)
         return response_payload
 
     def get_auth_requirements(self, service):
         request_params = {conf.RCDPV2_REQUEST_PARAM_NAME_SERVICE: service}
         self._request(conf.RCDPV2_REQUEST_AUTH_REQUIREMENTS, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_response(
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_AUTH_REQUIREMENTS, conf.RCDPV2_RESPONSE_AUTH_REQUIREMENTS)
         return response_payload
 
@@ -414,7 +427,7 @@ class KeyTalkProtocol(object):
         debug("Sending authentication request: " + pprint.pformat(request_params))
 
         self._request(conf.RCDPV2_REQUEST_AUTHENTICATION, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_response(
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_AUTHENTICATION, conf.RCDPV2_RESPONSE_AUTH_RESULT)
         auth_status = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_AUTH_STATUS]
         if auth_status == conf.AUTH_OK:
@@ -448,7 +461,7 @@ class KeyTalkProtocol(object):
         }
         debug("Changing user password")
         self._request(conf.RCDPV2_REQUEST_CHANGE_PASSWORD, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_response(
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CHANGE_PASSWORD, conf.RCDPV2_RESPONSE_AUTH_RESULT)
         auth_status = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_AUTH_STATUS]
         if auth_status == conf.AUTH_OK:
@@ -463,28 +476,36 @@ class KeyTalkProtocol(object):
             request_params[
                 conf.RCDPV2_REQUEST_PARAM_NAME_LAST_MESSAGES_FROM_UTC] = LAST_MESSAGES_FROM_UTC
         self._request(conf.RCDPV2_REQUEST_LAST_MESSAGES, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_response(
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_LAST_MESSAGES, conf.RCDPV2_RESPONSE_LAST_MESSAGES)
         messages = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_LAST_MESSAGES]
         if len(messages) > 0:
             log("Received {} user messages:\n{}".format(len(messages), pprint.pformat(messages)))
         return response_payload
 
-    def get_cert(self, format, include_chain, keypair=None):
+    def get_cert(self, format, include_chain, out_of_band=False):
         request_params = {
             conf.RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT: format,
             conf.RCDPV2_REQUEST_PARAM_NAME_CERT_INCLUDE_CHAIN: include_chain,
+            conf.RCDPV2_REQUEST_PARAM_NAME_CERT_OUT_OF_BAND: out_of_band,
         }
-        if keypair:
-            request_params[conf.RCDPV2_REQUEST_PARAM_NAME_KEYPAIR] = json.dumps(
-                {conf.RCDPV2_REQUEST_PARAM_NAME_PUBKEY: keypair['pubkey'], conf.RCDPV2_REQUEST_PARAM_NAME_PRIVKEY: keypair['privkey']})
 
         self._request(conf.RCDPV2_REQUEST_CERT, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_response(
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CERT, conf.RCDPV2_RESPONSE_CERT)
-        cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
-        if format == conf.CERT_FORMAT_P12:
-            cert = base64.b64decode(cert)
+
+        if out_of_band:
+            cert_url_templ = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT_URL_TEMPL]
+            cert_url = cert_url_templ.replace(
+                "$(" + conf.CERT_DOWNLOAD_URL_HOST_PLACEHOLDER + ")", KEYTALK_SERVER)
+            cert = KeyTalkProtocol._request_simple_url(cert_url)
+            assert not KeyTalkProtocol._request_simple_url(
+                cert_url), "the given certificate can only be downloaded once"
+        else:
+            cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
+            if format == conf.CERT_FORMAT_P12:
+                cert = base64.b64decode(cert)
+
         cert_passphrase = self._get_cert_passphrase()
         log("Successfully received {} certificate {} chain".format(
             format, "with" if include_chain else "without"))
@@ -513,6 +534,28 @@ def request_cert_with_password_authentication(cert_format, cert_with_chain):
     # get service
     proto.get_last_messages()
     proto.get_cert(cert_format, cert_with_chain)
+    # close connection
+    proto.eoc()
+
+
+def request_out_of_band_cert_with_password_authentication(cert_format, cert_with_chain):
+    service = "CUST_PASSWD_INTERNAL_TESTUI"
+    username = 'DemoUser'
+    password = 'secret'
+
+    proto = KeyTalkProtocol()
+    # handshake
+    proto.hello()
+    proto.handshake()
+    # authenticate
+    auth_requirements = proto.get_auth_requirements(service)
+    assert not KeyTalkProtocol.is_cr_authentication(
+        auth_requirements), "Non-CR authentication is expected for service {}".format(service)
+    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, password)
+    proto.authenticate(creds, service)
+    # get service
+    proto.get_last_messages()
+    proto.get_cert(cert_format, cert_with_chain, out_of_band=True)
     # close connection
     proto.eoc()
 
@@ -690,4 +733,5 @@ if __name__ == "__main__":
             request_cert_with_radius_securid_authentication(cert_format, cert_with_chain)
             request_cert_with_radius_eap_aka_authentication(cert_format, cert_with_chain)
             request_cert_with_radius_eap_sim_authentication(cert_format, cert_with_chain)
+            request_out_of_band_cert_with_password_authentication(cert_format, cert_with_chain)
             change_password_and_request_cert(cert_format, cert_with_chain)

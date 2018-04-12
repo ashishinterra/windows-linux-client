@@ -500,6 +500,7 @@ namespace resept
     namespace rcdpv2
     {
         const std::string V_2_0 = ${RCDP_VERSION_2_0};
+        const std::string V_2_1 = ${RCDP_VERSION_2_1};
 
         const std::string ClientSupportedRcdpVersions[] = ${CLIENT_SUPPORTED_RCDPV2_VERSIONS};
         const std::string ServerSupportdRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
@@ -537,6 +538,7 @@ namespace resept
         const std::string requestParamNamePrivKey = ${RCDPV2_REQUEST_PARAM_NAME_PRIVKEY};
         const std::string requestParamNameCertFormat = ${RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT};
         const std::string requestParamNameCertIncludeChain = ${RCDPV2_REQUEST_PARAM_NAME_CERT_INCLUDE_CHAIN};
+        const std::string requestParamNameCertOutOfBand = ${RCDPV2_REQUEST_PARAM_NAME_CERT_OUT_OF_BAND};
         const std::string requestParamNameResolved = ${RCDPV2_REQUEST_PARAM_NAME_RESOLVED};
         const std::string requestParamNameDigests = ${RCDPV2_REQUEST_PARAM_NAME_DIGESTS};
         const std::string requestParamNameUri = ${RCDPV2_REQUEST_PARAM_NAME_URI};
@@ -609,6 +611,7 @@ namespace resept
         const std::string responseParamNameMessageUtc = ${RCDPV2_RESPONSE_PARAM_NAME_MESSAGE_UTC};
         const std::string responseParamNameMessageText = ${RCDPV2_RESPONSE_PARAM_NAME_MESSAGE_TEXT};
         const std::string responseParamNameCert = ${RCDPV2_RESPONSE_PARAM_NAME_CERT};
+        const std::string responseParamNameCertUrlTempl = ${RCDPV2_RESPONSE_PARAM_NAME_CERT_URL_TEMPL};
         const std::string responseParamNameServiceUris = ${RCDPV2_RESPONSE_PARAM_NAME_SERVICE_URIS};
         const std::string responseParamNameResolveServiceUris = ${RCDPV2_RESPONSE_PARAM_NAME_RESOLVE_SERVICE_URIS};
         const std::string responseParamNameCalcServiceUrisDigest = ${RCDPV2_RESPONSE_PARAM_NAME_CALC_SERVICE_URIS_DIGEST};
@@ -665,5 +668,8 @@ namespace resept
 
 
     }// rcdpv2
+
+
+    const std::string CertDownloadUrlHostPlaceholder = ${CERT_DOWNLOAD_URL_HOST_PLACEHOLDER};
 
 } // resept

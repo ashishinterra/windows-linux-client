@@ -4,10 +4,10 @@ Release Notes of KeyTalk
 server-5.3.0, in progress
 ------------------------
 Supports upgrades from v5.2.1 and higher
+Supports RCDP 2.1.0 and 2.0.0
 Supports import of settings created in v5.2.0-v5.3.0, v4.6.0 and v4.6.2
 
     - CHANGED: phased out executable and relay authentication modules
-    - CHANGED: phased out relay authentication modules
     - CHANGED: always use DevID to store and check HWSIG
     - CHANGED: allow reusing a previously issued user certificate
     - CHANGED: added service admin account to manage KeyTalk via the web admin panel
@@ -18,10 +18,12 @@ Supports import of settings created in v5.2.0-v5.3.0, v4.6.0 and v4.6.2
     - CHANGED: flexible MySQL Db field mapping for MySQL user table
     - CHANGED: Reduced max validity for GlobalSign Organization SSL certificates from 36 to 24 months
     - CHANGED: Allow MS CA as 3rd party certificate provider
+    - CHANGED: Add ePKI S/MIME GlobalSign as 3rd party certificate provider
+    - CHANGED: store issued S/MIME certificate to AD and OpenLDAP
+    - CHANGED: Allow RCDP caller to request a certificate download URL iso certificate BLOB
     - FIXED: improve robustness of server PR generation
     - FIXED: excessive server logging results in huge PR file
     - FIXED: KeyTalk server runs out of disk space
-    - CHANGED: store issued S/MIME certificate to AD and OpenLDAP
 
 
 client-5.2.2, in progress

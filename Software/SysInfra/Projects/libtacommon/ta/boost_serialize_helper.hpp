@@ -38,11 +38,11 @@ namespace ta
         {
             if (aVerboseErrors)
             {
-                TA_THROW_MSG(std::invalid_argument, boost::format("Failed to deserialize %s from %s") % typeid(RetT).name() % aVal);
+                TA_THROW_MSG(std::invalid_argument, boost::format("Failed to deserialize the value of %s type from %s") % typeid(RetT).name() % aVal);
             }
             else
             {
-                TA_THROW_MSG(std::invalid_argument, boost::format("Failed to deserialize %s") % typeid(RetT).name());
+                TA_THROW_MSG(std::invalid_argument, boost::format("Failed to deserialize the value of %s type") % typeid(RetT).name());
             }
         }
     }

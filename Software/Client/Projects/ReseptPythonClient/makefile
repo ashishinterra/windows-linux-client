@@ -11,14 +11,14 @@ release debug: $(PACKAGE)
 $(PACKAGE): $(DEPENDENCIES) keytalk-client.py
 	tar -czf $@ $?
 
-common_config.py:
-	cp ../../../Common/$@ ./
+common_config.py: ../../../Common/common_config.py
+	cp $? ./
 
-pcacert.pem commcacert.pem:
-	cp ../../../CertKeys/CommunicationAndSigning/$@ ./
+pcacert.pem commcacert.pem: ../../../CertKeys/CommunicationAndSigning/pcacert.pem ../../../CertKeys/CommunicationAndSigning/commcacert.pem
+	cp $? ./
 
-KeyTalkProtocols.pdf:
-	cp ../../../Documentation/$@ ./
+KeyTalkProtocols.pdf: ../../../Documentation/KeyTalkProtocols.pdf
+	cp $? ./
 
 clean:
 	rm -f ${DEPENDENCIES} ${PACKAGE}

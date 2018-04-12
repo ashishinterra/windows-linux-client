@@ -164,11 +164,6 @@ namespace ta
             PEM, DER
         };
 
-        struct NotChainError : std::logic_error
-        {
-            explicit NotChainError(const std::string& aMessage = "")	: std::logic_error(aMessage) {}
-        };
-
         /**
           Retrieve certificate info from the certificate file
 
