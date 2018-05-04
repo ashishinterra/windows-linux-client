@@ -40,31 +40,6 @@ protected:
         ta::TimeUtils::sleep((anAuthDelaySecs * ta::TimeUtils::MsecsInSecond) + 100);
     }
 
-    std::vector<ta::version::Version> getClientSupportedRcdpVersions()
-    {
-        std::vector<ta::version::Version> myVersions;
-        foreach (const std::string& v, resept::rcdpv2::ClientSupportedRcdpVersions)
-        {
-            myVersions.push_back(ta::version::parse(v));
-        }
-        return myVersions;
-    }
-
-    ta::version::Version getClientHighestSupportedRcdpVersion()
-    {
-        return *boost::max_element(getClientSupportedRcdpVersions());
-    }
-
-    ta::version::Version getServerHighestSupportedRcdpVersion()
-    {
-        std::vector<ta::version::Version> myVersions;
-        foreach (const std::string& v, resept::rcdpv2::ServerSupportdRcdpVersions)
-        {
-            myVersions.push_back(ta::version::parse(v));
-        }
-        return *boost::max_element(myVersions);
-    }
-
     static ta::StringArrayDict resolveServiceURIs(const ta::StringArray& anUris)
     {
         ta::StringArrayDict myResolvedUris;
@@ -822,7 +797,7 @@ public:
         TS_ASSERT_EQUALS(myRcdp.getLastMessages(&myFromUtc).size(), 0);
     }
 
-    void test_that_cert_can_be_retrieved()
+    void test_that_cert_can_be_generated_on_the_server()
     {
         using namespace resept::rcdpv2;
         using resept::Credential;
@@ -867,7 +842,7 @@ public:
         }
     }
 
-    void test_that_keypair_can_be_signed()
+    void test_sign_csr()
     {
         using namespace resept::rcdpv2;
         using resept::Credential;
@@ -878,9 +853,6 @@ public:
         const string myGoodUserid = "DemoUser";
         const string myGoodHwsig = "123456";
         const string myGoodPasswd = "secret";
-
-        // given
-        const ta::KeyPair myKeyPair = ta::RsaUtils::genKeyPair(2048, ta::RsaUtils::encPEM, ta::RsaUtils::pubkeyPKCS1);
 
         // given
         rclient::RcdpHandler myRcdp(theSvr);
@@ -895,30 +867,114 @@ public:
         const rclient::AuthResponse myAuthResult = myRcdp.authenticate(myService, myCreds, myResolvedURIs);
         TS_ASSERT_EQUALS(myAuthResult.auth_result.type, resept::AuthResult::Ok);
 
+        // when
+        const resept::CsrRequirements myRequirements = myRcdp.getCsrRequirements();
+        // then
+        TS_ASSERT_EQUALS(myRequirements.key_size, 2048);
+        TS_ASSERT_EQUALS(myRequirements.signing_algo, ta::SignUtils::digestSha256);
+        TS_ASSERT_EQUALS(myRequirements.subject,
+                         ta::CertUtils::Subject(myGoodUserid, "NL", "Noord Brabant", "Eindhoven", "Sioux", "Sioux DC", "test@ta.com"));
+
         static const bool Flags[] = {true, false};
         foreach (bool withChain, Flags)
         {
-            TS_TRACE((boost::format("Requesting PKCS#12 certificate from self keypair %s chain") % (withChain ? "with" : "without")).str().c_str());
-            // when
-            rclient::CertResponse myCertResult = myRcdp.getCert(resept::certformatP12, withChain, &myKeyPair);
-            // then
-            string myParsedKey, myParsedCert;
-            TS_ASSERT_EQUALS(ta::CertUtils::parsePfx(myCertResult.cert, myCertResult.password, myParsedKey, myParsedCert), (withChain ? 3U : 1U));
-            TS_ASSERT(ta::CertUtils::isKeyPair(myParsedCert, myParsedKey));
-            TS_ASSERT_EQUALS(ta::CertUtils::extractPemPubKey(myParsedCert), ta::RsaUtils::pubKeyPkcs1ToPkcs8(myKeyPair.pubKey));
-            TS_ASSERT(!myCertResult.execute_sync);
+            {
+                // given, generate CSR from the requirements received from the server
+                const ta::KeyPair myKeyPair = ta::RsaUtils::genKeyPair(myRequirements.key_size, ta::RsaUtils::encPEM, ta::RsaUtils::pubkeyPKCS1);
+                const string myCsrPem = createCSRAsPem(myKeyPair, myRequirements.subject, &myRequirements.signing_algo);
 
-            TS_TRACE((boost::format("Requesting PEM certificate from self keypair %s chain") % (withChain ? "with" : "without")).str().c_str());
-            // when
-            myCertResult = myRcdp.getCert(resept::certformatPem, withChain, &myKeyPair);
-            // then
-            TS_ASSERT(ta::CertUtils::isKeyPair(myCertResult.cert, myCertResult.cert, myCertResult.password.c_str()));
-            TS_ASSERT_EQUALS(ta::CertUtils::getPemCertsInfo(myCertResult.cert).size(), (withChain ? 3U : 1U));
-            TS_ASSERT_EQUALS(ta::CertUtils::extractPemPubKey(myCertResult.cert), ta::RsaUtils::pubKeyPkcs1ToPkcs8(myKeyPair.pubKey));
-            TS_ASSERT(!myCertResult.execute_sync);
+                TS_TRACE((boost::format("Requesting signing of %d-bit CSR %s chain") % myRequirements.key_size % (withChain ? "with" : "without")).str().c_str());
+                // when
+                const rclient::CertResponse myCertResult = myRcdp.signCSR(myCsrPem, withChain);
+                // then
+                TS_ASSERT_EQUALS(ta::CertUtils::getPemCertsInfo(myCertResult.cert).size(), (withChain ? 3U : 1U));
+                TS_ASSERT_EQUALS(ta::CertUtils::extractPemPubKey(myCertResult.cert), ta::RsaUtils::pubKeyPkcs1ToPkcs8(myKeyPair.pubKey));
+                const ta::CertUtils::CertInfo myCertInfo = ta::CertUtils::getCertInfo(myCertResult.cert);
+                TS_ASSERT_EQUALS(myCertInfo.subjCN, myRequirements.subject.cn);
+                TS_ASSERT_EQUALS(myCertInfo.subjO, myRequirements.subject.o);
+                TS_ASSERT_EQUALS(myCertInfo.subjOU, myRequirements.subject.ou);
+                TS_ASSERT_EQUALS(myCertInfo.pubKeyType, ta::CertUtils::keyRsa);
+                TS_ASSERT_EQUALS(myCertInfo.basicConstraints, ta::CertUtils::caFalse);
+                TS_ASSERT_EQUALS(myCertInfo.pubKeyBits, myRequirements.key_size);
+                TS_ASSERT(!myCertResult.execute_sync);
+            }
         }
     }
-};
+
+    void test_that_cheating_is_detected_during_sign_csr()
+    {
+        using namespace resept::rcdpv2;
+        using resept::Credential;
+        using boost::assign::list_of;
+        using std::string;
+
+        const string myService = "CUST_PASSWD_INTERNAL_WEB";
+        const string myGoodUserid = "DemoUser";
+        const string myGoodHwsig = "123456";
+        const string myGoodPasswd = "secret";
+        const resept::Credentials myCreds = list_of(Credential(resept::credUserId, myGoodUserid))
+                                              (Credential(resept::credHwSig, myGoodHwsig))
+                                              (Credential(resept::credPasswd, myGoodPasswd));
+
+        // given
+        rclient::RcdpHandler myRcdp(theSvr);
+
+        {
+            myRcdp.hello();
+            myRcdp.handshake();
+            const rclient::AuthRequirements myAuthReqs = myRcdp.getAuthRequirements(myService);
+            const ta::StringArrayDict myResolvedURIs = resolveServiceURIs(myAuthReqs.service_uris);
+            const rclient::AuthResponse myAuthResult = myRcdp.authenticate(myService, myCreds, myResolvedURIs);
+            TS_ASSERT_EQUALS(myAuthResult.auth_result.type, resept::AuthResult::Ok);
+            const resept::CsrRequirements myRequirements = myRcdp.getCsrRequirements();
+
+            // given (spoof key size)
+            const ta::KeyPair myKeyPair = ta::RsaUtils::genKeyPair(myRequirements.key_size/2, ta::RsaUtils::encPEM, ta::RsaUtils::pubkeyPKCS1);
+            const string myCsrPem = createCSRAsPem(myKeyPair, myRequirements.subject, &myRequirements.signing_algo);
+            TS_TRACE((boost::format("Requesting signing of %d-bit CSR (spoofed key size)") % myRequirements.key_size).str().c_str());
+            // when-then (cheating detected)
+            TS_ASSERT_THROWS(myRcdp.signCSR(myCsrPem, false), rclient::EocError);
+        }
+
+        {
+            myRcdp.hello();
+            myRcdp.handshake();
+            const rclient::AuthRequirements myAuthReqs = myRcdp.getAuthRequirements(myService);
+            const ta::StringArrayDict myResolvedURIs = resolveServiceURIs(myAuthReqs.service_uris);
+            const rclient::AuthResponse myAuthResult = myRcdp.authenticate(myService, myCreds, myResolvedURIs);
+            TS_ASSERT_EQUALS(myAuthResult.auth_result.type, resept::AuthResult::Ok);
+            const resept::CsrRequirements myRequirements = myRcdp.getCsrRequirements();
+
+            // given (spoof signing algo)
+            const ta::KeyPair myKeyPair = ta::RsaUtils::genKeyPair(myRequirements.key_size, ta::RsaUtils::encPEM, ta::RsaUtils::pubkeyPKCS1);
+            ta::SignUtils::Digest mySigningAlgo = ta::SignUtils::digestSha1;
+            TS_ASSERT_DIFFERS(mySigningAlgo, myRequirements.signing_algo);
+            const string myCsrPem = createCSRAsPem(myKeyPair, myRequirements.subject, &mySigningAlgo);
+            TS_TRACE((boost::format("Requesting signing of %d-bit CSR (spoofed signing algo)") % myRequirements.key_size).str().c_str());
+            // when-then (cheating detected)
+            TS_ASSERT_THROWS(myRcdp.signCSR(myCsrPem, false), rclient::EocError);
+        }
+
+        {
+            myRcdp.hello();
+            myRcdp.handshake();
+            const rclient::AuthRequirements myAuthReqs = myRcdp.getAuthRequirements(myService);
+            const ta::StringArrayDict myResolvedURIs = resolveServiceURIs(myAuthReqs.service_uris);
+            const rclient::AuthResponse myAuthResult = myRcdp.authenticate(myService, myCreds, myResolvedURIs);
+            TS_ASSERT_EQUALS(myAuthResult.auth_result.type, resept::AuthResult::Ok);
+            const resept::CsrRequirements myRequirements = myRcdp.getCsrRequirements();
+
+            // given (spoof email)
+            const ta::KeyPair myKeyPair = ta::RsaUtils::genKeyPair(myRequirements.key_size, ta::RsaUtils::encPEM, ta::RsaUtils::pubkeyPKCS1);
+            ta::CertUtils::Subject mySubj = myRequirements.subject;
+            mySubj.e += "_spoofed";
+            const string myCsrPem = createCSRAsPem(myKeyPair, mySubj, &myRequirements.signing_algo);
+            TS_TRACE((boost::format("Requesting signing of %d-bit CSR (spoofed email)") % myRequirements.key_size).str().c_str());
+            // when-then (cheating detected)
+            TS_ASSERT_THROWS(myRcdp.signCSR(myCsrPem, false), rclient::EocError);
+        }
+    }
+}; // RcdpGenericTest
 
 
 //

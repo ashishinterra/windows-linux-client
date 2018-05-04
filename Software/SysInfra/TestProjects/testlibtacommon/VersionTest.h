@@ -62,7 +62,7 @@ public:
         TS_ASSERT(!(Version(5, 1, 2) < Version(5, 1, 2)));
     }
 
-    void testVertionToStr()
+    void testVersionToStr()
     {
         using namespace ta::version;
 
@@ -77,5 +77,16 @@ public:
 
         TS_ASSERT_EQUALS(toStr(Version(0,1,23,"p1"), fmtMajorMinor), "0.1");
         TS_ASSERT_EQUALS(toStr(Version(0,1), fmtMajorMinor), "0.1");
+    }
+
+    void testVersionToStringArray()
+    {
+        using namespace ta::version;
+
+        const std::vector<Version> myVersions = boost::assign::list_of(Version(1,2,3))(Version(4,5))(Version(0,1));
+        const ta::StringArray myVersionStrs = boost::assign::list_of("1.2.3")("4.5.0")("0.1.0");
+
+        TS_ASSERT_EQUALS(ta::version::parse(myVersionStrs), myVersions);
+        TS_ASSERT_EQUALS(ta::version::toStringArray(myVersions), myVersionStrs);
     }
 };

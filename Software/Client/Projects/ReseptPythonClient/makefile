@@ -8,7 +8,7 @@ all: release
 
 release debug: $(PACKAGE)
 
-$(PACKAGE): $(DEPENDENCIES) keytalk-client.py
+$(PACKAGE): $(DEPENDENCIES) requirements.txt keytalk-client.py
 	tar -czf $@ $?
 
 common_config.py: ../../../Common/common_config.py
@@ -23,4 +23,5 @@ KeyTalkProtocols.pdf: ../../../Documentation/KeyTalkProtocols.pdf
 clean:
 	rm -f ${DEPENDENCIES} ${PACKAGE}
 
-install:
+install: requirements.txt
+	pip3 install --upgrade --requirement requirements.txt

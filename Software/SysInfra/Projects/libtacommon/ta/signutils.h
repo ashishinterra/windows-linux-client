@@ -55,18 +55,17 @@ namespace ta
         {
             return aDigest >= _firstDigest && aDigest <= _lastDigest;
         }
-        inline bool parseDigest(const std::string& aDigestStr, Digest& aDigest)
+        inline Digest parseDigest(const std::string& aDigestStr)
         {
             for (int i = _firstDigest; i <= _lastDigest; ++i)
             {
-                Digest myDigest = static_cast<Digest>(i);
+                const Digest myDigest = static_cast<Digest>(i);
                 if (str(myDigest) == aDigestStr)
                 {
-                    aDigest = myDigest;
-                    return true;
+                    return myDigest;
                 }
             }
-            return false;
+            TA_THROW_MSG(std::invalid_argument, "Cannot parse digest from " + aDigestStr);
         }
 
         struct SignatureAlgorithm
@@ -77,6 +76,10 @@ namespace ta
             inline bool operator==(const SignatureAlgorithm& aRhs) const
             {
                 return nid == aRhs.nid;
+            }
+            inline bool operator!=(const SignatureAlgorithm& aRhs) const
+            {
+                return !(*this == aRhs);
             }
         };
 

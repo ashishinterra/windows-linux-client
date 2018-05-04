@@ -350,7 +350,27 @@ namespace rclient
             }
         }
 
-        CertResponse parseCert(const string& aResponse, const resept::CertFormat aCertFormat, const string& aSessionId)
+        resept::CsrRequirements parseCsrRequirements(const string& aResponse)
+        {
+            using namespace resept::rcdpv2;
+
+            const Response myExpectedResponseType = respCsrRequirements;
+            const ptree myResponseTree = parseResponseTree(aResponse, myExpectedResponseType);
+
+            try
+            {
+                const unsigned int myKeySize = parseIntVal(myResponseTree, responseParamNameKeySize);
+                const ta::SignUtils::Digest mySigningAlgo = ta::SignUtils::parseDigest(parseStringVal(myResponseTree, responseParamNameSigningAlgo));
+                const ta::CertUtils::Subject mySubject(myResponseTree.get_child(responseParamNameSubject));
+                return resept::CsrRequirements(myKeySize, mySigningAlgo, mySubject);
+            }
+            catch (std::exception& e)
+            {
+                TA_THROW_MSG(ParseError, boost::format("Cannot parse CSR requirements from %s response: '%s'. %s") % str(myExpectedResponseType) % aResponse % e.what());
+            }
+        }
+
+        CertResponse parseCertWithKey(const string& aResponse, const resept::CertFormat aCertFormat, const string& aSessionId)
         {
             using namespace resept::rcdpv2;
 
@@ -374,7 +394,31 @@ namespace rclient
             }
             catch (std::exception& e)
             {
-                TA_THROW_MSG(ParseError, boost::format("Cannot parse certificate from %s response: '%s'. %s") % str(myExpectedResponseType) % aResponse % e.what());
+                TA_THROW_MSG(ParseError, boost::format("Cannot parse certificate&key from %s response: '%s'. %s") % str(myExpectedResponseType) % aResponse % e.what());
+            }
+        }
+
+        CertResponse parsePemCert(const string& aResponse)
+        {
+            using namespace resept::rcdpv2;
+
+            const Response myExpectedResponseType = respCert;
+            const ptree myResponseTree = parseResponseTree(aResponse, myExpectedResponseType);
+
+            try
+            {
+                CertResponse myCertResponse;
+
+                myCertResponse.cert = ta::str2Vec<unsigned char>(parseStringVal(myResponseTree, responseParamNameCert));
+                myCertResponse.execute_sync = (isScalarParamExist<bool>(myResponseTree, responseParamNameExecuteSync))
+                                              ? parseBoolVal(myResponseTree, responseParamNameExecuteSync)
+                                              : false;
+
+                return myCertResponse;
+            }
+            catch (std::exception& e)
+            {
+                TA_THROW_MSG(ParseError, boost::format("Cannot parse PEM certificate from %s response: '%s'. %s") % str(myExpectedResponseType) % aResponse % e.what());
             }
         }
 

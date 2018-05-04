@@ -3,6 +3,8 @@
 #include "ta/common.h"
 #include "ta/strings.h"
 #include "ta/signutils.h"
+#include "ta/certutils.h"
+#include "ta/version.h"
 
 #include <cstddef>
 #include <string>
@@ -278,6 +280,34 @@ namespace resept
         return false;
     }
 
+    struct CsrRequirements
+    {
+        CsrRequirements()
+        {}
+        CsrRequirements(const boost::uint32_t aKeysSize, const ta::SignUtils::Digest& aSigningAlgo, const ta::CertUtils::Subject& aSubject)
+            : key_size(aKeysSize)
+            , signing_algo(aSigningAlgo)
+            , subject(aSubject)
+        {}
+
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive& ar, const unsigned int UNUSED(version))
+        {
+            ar & key_size;
+            ar & signing_algo;
+            ar & subject;
+        }
+
+        inline std::string info() const
+        {
+            return str(boost::format("Key size: %d bit. Signing algorithm: %s. Subject: %s.") % key_size % str(signing_algo) % subject.info());
+        }
+
+        boost::uint32_t key_size;
+        ta::SignUtils::Digest signing_algo;
+        ta::CertUtils::Subject subject;
+    };
+
     namespace rcdp
     {
         const int PasswordNeverExpires = ${RCDP_PASSWORD_NEVER_EXPIRES};
@@ -328,7 +358,18 @@ namespace resept
         const std::string V_1_4 = ${RCDP_VERSION_1_4};
         const std::string V_1_5 = ${RCDP_VERSION_1_5};
 
-        const std::string ServerSupportdRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV1_VERSIONS};
+        const std::string ServerSupportedRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV1_VERSIONS};
+
+        inline std::vector<ta::version::Version> getServerSupportedRcdpVersions()
+        {
+            const ta::StringArray versions(ServerSupportedRcdpVersions,
+                                           ServerSupportedRcdpVersions + sizeof(ServerSupportedRcdpVersions)/sizeof(ServerSupportedRcdpVersions[0]));
+            return ta::version::parse(versions);
+        }
+        inline std::vector<ta::version::Version> getClientSupportedRcdpVersions()
+        {
+            return getServerSupportedRcdpVersions();
+        }
 
         const std::string ReseptSvrPath = ${RCDPV1_RESEPT_SVR_PATH};
         const std::string HttpSidCookieName = ${RCDPV1_HTTP_SID_COOKIE_NAME};
@@ -501,9 +542,25 @@ namespace resept
     {
         const std::string V_2_0 = ${RCDP_VERSION_2_0};
         const std::string V_2_1 = ${RCDP_VERSION_2_1};
+        const std::string V_2_2 = ${RCDP_VERSION_2_2};
 
         const std::string ClientSupportedRcdpVersions[] = ${CLIENT_SUPPORTED_RCDPV2_VERSIONS};
-        const std::string ServerSupportdRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
+
+        inline std::vector<ta::version::Version> getClientSupportedRcdpVersions()
+        {
+            const ta::StringArray versions(ClientSupportedRcdpVersions,
+                                           ClientSupportedRcdpVersions + sizeof(ClientSupportedRcdpVersions)/sizeof(ClientSupportedRcdpVersions[0]));
+            return ta::version::parse(versions);
+        }
+
+        const std::string ServerSupportedRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
+
+        inline std::vector<ta::version::Version> getServerSupportedRcdpVersions()
+        {
+            const ta::StringArray versions(ServerSupportedRcdpVersions,
+                                           ServerSupportedRcdpVersions + sizeof(ServerSupportedRcdpVersions)/sizeof(ServerSupportedRcdpVersions[0]));
+            return ta::version::parse(versions);
+        }
 
         const std::string HttpRequestUriPrefix  = ${RCDPV2_HTTP_REQUEST_URI_PREFIX};
         const std::string HttpSidCookieName = ${RCDPV2_HTTP_SID_COOKIE_NAME};
@@ -523,7 +580,8 @@ namespace resept
             reqChangePassword,
             reqLastMessages,
             reqCert,
-            LastRequest = reqCert
+            reqCsrRequirements,
+            LastRequest = reqCsrRequirements
         };
         const std::string requestParamNameCallerAppDescription = ${RCDPV2_REQUEST_PARAM_NAME_CALLER_APP_DESCRIPTION};
         const std::string requestParamNameCallerHwDescription = ${RCDPV2_REQUEST_PARAM_NAME_CALLER_HW_DESCRIPTION};
@@ -533,9 +591,6 @@ namespace resept
         const std::string requestParamNameCallerUtc = ${RCDPV2_REQUEST_PARAM_NAME_CALLER_UTC};
         const std::string requestParamNameService = ${RCDPV2_REQUEST_PARAM_NAME_SERVICE};
         const std::string requestParamNameLastMessagesFromUtc = ${RCDPV2_REQUEST_PARAM_NAME_LAST_MESSAGES_FROM_UTC};
-        const std::string requestParamNameKeyPair = ${RCDPV2_REQUEST_PARAM_NAME_KEYPAIR};
-        const std::string requestParamNamePubKey = ${RCDPV2_REQUEST_PARAM_NAME_PUBKEY};
-        const std::string requestParamNamePrivKey = ${RCDPV2_REQUEST_PARAM_NAME_PRIVKEY};
         const std::string requestParamNameCertFormat = ${RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT};
         const std::string requestParamNameCertIncludeChain = ${RCDPV2_REQUEST_PARAM_NAME_CERT_INCLUDE_CHAIN};
         const std::string requestParamNameCertOutOfBand = ${RCDPV2_REQUEST_PARAM_NAME_CERT_OUT_OF_BAND};
@@ -549,6 +604,7 @@ namespace resept
         const std::string requestParamNameResponses = ${RCDPV2_REQUEST_PARAM_NAME_RESPONSES};
         const std::string requestParamNameOldPassword = ${RCDPV2_REQUEST_PARAM_NAME_OLD_PASSWORD};
         const std::string requestParamNameNewPassword = ${RCDPV2_REQUEST_PARAM_NAME_NEW_PASSWORD};
+        const std::string requestParamNameCSR = ${RCDPV2_REQUEST_PARAM_NAME_CSR};
 
 
         const std::string RequestStrings[] = ${RCDPV2_REQUEST_STRINGS};
@@ -589,7 +645,8 @@ namespace resept
             respAuthResult,
             respLastMessages,
             respCert,
-            LastResponse = respCert
+            respCsrRequirements,
+            LastResponse = respCsrRequirements
         };
         const std::string responseParamNameStatus = ${RCDPV2_RESPONSE_PARAM_NAME_STATUS};
         const std::string responseParamNameErrorCode = ${RCDPV2_RESPONSE_PARAM_NAME_ERROR_CODE};
@@ -616,6 +673,9 @@ namespace resept
         const std::string responseParamNameResolveServiceUris = ${RCDPV2_RESPONSE_PARAM_NAME_RESOLVE_SERVICE_URIS};
         const std::string responseParamNameCalcServiceUrisDigest = ${RCDPV2_RESPONSE_PARAM_NAME_CALC_SERVICE_URIS_DIGEST};
         const std::string responseParamNameExecuteSync = ${RCDPV2_RESPONSE_PARAM_NAME_EXECUTE_SYNC};
+        const std::string responseParamNameKeySize = ${RCDPV2_RESPONSE_PARAM_NAME_KEY_SIZE};
+        const std::string responseParamNameSigningAlgo = ${RCDPV2_RESPONSE_PARAM_NAME_SIGNING_ALGO};
+        const std::string responseParamNameSubject = ${RCDPV2_RESPONSE_PARAM_NAME_SUBJECT};
 
         const std::string ResponseStrings[] = ${RCDPV2_RESPONSE_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == LastResponse-FirstResponse+1);

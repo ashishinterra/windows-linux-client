@@ -71,18 +71,17 @@ namespace rclient
         }
 
         ta::StringDict makeCertRequestParams(const resept::CertFormat aCertFormat,
-                                             const bool anIncludeChain,
-                                             const ta::KeyPair* aFromKeyPair)
+                                             const bool anIncludeChain)
         {
-            ta::StringDict myParams = map_list_of(requestParamNameCertFormat, str(aCertFormat))
-                                      (requestParamNameCertIncludeChain, resept::rcdp::boolToStr(anIncludeChain));
-            if (aFromKeyPair)
-            {
-                const ta::StringDict myKeyPair = map_list_of(requestParamNamePubKey, ta::vec2Str(aFromKeyPair->pubKey))
-                                                 (requestParamNamePrivKey, ta::vec2Str(aFromKeyPair->privKey));
-                myParams[requestParamNameKeyPair] = ta::EncodingUtils::toJson(myKeyPair);
-            }
-
+            const ta::StringDict myParams = map_list_of(requestParamNameCertFormat, str(aCertFormat))
+                                            (requestParamNameCertIncludeChain, resept::rcdp::boolToStr(anIncludeChain));
+            return myParams;
+        }
+        ta::StringDict makeCertRequestParams(const string& aCsrPem,
+                                             const bool anIncludeChain)
+        {
+            const ta::StringDict myParams = map_list_of(requestParamNameCSR, aCsrPem)
+                                            (requestParamNameCertIncludeChain, resept::rcdp::boolToStr(anIncludeChain));
             return myParams;
         }
 

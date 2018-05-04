@@ -52,6 +52,7 @@ namespace ta
           devstage defaults to empty string.
          */
         Version parse(const std::string& anStr);
+        std::vector<Version> parse(const ta::StringArray& aStringArray);
 
         enum Format
         {
@@ -60,6 +61,7 @@ namespace ta
             fmtMajorMinorSubminorDevstage // "5.2.1.b3"
         };
         std::string toStr(const Version& aVersion, const Format aFormat = fmtMajorMinorSubminorDevstage);
+        ta::StringArray toStringArray(const std::vector<Version>& aVersions, const Format aFormat = fmtMajorMinorSubminorDevstage);
     }
 }
 

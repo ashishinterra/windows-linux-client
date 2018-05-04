@@ -9,6 +9,15 @@
 #include "boost/cstdint.hpp"
 #include "boost/format.hpp"
 
+#ifdef _WIN32
+// suppress misleading "not all control paths return a value" warning in boost::property_tree produced by MSVC
+#pragma warning (disable: 4715)
+#endif
+#include "boost/property_tree/json_parser.hpp"
+#ifdef _WIN32
+#pragma warning (default: 4715)
+#endif
+
 struct x509_st;
 typedef struct x509_st X509;
 struct X509_req_st;
@@ -343,8 +352,9 @@ namespace ta
             }
         };
 
-        // serialize (extended) key usage to X509 format
+        // serialize key usage to X509 format
         std::string x509SerializeKeyUsage(const std::vector<KeyUsage>& aKeyUsages);
+        // serialize (extended) key usage to X509 format
         std::string x509SerializeKeyUsage(const ta::StringArray& aKeyUsages);
         // serialize basic constraints to X509 format
         std::string x509SerializeBasicConstraints(const BasicConstraints& aBasicConstraints);
@@ -384,6 +394,8 @@ namespace ta
 
         struct Subject
         {
+            Subject()
+            {}
             Subject(const std::string& aCN,
                     const std::string& aC = "",
                     const std::string& aSt = "",
@@ -400,6 +412,41 @@ namespace ta
                 , ou(aOU)
                 , e(aE)
             {}
+            Subject(const boost::property_tree::ptree& aTree);
+
+            inline bool operator==(const Subject& rhs) const
+            {
+                return cn == rhs.cn &&
+                       c == rhs.c &&
+                       st == rhs.st &&
+                       l == rhs.l &&
+                       o == rhs.o &&
+                       ou == rhs.ou &&
+                       e == rhs.e ;
+            }
+            inline bool operator!=(const Subject& rhs) const
+            {
+                return !(*this == rhs);
+            }
+
+            std::string info() const;
+            // overwrite attributes with with non-empty counterparts of the given subject
+            void overwriteAttrsFrom(const Subject& anOther);
+
+            friend class boost::serialization::access;
+            template<class Archive> void serialize(Archive& ar, const unsigned int UNUSED(version))
+            {
+                ar & cn;
+                ar & c;
+                ar & st;
+                ar & l;
+                ar & o;
+                ar & ou;
+                ar & e;
+            }
+
+            boost::property_tree::ptree  toTree() const;
+
             std::string cn;
             std::string c;
             std::string st;
@@ -409,7 +456,7 @@ namespace ta
             std::string e;
         };
         /**
-            Generate CSR for the given public key and certificate fields
+            Generate CSR for the given public key and certificate fields, optionally signed with the given private key
             @param [in] aKeyPair RSA keypair with PEM-encoded PKCS1 public key
             @param [in] aSignatureAlgorithm signature algorithm or NULL is CSR does not need to be signed
             @return Valid pointer to X509_REQ which ought to be freed with X509_REQ_free
@@ -419,8 +466,31 @@ namespace ta
                             const ta::SignUtils::Digest* aSignatureAlgorithm = NULL,
                             const ta::StringArray& aSAN = ta::StringArray(),
                             const std::string& aChallengePassword = "");
+
         std::string convX509_REQ_2Pem(X509_REQ* aReq);
-        std::string parseCnFromSignedCSR(const std::string& aCsrPem);
+
+        // @pre CSR is signed
+        // @return Valid pointer to X509_REQ which ought to be freed with X509_REQ_free
+        X509_REQ* convPEM_2X509_REQ(const std::string& aCsrPem);
+
+        // just a shortcut for createCSR() + convX509_REQ_2Pem()
+        std::string createCSRAsPem(const ta::KeyPair& aKeyPair,
+                                   const Subject& aSubject,
+                                   const ta::SignUtils::Digest* aSignatureAlgorithm = NULL,
+                                   const ta::StringArray& aSAN = ta::StringArray(),
+                                   const std::string& aChallengePassword = "");
+
+        struct CsrInfo
+        {
+            CsrInfo(const Subject& aSubject, const ta::SignUtils::SignatureAlgorithm aSignatureAlgorithm, const KeyType aPubKeyType, const boost::uint32_t aPubKeyBits)
+                : subject(aSubject), signatureAlgorithm(aSignatureAlgorithm), pubKeyType(aPubKeyType), pubKeyBits(aPubKeyBits)
+            {}
+            Subject subject;
+            ta::SignUtils::SignatureAlgorithm signatureAlgorithm;
+            KeyType pubKeyType;
+            boost::uint32_t pubKeyBits;
+        };
+        CsrInfo parseSignedCSR(const std::string& aCsrPem);
 
         void validateSAN(const std::string& aSAN);
 

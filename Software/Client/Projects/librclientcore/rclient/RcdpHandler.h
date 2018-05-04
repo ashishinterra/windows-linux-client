@@ -67,7 +67,9 @@ namespace rclient
         // Phase 3 messages (service)
         //
         Messages getLastMessages(const time_t* aFromUtc = NULL);
-        CertResponse getCert(const resept::CertFormat aCertFormat, const bool anIncludeChain, const ta::KeyPair* aFromKeyPair = NULL);
+        resept::CsrRequirements getCsrRequirements();
+        CertResponse getCert(const resept::CertFormat aCertFormat, const bool anIncludeChain);
+        CertResponse signCSR(const std::string& aCsrPem, const bool anIncludeChain);
 
         //
         // Helpers

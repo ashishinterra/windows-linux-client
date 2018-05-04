@@ -42,6 +42,7 @@ import base64
 import pprint
 import hashlib
 import socket
+import OpenSSL
 
 import common_config as conf
 
@@ -89,7 +90,7 @@ def log(msg):
 class KeyTalkProtocol(object):
 
     def __init__(self):
-        self.version = conf.RCDP_VERSION_2_1
+        self.version = conf.RCDP_VERSION_2_2
         self.conn = None
         self.cookie = None
 
@@ -307,6 +308,42 @@ class KeyTalkProtocol(object):
         return creds
 
     @staticmethod
+    def gen_csr(requirements):
+        key_size = int(requirements[conf.RCDPV2_RESPONSE_PARAM_NAME_KEY_SIZE])
+        signing_algo = requirements[conf.RCDPV2_RESPONSE_PARAM_NAME_SIGNING_ALGO]
+        subject = requirements[conf.RCDPV2_RESPONSE_PARAM_NAME_SUBJECT]
+
+        log("Generating {}-bit RSA keypair".format(key_size))
+        keypair = OpenSSL.crypto.PKey()
+        keypair.generate_key(OpenSSL.crypto.TYPE_RSA, key_size)
+        log("Creating CSR with subject {} and signed by {}".format(subject, signing_algo))
+        req = OpenSSL.crypto.X509Req()
+        KeyTalkProtocol._set_subject_on_req(req, subject)
+        req.set_pubkey(keypair)
+        req.sign(keypair, signing_algo)
+        pkcs10_req = OpenSSL.crypto.dump_certificate_request(OpenSSL.crypto.FILETYPE_PEM, req)
+        return pkcs10_req
+
+    @staticmethod
+    def _set_subject_on_req(req, subject):
+        subj = req.get_subject()
+        for key, value in subject.items():
+            if key == "cn":
+                setattr(subj, "CN", value)
+            if key == "c":
+                setattr(subj, "C", value)
+            if key == "st":
+                setattr(subj, "ST", value)
+            if key == "l":
+                setattr(subj, "L", value)
+            if key == "o":
+                setattr(subj, "O", value)
+            if key == "ou":
+                setattr(subj, "OU", value)
+            if key == "e":
+                setattr(subj, "emailAddress", value)
+
+    @staticmethod
     def _save_cert(cert, passphrase, format):
         pass_path = 'certkey-password.txt'
         if format == conf.CERT_FORMAT_PEM:
@@ -332,17 +369,39 @@ class KeyTalkProtocol(object):
 
         return cert_path, pass_path
 
-    def _request(self, action, params={}, send_cookie=True):
-        url = "/{}/{}/{}?{}".format(conf.RCDPV2_HTTP_REQUEST_URI_PREFIX,
-                                    self.version,
-                                    action,
-                                    urllib.parse.urlencode(params))
+    @staticmethod
+    def _save_pem_cert_only(cert):
+        cert_path = 'cert.pem'
+        with open(cert_path, 'wb') as cert_file:
+            cert_file.write(cert)
+        log("The certificate has been saved to {}".format(cert_path))
+        return cert_path
+
+    def _request(self, action, params={}, method='GET', send_cookie=True):
         if VERBOSE:
             self.conn.set_debuglevel(1)
-        if send_cookie:
-            self.conn.request("GET", url, headers={"Cookie": self.cookie})
+
+        url = "/{}/{}/{}".format(conf.RCDPV2_HTTP_REQUEST_URI_PREFIX,
+                                 self.version,
+                                 action)
+        headers = {}
+        body = None
+
+        if method == 'GET':
+            # HTTP GET params are sent in URL
+            if params:
+                url += '?' + urllib.parse.urlencode(params)
+        elif method == 'POST':
+            # HTTP POST params are sent in body
+            body = urllib.parse.urlencode(params)
+            headers["Content-type"] = "application/x-www-form-urlencoded"
         else:
-            self.conn.request("GET", url)
+            raise Exception('Unsupported HTTP request method {}'.format(method))
+
+        if send_cookie:
+            headers["Cookie"] = self.cookie
+
+        self.conn.request(method, url, body, headers)
 
     def _get_cert_passphrase(self):
         parsed_cookie = self.cookie.split('=')
@@ -420,8 +479,8 @@ class KeyTalkProtocol(object):
             }
             request_params.update(creds)
         else:
-            # normally this means we already sent service on the first authentication
-            # request and now on challenge phase
+            # normally this means that we have already submitted service name on the first authentication
+            # request and now we are on the challenge phase
             request_params = creds
 
         debug("Sending authentication request: " + pprint.pformat(request_params))
@@ -483,6 +542,12 @@ class KeyTalkProtocol(object):
             log("Received {} user messages:\n{}".format(len(messages), pprint.pformat(messages)))
         return response_payload
 
+    def get_csr_requirements(self):
+        self._request(conf.RCDPV2_REQUEST_CSR_REQUIREMENTS)
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+            self.conn, conf.RCDPV2_REQUEST_CSR_REQUIREMENTS, conf.RCDPV2_RESPONSE_CSR_REQUIREMENTS)
+        return response_payload
+
     def get_cert(self, format, include_chain, out_of_band=False):
         request_params = {
             conf.RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT: format,
@@ -512,9 +577,39 @@ class KeyTalkProtocol(object):
         cert_path, cert_pass_path = KeyTalkProtocol._save_cert(cert, cert_passphrase, format)
         return cert_path, cert_pass_path
 
+    def sign_csr(self, csr, include_chain, out_of_band=False):
+        request_params = {
+            conf.RCDPV2_REQUEST_PARAM_NAME_CSR: csr,
+            conf.RCDPV2_REQUEST_PARAM_NAME_CERT_INCLUDE_CHAIN: include_chain,
+            conf.RCDPV2_REQUEST_PARAM_NAME_CERT_OUT_OF_BAND: out_of_band,
+        }
+
+        self._request(conf.RCDPV2_REQUEST_CERT, request_params, method='POST')
+        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+            self.conn, conf.RCDPV2_REQUEST_CERT, conf.RCDPV2_RESPONSE_CERT)
+
+        if out_of_band:
+            cert_url_templ = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT_URL_TEMPL]
+            cert_url = cert_url_templ.replace(
+                "$(" + conf.CERT_DOWNLOAD_URL_HOST_PLACEHOLDER + ")", KEYTALK_SERVER)
+            cert = KeyTalkProtocol._request_simple_url(cert_url)
+            assert not KeyTalkProtocol._request_simple_url(
+                cert_url), "the given certificate can only be downloaded once"
+        else:
+            cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
+
+        log("Successfully generated PEM certificate {} chain from client CSR".format(
+            "with" if include_chain else "without"))
+        cert_path = KeyTalkProtocol._save_pem_cert_only(cert)
+        return cert_path
+
     def reset_user_password(self, password):
         pass
 
+
+#
+# Test cases
+#
 
 def request_cert_with_password_authentication(cert_format, cert_with_chain):
     service = "CUST_PASSWD_INTERNAL_TESTUI"
@@ -534,6 +629,30 @@ def request_cert_with_password_authentication(cert_format, cert_with_chain):
     # get service
     proto.get_last_messages()
     proto.get_cert(cert_format, cert_with_chain)
+    # close connection
+    proto.eoc()
+
+
+def request_cert_from_csr_with_password_authentication(cert_with_chain):
+    service = "CUST_PASSWD_INTERNAL_TESTUI"
+    username = 'DemoUser'
+    password = 'secret'
+
+    proto = KeyTalkProtocol()
+    # handshake
+    proto.hello()
+    proto.handshake()
+    # authenticate
+    auth_requirements = proto.get_auth_requirements(service)
+    assert not KeyTalkProtocol.is_cr_authentication(
+        auth_requirements), "Non-CR authentication is expected for service {}".format(service)
+    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, password)
+    proto.authenticate(creds, service)
+    # get service
+    proto.get_last_messages()
+    csr_requirements = proto.get_csr_requirements()
+    csr = KeyTalkProtocol.gen_csr(csr_requirements)
+    proto.sign_csr(csr, cert_with_chain)
     # close connection
     proto.eoc()
 
@@ -733,5 +852,6 @@ if __name__ == "__main__":
             request_cert_with_radius_securid_authentication(cert_format, cert_with_chain)
             request_cert_with_radius_eap_aka_authentication(cert_format, cert_with_chain)
             request_cert_with_radius_eap_sim_authentication(cert_format, cert_with_chain)
+            request_cert_from_csr_with_password_authentication(cert_with_chain)
             request_out_of_band_cert_with_password_authentication(cert_format, cert_with_chain)
             change_password_and_request_cert(cert_format, cert_with_chain)

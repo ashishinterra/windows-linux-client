@@ -14,7 +14,8 @@ namespace rclient
                 const ta::StringDict& aCalculatedDigests);
 
         ta::StringDict makeCertRequestParams(const resept::CertFormat aCertFormat,
-                                             const bool anIncludeChain,
-                                             const ta::KeyPair* aFromKeyPair = NULL);
+                                             const bool anIncludeChain);
+        ta::StringDict makeCertRequestParams(const std::string& aCsrPem,
+                                             const bool anIncludeChain);
     }
 }

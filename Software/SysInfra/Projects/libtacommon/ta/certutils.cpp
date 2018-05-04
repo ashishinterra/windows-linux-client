@@ -420,6 +420,64 @@ namespace ta
                 return myStr;
             }
 
+            enum Strict
+            {
+                attrRequired,
+                attrOptional
+            };
+            string getCertSubjectAttr(X509& aX509Cert, const int anAttrNID, const string& anAttrFriendlyNameHint, const Strict aStrict)
+            {
+                X509_NAME* myX509SubjName = X509_get_subject_name(&aX509Cert);
+                if (!myX509SubjName)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Failed to read subject name from X509 cert");
+                }
+                const int myCnIndex = X509_NAME_get_index_by_NID(myX509SubjName, anAttrNID, -1);
+                if (myCnIndex < 0)
+                {
+                    if (aStrict == attrRequired)
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to read subject %s index from X509 cert") % anAttrFriendlyNameHint);
+                    }
+                    else
+                    {
+                        return "";
+                    }
+                }
+                X509_NAME_ENTRY* myCnEntry = X509_NAME_get_entry(myX509SubjName, myCnIndex);
+                if (!myCnEntry)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to read subject %s from X509 cert") % anAttrFriendlyNameHint);
+                }
+                return asn1ToStr(X509_NAME_ENTRY_get_data(myCnEntry));
+            }
+            string getCsrSubjectAttr(X509_REQ& aReq, const int anAttrNID, const string& anAttrFriendlyNameHint, const Strict aStrict)
+            {
+                X509_NAME* myX509SubjName = X509_REQ_get_subject_name(&aReq);
+                if (!myX509SubjName)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Failed to read subject name from X509 request");
+                }
+                const int myCnIndex = X509_NAME_get_index_by_NID(myX509SubjName, anAttrNID, -1);
+                if (myCnIndex < 0)
+                {
+                    if (aStrict == attrRequired)
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to read subject %s index from X509 request") % anAttrFriendlyNameHint);
+                    }
+                    else
+                    {
+                        return "";
+                    }
+                }
+                X509_NAME_ENTRY* myCnEntry = X509_NAME_get_entry(myX509SubjName, myCnIndex);
+                if (!myCnEntry)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to read subject %s from X509 request") % anAttrFriendlyNameHint);
+                }
+                return asn1ToStr(X509_NAME_ENTRY_get_data(myCnEntry));
+            }
+
             string getSubjectName(X509& aX509Cert)
             {
                 X509_NAME* myX509SubjName = X509_get_subject_name(&aX509Cert);
@@ -435,66 +493,6 @@ namespace ta
                 const string mySubjNameStr = mySubjName;
                 OPENSSL_free(mySubjName);
                 return mySubjNameStr;
-            }
-
-            string getSubjectCN(X509& aX509Cert)
-            {
-                X509_NAME* myX509SubjName = X509_get_subject_name(&aX509Cert);
-                if (!myX509SubjName)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read X509 subject name from X509 cert");
-                }
-                const int myCnIndex = X509_NAME_get_index_by_NID(myX509SubjName, NID_commonName, -1);
-                if (myCnIndex < 0)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read subject CN index from X509 cert");
-                }
-                X509_NAME_ENTRY* myCnEntry = X509_NAME_get_entry(myX509SubjName, myCnIndex);
-                if (!myCnEntry)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read subject CN from X509 cert");
-                }
-                return asn1ToStr(X509_NAME_ENTRY_get_data(myCnEntry));
-            }
-
-            string getSubjectO(X509& aX509Cert)
-            {
-                X509_NAME* myX509SubjName = X509_get_subject_name(&aX509Cert);
-                if (!myX509SubjName)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read X509 subject O from X509 cert");
-                }
-                const int myCnIndex = X509_NAME_get_index_by_NID(myX509SubjName, NID_organizationName, -1);
-                if (myCnIndex < 0)
-                {
-                    return ""; // O is not mandatory
-                }
-                X509_NAME_ENTRY* myCnEntry = X509_NAME_get_entry(myX509SubjName, myCnIndex);
-                if (!myCnEntry)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read subject O from X509 cert");
-                }
-                return asn1ToStr(X509_NAME_ENTRY_get_data(myCnEntry));
-            }
-
-            string getSubjectOU(X509& aX509Cert)
-            {
-                X509_NAME* myX509SubjName = X509_get_subject_name(&aX509Cert);
-                if (!myX509SubjName)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read X509 subject OU from X509 cert");
-                }
-                const int myCnIndex = X509_NAME_get_index_by_NID(myX509SubjName, NID_organizationalUnitName, -1);
-                if (myCnIndex < 0)
-                {
-                    return ""; // OU is not mandatory
-                }
-                X509_NAME_ENTRY* myCnEntry = X509_NAME_get_entry(myX509SubjName, myCnIndex);
-                if (!myCnEntry)
-                {
-                    TA_THROW_MSG(std::runtime_error, "Failed to read subject OU from X509 cert");
-                }
-                return asn1ToStr(X509_NAME_ENTRY_get_data(myCnEntry));
             }
 
             string getIssuerName(X509& aX509Cert)
@@ -544,6 +542,102 @@ namespace ta
                 }
             }
 
+            struct PubKeyInfo
+            {
+                PubKeyInfo(const KeyType& aType, const boost::uint32_t aBit)
+                    : type(aType), bit(aBit)
+                {}
+                KeyType type;
+                boost::uint32_t bit;
+            };
+            PubKeyInfo getPubKeyInfo(EVP_PKEY& aKey)
+            {
+                const int myPubKeyType = EVP_PKEY_base_id(&aKey);
+                switch (myPubKeyType)
+                {
+                case EVP_PKEY_RSA:
+                {
+                    ScopedResource<RSA*> myPubKeyRsa(EVP_PKEY_get1_RSA(&aKey), RSA_free);
+                    return PubKeyInfo(keyRsa, 8*RSA_size(myPubKeyRsa));
+                }
+                case EVP_PKEY_DSA:
+                {
+                    ScopedResource<DSA*> myPubKeyDsa(EVP_PKEY_get1_DSA(&aKey), DSA_free);
+                    return PubKeyInfo(keyDsa, 8*DSA_size(myPubKeyDsa));
+                }
+                case EVP_PKEY_EC:
+                {
+#ifdef OPENSSL_NO_EC
+                    TA_THROW_MSG(std::runtime_error, "Elliptic Key cryptography is not supported by OpenSSL");
+#else
+                    ta::ScopedResource<EC_KEY*> ec_params(EVP_PKEY_get1_EC_KEY(&aKey), EC_KEY_free);
+                    return PubKeyInfo(keyEc, EC_GROUP_get_degree(EC_KEY_get0_group(ec_params)));
+#endif
+                }
+                default:  TA_THROW_MSG(std::runtime_error, boost::format("Unexpected pubkey type %d") % myPubKeyType);
+                }
+            }
+            PubKeyInfo getCertPubKeyInfo(X509& aX509Cert)
+            {
+                ScopedResource<EVP_PKEY*> myPubKey(X509_get_pubkey(&aX509Cert), EVP_PKEY_free);
+                if (!myPubKey)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Cannot extract public key from the certificate");
+                }
+                return getPubKeyInfo(*myPubKey);
+            }
+            PubKeyInfo getCsrPubKeyInfo(X509_REQ& aReq)
+            {
+                ScopedResource<EVP_PKEY*> myPubKey(X509_REQ_get_pubkey(&aReq), EVP_PKEY_free);
+                if (!myPubKey)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Cannot extract public key from the CSR");
+                }
+                return getPubKeyInfo(*myPubKey);
+            }
+
+            ta::SignUtils::SignatureAlgorithm getCertSignatureAlgorithm(X509& aX509Cert)
+            {
+                ta::SignUtils::SignatureAlgorithm myRetVal;
+
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+                const X509_ALGOR* sigalg = X509_get0_tbs_sigalg(&aX509Cert);
+#else
+                const X509_ALGOR* sigalg = aX509Cert.sig_alg;
+#endif
+                myRetVal.nid = OBJ_obj2nid(sigalg->algorithm);
+
+                char mySignAlgoBuf[128] = {};
+                if (i2t_ASN1_OBJECT(mySignAlgoBuf, sizeof(mySignAlgoBuf)-1, sigalg->algorithm) <= 0)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Failed to extract signature algorithm from X509 cert");
+                }
+                myRetVal.name = mySignAlgoBuf;
+
+                return myRetVal;
+            }
+            ta::SignUtils::SignatureAlgorithm getCsrSignatureAlgorithm(X509_REQ& aReq)
+            {
+                ta::SignUtils::SignatureAlgorithm myRetVal;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+                const ASN1_BIT_STRING *psig;
+                const X509_ALGOR *sigalg;
+                X509_REQ_get0_signature(&aReq, &psig, &sigalg);
+#else
+                const X509_ALGOR *sigalg = aReq.sig_alg;
+#endif
+                myRetVal.nid = OBJ_obj2nid(sigalg->algorithm);
+                char mySignAlgoBuf[128] = {};
+                if (i2t_ASN1_OBJECT(mySignAlgoBuf, sizeof(mySignAlgoBuf)-1, sigalg->algorithm) <= 0)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Failed to extract signature algorithm from CSR");
+                }
+                myRetVal.name = mySignAlgoBuf;
+
+                return myRetVal;
+            }
+
         } // unnamed ns
 
 
@@ -561,9 +655,9 @@ namespace ta
 
             // Subject
             myCertInfo.subjName = getSubjectName(*aX509Cert);
-            myCertInfo.subjCN = getSubjectCN(*aX509Cert);
-            myCertInfo.subjO = getSubjectO(*aX509Cert);
-            myCertInfo.subjOU = getSubjectOU(*aX509Cert);
+            myCertInfo.subjCN = getCertSubjectAttr(*aX509Cert, NID_commonName, "CN", attrRequired);
+            myCertInfo.subjO = getCertSubjectAttr(*aX509Cert, NID_organizationName, "Organization", attrOptional);
+            myCertInfo.subjOU = getCertSubjectAttr(*aX509Cert, NID_organizationalUnitName, "Organization Unit", attrOptional);
 
 
             // Serial number
@@ -614,55 +708,12 @@ namespace ta
             myCertInfo.sha1Fingerprint = Strings::toHex(md, md_size);
 
             // Signature algorithm
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-            const X509_ALGOR* sigalg = X509_get0_tbs_sigalg(aX509Cert);
-#else
-            const X509_ALGOR* sigalg = aX509Cert->sig_alg;
-#endif
-            myCertInfo.signatureAlgorithm.nid = OBJ_obj2nid(sigalg->algorithm);
-            char mySignAlgoBuf[128] = {};
-            if (i2t_ASN1_OBJECT(mySignAlgoBuf, sizeof(mySignAlgoBuf)-1, sigalg->algorithm) <= 0)
-            {
-                TA_THROW_MSG(std::runtime_error, "Failed to retrieve signature algorithm for X509 cert");
-            }
-            myCertInfo.signatureAlgorithm.name = mySignAlgoBuf;
+            myCertInfo.signatureAlgorithm = getCertSignatureAlgorithm(*aX509Cert);
 
-            // Pubkey type
-            ta::ScopedResource<EVP_PKEY*> myPubKey(X509_get_pubkey(aX509Cert), EVP_PKEY_free);
-            if (!myPubKey)
-            {
-                TA_THROW_MSG(std::runtime_error, "X509_get_pubkey failed");
-            }
-            const int myPubKeyType = EVP_PKEY_base_id(myPubKey);
-            switch (myPubKeyType)
-            {
-            case EVP_PKEY_RSA:
-            {
-                myCertInfo.pubKeyType = keyRsa;
-                ScopedResource<RSA*> myPubKeyRsa(EVP_PKEY_get1_RSA(myPubKey), RSA_free);
-                myCertInfo.pubKeyBits = 8*RSA_size(myPubKeyRsa);
-                break;
-            }
-            case EVP_PKEY_DSA:
-            {
-                myCertInfo.pubKeyType = keyDsa;
-                ScopedResource<DSA*> myPubKeyDsa(EVP_PKEY_get1_DSA(myPubKey), DSA_free);
-                myCertInfo.pubKeyBits = 8*DSA_size(myPubKeyDsa);
-                break;
-            }
-            case EVP_PKEY_EC:
-            {
-#ifdef OPENSSL_NO_EC
-                TA_THROW_MSG(std::runtime_error, "Elliptic Key cryptography is not supported by OpenSSL");
-#else
-                myCertInfo.pubKeyType = keyEc;
-                ta::ScopedResource<EC_KEY*> ec_params(EVP_PKEY_get1_EC_KEY(myPubKey), EC_KEY_free);
-                myCertInfo.pubKeyBits = EC_GROUP_get_degree(EC_KEY_get0_group(ec_params));
-                break;
-#endif
-            }
-            default:  TA_THROW_MSG(std::runtime_error, boost::format("Unexpected certificate pubkey type %d") % myPubKeyType);
-            }
+            // Public key info
+            const PubKeyInfo myPubKey =  getCertPubKeyInfo(*aX509Cert);
+            myCertInfo.pubKeyType = myPubKey.type;
+            myCertInfo.pubKeyBits = myPubKey.bit;
 
             // Check whether the cert is CA by reading basic constraints extension
             ScopedResource<BASIC_CONSTRAINTS*> bc ((BASIC_CONSTRAINTS*)X509_get_ext_d2i(aX509Cert, NID_basic_constraints, NULL, NULL), BASIC_CONSTRAINTS_free);
@@ -2126,6 +2177,143 @@ namespace ta
             return x509SerializeCertPolicies(myNormalizedCertPolicies);
         }
 
+        //
+        // Subject
+        //
+
+        Subject::Subject(const boost::property_tree::ptree& aTree)
+        {
+            if (boost::optional<string> myVal = aTree.get_optional<string>("cn"))
+            {
+                cn = *myVal;
+            }
+            else
+            {
+                TA_THROW_MSG(std::invalid_argument, "No subject CN found in the ptree-serialized subject");
+            }
+            if (boost::optional<string> myVal = aTree.get_optional<string>("c"))
+            {
+                c = *myVal;
+            }
+            if (boost::optional<string> myVal = aTree.get_optional<string>("st"))
+            {
+                st = *myVal;
+            }
+            if (boost::optional<string> myVal = aTree.get_optional<string>("l"))
+            {
+                l = *myVal;
+            }
+            if (boost::optional<string> myVal = aTree.get_optional<string>("o"))
+            {
+                o = *myVal;
+            }
+            if (boost::optional<string> myVal = aTree.get_optional<string>("ou"))
+            {
+                ou = *myVal;
+            }
+            if (boost::optional<string> myVal = aTree.get_optional<string>("e"))
+            {
+                e = *myVal;
+            }
+        }
+
+        string Subject::info() const
+        {
+            string myInfo = "CN = " + cn;
+
+            if (!c.empty())
+            {
+                myInfo += ", country = " + c;
+            }
+            if (!st.empty())
+            {
+                myInfo += ", state = " + st;
+            }
+            if (!l.empty())
+            {
+                myInfo += ", locality = " + l;
+            }
+            if (!o.empty())
+            {
+                myInfo += ", organization = " + o;
+            }
+            if (!ou.empty())
+            {
+                myInfo += ", organization unit = " + ou;
+            }
+            if (!e.empty())
+            {
+                myInfo += ", email = " + e;
+            }
+            return myInfo;
+        }
+
+        void Subject::overwriteAttrsFrom(const Subject& anOther)
+        {
+            if (!anOther.cn.empty())
+            {
+                cn = anOther.cn;
+            }
+            if (!anOther.c.empty())
+            {
+                c = anOther.c;
+            }
+            if (!anOther.st.empty())
+            {
+                st = anOther.st;
+            }
+            if (!anOther.l.empty())
+            {
+                l = anOther.l;
+            }
+            if (!anOther.o.empty())
+            {
+                o = anOther.o;
+            }
+            if (!anOther.ou.empty())
+            {
+                ou = anOther.ou;
+            }
+            if (!anOther.e.empty())
+            {
+                e = anOther.e;
+            }
+        }
+
+        boost::property_tree::ptree  Subject::toTree() const
+        {
+            boost::property_tree::ptree tree;
+
+            tree.put("cn", cn);
+
+            if (!c.empty())
+            {
+                tree.put("c", c);
+            }
+            if (!st.empty())
+            {
+                tree.put("st", st);
+            }
+            if (!l.empty())
+            {
+                tree.put("l", l);
+            }
+            if (!o.empty())
+            {
+                tree.put("o", o);
+            }
+            if (!ou.empty())
+            {
+                tree.put("ou", ou);
+            }
+            if (!e.empty())
+            {
+                tree.put("e", e);
+            }
+
+            return tree;
+        }
+
 
         X509_REQ* createCSR(const ta::KeyPair& aKeyPair,
                             const Subject& aSubject,
@@ -2202,39 +2390,54 @@ namespace ta
             return string((const char*)myPemBuf->data, myPemBuf->length);
         }
 
-        string parseCnFromSignedCSR(const string& aCsrPem)
+        X509_REQ* convPEM_2X509_REQ(const string& aCsrPem)
         {
-            // Convert CSR from PEM to X509_REQ*
             ScopedResource<BIO*> myMemBio( BIO_new(BIO_s_mem()), BIO_free);
             const int mySize = (int)aCsrPem.size();
             const int myWritten = BIO_write(myMemBio, aCsrPem.c_str(), mySize);
             if (myWritten != mySize)
             {
-                TA_THROW_MSG(std::runtime_error, boost::format("BIO_write failed trying to write %1% bytes of CSR. Actually written: %2% bytes.") % mySize % myWritten);
+                TA_THROW_MSG(std::runtime_error, boost::format("BIO_write failed trying to write %d bytes of CSR. Actually written: %d bytes.") % mySize % myWritten);
             }
-            ScopedResource<X509_REQ*> myX509ReqPtr(PEM_read_bio_X509_REQ(myMemBio, NULL, NULL, NULL), X509_REQ_free);
+            X509_REQ* myX509ReqPtr = PEM_read_bio_X509_REQ(myMemBio, NULL, NULL, NULL);
             if (!myX509ReqPtr)
             {
-                TA_THROW_MSG(std::runtime_error, "Failed to read X509 CSR from PEM memory buffer");
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to read X509 CSR from PEM %s") % aCsrPem);
             }
+            return myX509ReqPtr;
+        }
 
-            // Parse subject CN
-            X509_NAME* myX509SubjName = X509_REQ_get_subject_name(myX509ReqPtr);
-            if (!myX509SubjName)
-            {
-                TA_THROW_MSG(std::runtime_error, "Failed to read X509 subject name from CSR");
-            }
-            const int myCnIndex = X509_NAME_get_index_by_NID(myX509SubjName, NID_commonName, -1);
-            if (myCnIndex < 0)
-            {
-                TA_THROW_MSG(std::runtime_error, "Failed to read subject CN index from CSR subject name");
-            }
-            X509_NAME_ENTRY* myCnEntry = X509_NAME_get_entry(myX509SubjName, myCnIndex);
-            if (!myCnEntry)
-            {
-                TA_THROW_MSG(std::runtime_error, "Failed to read subject CN from CSR subject name");
-            }
-            return asn1ToStr(X509_NAME_ENTRY_get_data(myCnEntry));
+        string createCSRAsPem(const ta::KeyPair& aKeyPair,
+                              const Subject& aSubject,
+                              const SignUtils::Digest* aSignatureAlgorithm,
+                              const ta::StringArray& aSAN,
+                              const string& aChallengePassword)
+        {
+            ScopedResource<X509_REQ*> myCsr(createCSR(aKeyPair, aSubject, aSignatureAlgorithm, aSAN, aChallengePassword),
+                                            X509_REQ_free);
+            return convX509_REQ_2Pem(myCsr);
+        }
+
+        CsrInfo parseSignedCSR(const string& aCsrPem)
+        {
+            ScopedResource<X509_REQ*> myReqPtr(convPEM_2X509_REQ(aCsrPem), X509_REQ_free);
+
+            const Subject mySubj(
+                getCsrSubjectAttr(*myReqPtr, NID_commonName, "CN", attrRequired),
+                getCsrSubjectAttr(*myReqPtr, NID_countryName, "Country", attrOptional),
+                getCsrSubjectAttr(*myReqPtr, NID_stateOrProvinceName, "State", attrOptional),
+                getCsrSubjectAttr(*myReqPtr, NID_localityName, "Locality", attrOptional),
+                getCsrSubjectAttr(*myReqPtr, NID_organizationName, "Organization", attrOptional),
+                getCsrSubjectAttr(*myReqPtr, NID_organizationalUnitName, "Organization Unit", attrOptional),
+                getCsrSubjectAttr(*myReqPtr, NID_pkcs9_emailAddress, "Email", attrOptional)
+            );
+            const ta::SignUtils::SignatureAlgorithm mySignAlgo = getCsrSignatureAlgorithm(*myReqPtr);
+            const PubKeyInfo myPubKey = getCsrPubKeyInfo(*myReqPtr);
+
+            return CsrInfo(mySubj,
+                           mySignAlgo,
+                           myPubKey.type,
+                           myPubKey.bit);
         }
 
         // "DNS:example.com" => ("DNS", "example.com")

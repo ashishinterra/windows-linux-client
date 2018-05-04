@@ -1152,25 +1152,37 @@ public:
             {
                 TS_TRACE(str(boost::format("Create CSR with %d bit key signed by sha-256") % keyBits).c_str());
                 const ta::SignUtils::Digest mySigningAlgorithm = ta::SignUtils::digestSha256;
+                const Subject mySubj("test.keytalk.com");
                 // when
-                ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, Subject("test.keytalk.com"), &mySigningAlgorithm),
+                ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubj, &mySigningAlgorithm),
                                          X509_REQ_free);
                 // then
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
                 TS_ASSERT(isCSR(myCsrPem));
-                TS_ASSERT_EQUALS(parseCnFromSignedCSR(myCsrPem), "test.keytalk.com");
+                const CsrInfo myCsrInfo = parseSignedCSR(myCsrPem);
+                TS_ASSERT_EQUALS(myCsrInfo.subject, mySubj);
+                TS_ASSERT_EQUALS(myCsrInfo.signatureAlgorithm.nid, ta::SignUtils::digest2Nid(mySigningAlgorithm));
+                TS_ASSERT_EQUALS(myCsrInfo.pubKeyType, keyRsa);
+                TS_ASSERT_EQUALS(myCsrInfo.pubKeyBits, keyBits);
 #ifndef _WIN32
                 TS_ASSERT(!doesCsrHaveChallengePassword(myCsrPem));
                 TS_ASSERT(!doesCsrHaveSan(myCsrPem));
 #endif
+
+                // when
+                ta::ScopedResource<X509_REQ*> myCsr2(convPEM_2X509_REQ(myCsrPem), X509_REQ_free);
+                // then
+                TS_ASSERT_EQUALS(convX509_REQ_2Pem(myCsr2), myCsrPem);
             }
+
             {
                 TS_TRACE(str(boost::format("Create CSR with %d bit key signed by sha-1 with SAN") % keyBits).c_str());
                 const ta::SignUtils::Digest mySigningAlgorithm = ta::SignUtils::digestSha1;
+                const Subject mySubj("test.keytalk.com", "NL", "Noord Brabant", "Eindhoven", "Sioux", "Development", "test@keytalk.com");
                 // when
                 ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair,
-                                                             Subject("test.keytalk.com", "NL", "Noord Brabant", "Eindhoven", "Sioux", "Development", "test@keytalk.com"),
+                                                             mySubj,
                                                              &mySigningAlgorithm,
                                                              mySAN),
                                          X509_REQ_free);
@@ -1178,18 +1190,28 @@ public:
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
                 TS_ASSERT(isCSR(myCsrPem));
-                TS_ASSERT_EQUALS(parseCnFromSignedCSR(myCsrPem), "test.keytalk.com");
+                const CsrInfo myCsrInfo = parseSignedCSR(myCsrPem);
+                TS_ASSERT_EQUALS(myCsrInfo.subject, mySubj);
+                TS_ASSERT_EQUALS(myCsrInfo.signatureAlgorithm.nid, ta::SignUtils::digest2Nid(mySigningAlgorithm));
+                TS_ASSERT_EQUALS(myCsrInfo.pubKeyType, keyRsa);
+                TS_ASSERT_EQUALS(myCsrInfo.pubKeyBits, keyBits);
 #ifndef _WIN32
                 TS_ASSERT(!doesCsrHaveChallengePassword(myCsrPem));
                 assertCsrSanEquals(myCsrPem, mySAN);
 #endif
+                // when
+                ta::ScopedResource<X509_REQ*> myCsr2(convPEM_2X509_REQ(myCsrPem), X509_REQ_free);
+                // then
+                TS_ASSERT_EQUALS(convX509_REQ_2Pem(myCsr2), myCsrPem);
             }
+
             {
                 TS_TRACE(str(boost::format("Create CSR with %d bit key with SAN and challenge password") % keyBits).c_str());
                 const ta::SignUtils::Digest mySigningAlgorithm = ta::SignUtils::digestSha256;
+                const Subject mySubj("test.keytalk.com", "NL", "Noord Brabant", "Eindhoven", "Sioux", "Development", "test@keytalk.com");
                 // when
                 ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair,
-                                                              Subject("test.keytalk.com", "NL", "Noord Brabant", "Eindhoven", "Sioux", "Development", "test@keytalk.com"),
+                                                              mySubj,
                                                               &mySigningAlgorithm,
                                                               mySAN,
                                                               "secret"),
@@ -1198,11 +1220,19 @@ public:
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
                 TS_ASSERT(isCSR(myCsrPem));
-                TS_ASSERT_EQUALS(parseCnFromSignedCSR(myCsrPem), "test.keytalk.com");
+                const CsrInfo myCsrInfo = parseSignedCSR(myCsrPem);
+                TS_ASSERT_EQUALS(myCsrInfo.subject, mySubj);
+                TS_ASSERT_EQUALS(myCsrInfo.signatureAlgorithm.nid, ta::SignUtils::digest2Nid(mySigningAlgorithm));
+                TS_ASSERT_EQUALS(myCsrInfo.pubKeyType, keyRsa);
+                TS_ASSERT_EQUALS(myCsrInfo.pubKeyBits, keyBits);
 #ifndef _WIN32
                 assertCsrChallengePasswordEquals(myCsrPem, "secret");
                 assertCsrSanEquals(myCsrPem, mySAN);
 #endif
+                // when
+                ta::ScopedResource<X509_REQ*> myCsr2(convPEM_2X509_REQ(myCsrPem), X509_REQ_free);
+                // then
+                TS_ASSERT_EQUALS(convX509_REQ_2Pem(myCsr2), myCsrPem);
             }
 
             {
@@ -1214,7 +1244,8 @@ public:
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
                 TS_ASSERT(isCSR(myCsrPem));
-                TS_ASSERT_THROWS(parseCnFromSignedCSR(myCsrPem), std::exception);
+                TS_ASSERT_THROWS(parseSignedCSR(myCsrPem), std::exception);
+                TS_ASSERT_THROWS(convPEM_2X509_REQ(myCsrPem), std::exception);
             }
             {
                 TS_TRACE(str(boost::format("Create non-signed CSR with %d bit key") % keyBits).c_str());
@@ -1226,7 +1257,8 @@ public:
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
                 TS_ASSERT(isCSR(myCsrPem));
-                TS_ASSERT_THROWS(parseCnFromSignedCSR(myCsrPem), std::exception);
+                TS_ASSERT_THROWS(parseSignedCSR(myCsrPem), std::exception);
+                TS_ASSERT_THROWS(convPEM_2X509_REQ(myCsrPem), std::exception);
             }
         }
 
@@ -1234,10 +1266,10 @@ public:
         // when-then
         TS_ASSERT_THROWS(createCSR(ta::KeyPair(), Subject("test.keytalk.com")), std::exception);
 
-        TS_TRACE("Try to parse CN from invalid CSR");
+        TS_TRACE("Try to parse subject from invalid CSR");
         // when-then
-        TS_ASSERT_THROWS(parseCnFromSignedCSR("invalid-csr"), std::exception);
-        TS_ASSERT_THROWS(parseCnFromSignedCSR(""), std::exception);
+        TS_ASSERT_THROWS(parseSignedCSR("invalid-csr"), std::exception);
+        TS_ASSERT_THROWS(parseSignedCSR(""), std::exception);
     }
 
     void testValidateSAN()

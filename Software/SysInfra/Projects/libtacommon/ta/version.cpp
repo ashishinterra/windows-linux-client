@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 using std::string;
+using std::vector;
 
 namespace ta
 {
@@ -112,7 +113,7 @@ namespace ta
         {
             try
             {
-                const std::vector<string> myParts = Strings::split(boost::trim_copy(anStr), '.');
+                const vector<string> myParts = Strings::split(boost::trim_copy(anStr), '.');
                 if (myParts.size() < 2 || myParts.size() > 4)
                 {
                     TA_THROW_MSG(VersionParseError, boost::format("Cannot parse version from '%s'") % anStr);
@@ -148,6 +149,17 @@ namespace ta
             }
         }
 
+        vector<Version> parse(const ta::StringArray& aStringArray)
+        {
+            vector<Version> myRetVal(aStringArray.size());
+            size_t i = 0;
+            foreach (const string& s, aStringArray)
+            {
+                myRetVal[i++] = parse(s);
+            }
+            return myRetVal;
+        }
+
         string toStr(const Version& aVersion, const Format aFormat)
         {
             switch (aFormat)
@@ -176,6 +188,17 @@ namespace ta
                 TA_THROW_MSG(std::invalid_argument, boost::format("Unsupported version format %d") % aFormat);
             }
             }
+        }
+
+        StringArray toStringArray(const std::vector<Version>& aVersions, const Format aFormat)
+        {
+            StringArray myRetVal(aVersions.size());
+            size_t i = 0;
+            foreach (const Version& v, aVersions)
+            {
+                myRetVal[i++] = toStr(v, aFormat);
+            }
+            return myRetVal;
         }
 
     } // version

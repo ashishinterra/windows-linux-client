@@ -162,6 +162,16 @@ template<class T> std::vector<T>& operator+= (std::vector<T>& aVec, const T& anE
     return aVec;
 }
 
+template<class T, class U> std::map<T,U> operator+= (std::map<T,U>& aDict, const std::map<T,U>& anAdd)
+{
+    typedef std::pair<T, U> value_type;
+    foreach (const value_type& elem, anAdd)
+    {
+        aDict[elem.first] = elem.second;
+    }
+    return aDict;
+}
+
 template<class T> std::vector<T> operator+ (const std::vector<T>& aVec1, const std::vector<T>& aVec2)
 {
     std::vector<T> myRetVal = aVec1;
@@ -173,6 +183,13 @@ template<class T> std::vector<T> operator+ (const std::vector<T>& aVec, const T&
 {
     std::vector<T> myRetVal = aVec;
     myRetVal += anElem;
+    return myRetVal;
+}
+
+template<class T, class U> std::map<T,U> operator+ (const std::map<T,U>& aDict1, const std::map<T,U>& aDict2)
+{
+    std::map<T,U> myRetVal = aDict1;
+    myRetVal += aDict2;
     return myRetVal;
 }
 

@@ -39,6 +39,8 @@ namespace rclient
         AuthRequirements parseAuthRequirements(const std::string& aResponse);
         AuthResponse parseAuthResponse(const std::string& aResponse);
         Messages parseLastMessages(const std::string& aResponse);
-        CertResponse parseCert(const std::string& aResponse, const resept::CertFormat aCertFormat, const std::string& aSessionId);
+        resept::CsrRequirements parseCsrRequirements(const std::string& aResponse);
+        CertResponse parseCertWithKey(const std::string& aResponse, const resept::CertFormat aCertFormat, const std::string& aSessionId);
+        CertResponse parsePemCert(const std::string& aResponse);
     }
 }

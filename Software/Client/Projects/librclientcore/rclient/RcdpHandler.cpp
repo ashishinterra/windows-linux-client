@@ -104,25 +104,15 @@ namespace rclient
             TA_THROW_MSG(std::logic_error, boost::format("No state transition allowed from %s to %s") % str(aFrom) % str(aTo));
         }
 
-        vector<Version> getSupportedRcdpVersions()
-        {
-            vector<Version> myVersions;
-            foreach (const string& v, resept::rcdpv2::ClientSupportedRcdpVersions)
-            {
-                myVersions.push_back(ta::version::parse(v));
-            }
-            return myVersions;
-        }
-
         Version getHighestSupportedRcdpVersion()
         {
-            return *boost::max_element(getSupportedRcdpVersions());
+            return *boost::max_element(resept::rcdpv2::getClientSupportedRcdpVersions());
         }
 
         // check whether the given RCDP version is supported by the client ignoring subminor part
         bool isRcdpVersionSupported(const Version& aVersion)
         {
-            foreach (const Version& supportedVer, getSupportedRcdpVersions())
+            foreach (const Version& supportedVer, resept::rcdpv2::getClientSupportedRcdpVersions())
             {
                 if (supportedVer.major() == aVersion.major() && supportedVer.minor() == aVersion.minor())
                 {
@@ -132,17 +122,11 @@ namespace rclient
             return false;
         }
 
-        string formatSupportedRcdpVersions()
+        enum HttpRequestMethod
         {
-            string myRetVal;
-            foreach (const Version& supportedVer, getSupportedRcdpVersions())
-            {
-                if (!myRetVal.empty())
-                    myRetVal += ", ";
-                myRetVal += toStr(supportedVer);
-            }
-            return myRetVal;
-        }
+            methodGET,
+            methodPOST
+        };
 
 
     } // private stuff
@@ -156,8 +140,9 @@ namespace rclient
             DEBUGLOG(boost::format("Created RcdpHandler for server at %s") % toString(server));
         }
 
-        string sendHttpRequest(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams = ta::StringDict());
-        string makeRequestUrl(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams) const;
+        string sendHttpRequest(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams = ta::StringDict(), const HttpRequestMethod aMethod = methodGET);
+        string makeRequestUrl(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams = ta::StringDict()) const;
+        string makePostData(const ta::StringDict& aReqParams) const;
         void setupSSL(CURL* aCurl) const;
         void logExtraHttpResponseInfo(CURL* aCurl);
         void parseSidFromHttpResponse(CURL* aCurl);
@@ -290,7 +275,7 @@ namespace rclient
 
             if (!isRcdpVersionSupported(pImpl->session.rcdpVersion))
             {
-                TA_THROW_MSG(rclient::RcdpVersionMismatchError, boost::format("RCDP version %s proposed by the server is not supported by the client. Client supports the following RCDP versions: %s") % toStr(pImpl->session.rcdpVersion) % formatSupportedRcdpVersions());
+                TA_THROW_MSG(rclient::RcdpVersionMismatchError, boost::format("RCDP version %s proposed by the server is not supported by the client. Client supports the following RCDP versions: %s") % toStr(pImpl->session.rcdpVersion) % ta::Strings::join(toStringArray(getClientSupportedRcdpVersions()), ','));
             }
             DEBUGDEVLOG(boost::format("Client and server agreed on RCDP version %s") % toStr(pImpl->session.rcdpVersion));
 
@@ -497,7 +482,7 @@ namespace rclient
         }
     }
 
-    CertResponse RcdpHandler::getCert(const resept::CertFormat aCertFormat, const bool anIncludeChain, const ta::KeyPair* aFromKeyPair)
+    resept::CsrRequirements RcdpHandler::getCsrRequirements()
     {
         using namespace resept::rcdpv2;
 
@@ -505,7 +490,40 @@ namespace rclient
 
         try
         {
-            DEBUGDEVLOG(boost::format("Requesting certificate %s in %s format%s") % (anIncludeChain ? "with chain" : "without chain") % str(aCertFormat) % (aFromKeyPair ? " from self keypair" : ""));
+            DEBUGDEVLOG("Requesting CSR requirements");
+
+            if (pImpl->session.rcdpState != stateAuthenticated)
+            {
+                TA_THROW_MSG(std::invalid_argument, "Cannot request certificate from " + str(pImpl->session.rcdpState) + " state");
+            }
+
+            const Request myReqType = reqCsrRequirements;
+            const string myResp = pImpl->sendHttpRequest(myReqType);
+            DEBUGDEVLOG(boost::format("Received RCDP response %s on %s request") % myResp % str(myReqType));
+
+            handleErrors(myResp, myReqType);
+
+            const resept::CsrRequirements myCsrRequirements = rcdpv2response::parseCsrRequirements(myResp);
+            DEBUGLOG(boost::format("Sent %s, received %s back") % str(myReqType) % str(respCsrRequirements));
+
+            return myCsrRequirements;
+        }
+        catch (...)
+        {
+            pImpl->session.reset();
+            throw;
+        }
+    }
+
+    CertResponse RcdpHandler::getCert(const resept::CertFormat aCertFormat, const bool anIncludeChain)
+    {
+        using namespace resept::rcdpv2;
+
+        TA_ASSERT(pImpl);
+
+        try
+        {
+            DEBUGDEVLOG(boost::format("Requesting certificate %s in %s format") % (anIncludeChain ? "with chain" : "without chain") % str(aCertFormat));
 
             if (pImpl->session.rcdpState != stateAuthenticated)
             {
@@ -513,14 +531,49 @@ namespace rclient
             }
 
             const Request myReqType = reqCert;
-            const ta::StringDict myReqParams = rcdpv2request::makeCertRequestParams(aCertFormat, anIncludeChain, aFromKeyPair);
+            const ta::StringDict myReqParams = rcdpv2request::makeCertRequestParams(aCertFormat, anIncludeChain);
 
             const string myResp = pImpl->sendHttpRequest(myReqType, myReqParams);
             DEBUGDEVLOG(boost::format("Received RCDP response %s on %s request") % myResp % str(myReqType));
 
             handleErrors(myResp, myReqType);
 
-            const CertResponse myCertResponse = rcdpv2response::parseCert(myResp, aCertFormat, pImpl->session.sid);
+            const CertResponse myCertResponse = rcdpv2response::parseCertWithKey(myResp, aCertFormat, pImpl->session.sid);
+            DEBUGLOG(boost::format("Sent %s, received %s back") % str(myReqType) % str(respCert));
+
+            return myCertResponse;
+        }
+        catch (...)
+        {
+            pImpl->session.reset();
+            throw;
+        }
+    }
+
+    CertResponse RcdpHandler::signCSR(const string& aCsrPem, const bool anIncludeChain)
+    {
+        using namespace resept::rcdpv2;
+
+        TA_ASSERT(pImpl);
+
+        try
+        {
+            DEBUGDEVLOG(boost::format("Requesting CSR sign %s") % (anIncludeChain ? "with chain" : "without chain"));
+
+            if (pImpl->session.rcdpState != stateAuthenticated)
+            {
+                TA_THROW_MSG(std::invalid_argument, "Cannot request CSR signing from " + str(pImpl->session.rcdpState) + " state");
+            }
+
+            const Request myReqType = reqCert;
+            const ta::StringDict myReqParams = rcdpv2request::makeCertRequestParams(aCsrPem, anIncludeChain);
+
+            const string myResp = pImpl->sendHttpRequest(myReqType, myReqParams, methodPOST);
+            DEBUGDEVLOG(boost::format("Received RCDP response %s on %s request") % myResp % str(myReqType));
+
+            handleErrors(myResp, myReqType);
+
+            const CertResponse myCertResponse = rcdpv2response::parsePemCert(myResp);
             DEBUGLOG(boost::format("Sent %s, received %s back") % str(myReqType) % str(respCert));
 
             return myCertResponse;
@@ -618,6 +671,17 @@ namespace rclient
         return myUrl;
     }
 
+    string RcdpHandler::RcdpHandlerImpl::makePostData(const ta::StringDict& aReqParams) const
+    {
+        ta::StringArray myPostData;
+        foreach (const ta::StringDict::value_type& kv, aReqParams)
+        {
+            const string myEncodedKv = ta::EncodingUtils::urlEncode(kv.first) + "=" + ta::EncodingUtils::urlEncode(kv.second);
+            myPostData.push_back(myEncodedKv);
+        }
+        return ta::Strings::join(myPostData, '&');
+    }
+
     void RcdpHandler::RcdpHandlerImpl::setupSSL(CURL* aCurl) const
     {
         if (!aCurl)
@@ -652,10 +716,11 @@ namespace rclient
     }
 
     /**
+    Send HTTP GET or POST request
     @return response body
     @throw HttpRequestError e.g. if connection fails or received HTTP code is other than 200
     */
-    string RcdpHandler::RcdpHandlerImpl::sendHttpRequest(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams)
+    string RcdpHandler::RcdpHandlerImpl::sendHttpRequest(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams, const HttpRequestMethod aMethod)
     {
         try
         {
@@ -669,53 +734,93 @@ namespace rclient
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to set TcpNoDelay CURL option to %u. %s") % TcpNoDelay % curl_easy_strerror(myCurlRetCode));
             }
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEFUNCTION, responseCallback);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEFUNCTION, responseCallback)) != CURLE_OK)
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to setup response callback. %s") % curl_easy_strerror(myCurlRetCode));
             }
             string myResponse;
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEDATA, &myResponse);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEDATA, &myResponse)) != CURLE_OK)
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to setup cookie for response callback. %s") % curl_easy_strerror(myCurlRetCode));
             }
 
-            const string myRequestUrl = makeRequestUrl(aReqType, aReqParams);
-            // DEBUGDEVLOG("Sending request: " + myRequestUrl);
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, myRequestUrl.c_str());
-            if (myCurlRetCode != CURLE_OK)
+
+            struct curl_slist *headerlist = NULL;
+
+            if (aMethod == methodGET)
             {
-                TA_THROW_MSG(HttpRequestError, boost::format("Failed to set URL curl option. %s") % curl_easy_strerror(myCurlRetCode));
+                // HTTP GET. Send parameters in URL
+
+                const string myRequestUrl = makeRequestUrl(aReqType, aReqParams);
+                // DEBUGDEVLOG("Sending GET request: " + myRequestUrl);
+                if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, myRequestUrl.c_str())) != CURLE_OK)
+                {
+                    TA_THROW_MSG(HttpRequestError, boost::format("Failed to set URL curl option. %s") % curl_easy_strerror(myCurlRetCode));
+                }
+            }
+            else if (aMethod == methodPOST)
+            {
+                // HTTP POST. Send parameters in body (application/x-www-form-urlencoded)
+
+                const string myRequestUrl = makeRequestUrl(aReqType);
+                if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, myRequestUrl.c_str())) != CURLE_OK)
+                {
+                    TA_THROW_MSG(HttpRequestError, boost::format("Failed to set URL curl option. %s") % curl_easy_strerror(myCurlRetCode));
+                }
+
+                const string myPostData = makePostData(aReqParams);
+                // DEBUGDEVLOG("Sending POST request: " + myPostData);
+                if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_POSTFIELDSIZE, myPostData.size())) != CURLE_OK)
+                {
+                    TA_THROW_MSG(HttpRequestError, boost::format("Failed to set CURLOPT_POSTFIELDSIZE CURL option to %u. %s") % myPostData.size() % curl_easy_strerror(myCurlRetCode));
+                }
+
+                if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_COPYPOSTFIELDS, myPostData.c_str())) != CURLE_OK)
+                {
+                    TA_THROW_MSG(HttpRequestError, boost::format("Failed to set CURLOPT_COPYPOSTFIELDS CURL option. %s") % curl_easy_strerror(myCurlRetCode));
+                }
+
+                headerlist = curl_slist_append (headerlist, "Content-Type:application/x-www-form-urlencoded");
+                // headerlist = curl_slist_append (headerlist, "Transfer-Encoding: chunked");
+                headerlist = curl_slist_append (headerlist, "Expect:");// to remove "Expect: 100-continue" header
+            }
+            else
+            {
+                TA_THROW_MSG(HttpRequestError, boost::format("Unsupported HTTP request method %d") % aMethod);
+            }
+
+            ta::ScopedResource<curl_slist*> mySafeHeaderList(headerlist, curl_slist_free_all); // just for RAII
+            if (headerlist)
+            {
+                if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_HTTPHEADER, headerlist)) != CURLE_OK)
+                {
+                    TA_THROW_MSG(HttpRequestError, boost::format("Failed to set HTTPHEADER curl option. %s") % curl_easy_strerror(myCurlRetCode));
+                }
             }
 
             setupSSL(myCurl);
 
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, ConnectTimeout);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, ConnectTimeout)) != CURLE_OK)
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to set CURLOPT_CONNECTTIMEOUT curl option. %s") % curl_easy_strerror(myCurlRetCode));
             }
 
             // follow HTTP redirects (3xx)
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_FOLLOWLOCATION, 1L);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_FOLLOWLOCATION, 1L)) != CURLE_OK)
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to set CURLOPT_FOLLOWLOCATION curl option. %s") % curl_easy_strerror(myCurlRetCode));
             }
 
 
             // setup HTTP cookie
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_COOKIEFILE, ""); /* to start the cookie engine */
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_COOKIEFILE, "")) != CURLE_OK) /* crank up the cookie engine */
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to enable cookie engine. %s") % curl_easy_strerror(myCurlRetCode));
             }
             if (session.sid_exist)
             {
                 const string mySidCookie = resept::rcdpv2::HttpSidCookieName + "=" + session.sid;
-                myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_COOKIE, mySidCookie.c_str());
-                if (myCurlRetCode != CURLE_OK)
+                if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_COOKIE, mySidCookie.c_str())) != CURLE_OK)
                 {
                     TA_THROW_MSG(HttpRequestError, boost::format("Failed to set cookie. %s") % curl_easy_strerror(myCurlRetCode));
                 }
@@ -734,8 +839,7 @@ namespace rclient
             disableProxy(myCurl);
 
             // Send request and read response
-            myCurlRetCode = curl_easy_perform(myCurl);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_perform(myCurl)) != CURLE_OK)
             {
                 if (myCurlRetCode == CURLE_SSL_CONNECT_ERROR && string(myExtraErrorMsg).find("SEC_E_WRONG_PRINCIPAL") != std::string::npos && (ta::NetUtils::isValidIpv4(server.host) || ta::NetUtils::isValidIpv6(server.host)))
                 {
@@ -745,8 +849,7 @@ namespace rclient
             }
 
             long myHttpResponseCode = -1;
-            myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode)) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve response code for HTTP GET request to %s. %s") % toString(server) % curl_easy_strerror(myCurlRetCode));
             }
