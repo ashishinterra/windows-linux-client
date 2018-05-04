@@ -117,4 +117,4 @@ Building KeyTalk client for `KeyTalkClientNotSigned` produces executables and ms
 ## Contributing
   1. Make sure your changes are rebased on origin/master
   2. Make sure your source code is properly formatted by running 'formatcxx.py --fix' and 'formatpython.py --fix'
-  3. Create a pull-request or commit to the agreed branch.
+  3. Commit and create a pull-request
