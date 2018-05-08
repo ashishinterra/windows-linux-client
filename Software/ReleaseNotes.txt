@@ -7,6 +7,7 @@ Supports upgrades from v5.2.1 and higher
 Supports RCDP 2.2.0, 2.1.0 and 2.0.0
 Supports import of settings created in v5.2.0-v5.3.1, v4.6.0 and v4.6.2
     - ADDED: Allow signing CSR using REST API v2.2.0
+    - ADDED: Allow retrieving Signing CA chain from the server using CA REST API
 
 server-5.3.0, 13 April 2018
 ------------------------

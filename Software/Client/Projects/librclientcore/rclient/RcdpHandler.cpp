@@ -106,13 +106,13 @@ namespace rclient
 
         Version getHighestSupportedRcdpVersion()
         {
-            return *boost::max_element(resept::rcdpv2::getClientSupportedRcdpVersions());
+            return *boost::max_element(resept::rcdpv2::getServerSupportedRcdpVersions());
         }
 
         // check whether the given RCDP version is supported by the client ignoring subminor part
         bool isRcdpVersionSupported(const Version& aVersion)
         {
-            foreach (const Version& supportedVer, resept::rcdpv2::getClientSupportedRcdpVersions())
+            foreach (const Version& supportedVer, resept::rcdpv2::getServerSupportedRcdpVersions())
             {
                 if (supportedVer.major() == aVersion.major() && supportedVer.minor() == aVersion.minor())
                 {
@@ -275,7 +275,7 @@ namespace rclient
 
             if (!isRcdpVersionSupported(pImpl->session.rcdpVersion))
             {
-                TA_THROW_MSG(rclient::RcdpVersionMismatchError, boost::format("RCDP version %s proposed by the server is not supported by the client. Client supports the following RCDP versions: %s") % toStr(pImpl->session.rcdpVersion) % ta::Strings::join(toStringArray(getClientSupportedRcdpVersions()), ','));
+                TA_THROW_MSG(rclient::RcdpVersionMismatchError, boost::format("RCDP version %s proposed by the server is not supported by the client. Client supports the following RCDP versions: %s") % toStr(pImpl->session.rcdpVersion) % ta::Strings::join(toStringArray(getServerSupportedRcdpVersions()), ','));
             }
             DEBUGDEVLOG(boost::format("Client and server agreed on RCDP version %s") % toStr(pImpl->session.rcdpVersion));
 

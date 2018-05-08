@@ -366,10 +366,6 @@ namespace resept
                                            ServerSupportedRcdpVersions + sizeof(ServerSupportedRcdpVersions)/sizeof(ServerSupportedRcdpVersions[0]));
             return ta::version::parse(versions);
         }
-        inline std::vector<ta::version::Version> getClientSupportedRcdpVersions()
-        {
-            return getServerSupportedRcdpVersions();
-        }
 
         const std::string ReseptSvrPath = ${RCDPV1_RESEPT_SVR_PATH};
         const std::string HttpSidCookieName = ${RCDPV1_HTTP_SID_COOKIE_NAME};
@@ -544,15 +540,6 @@ namespace resept
         const std::string V_2_1 = ${RCDP_VERSION_2_1};
         const std::string V_2_2 = ${RCDP_VERSION_2_2};
 
-        const std::string ClientSupportedRcdpVersions[] = ${CLIENT_SUPPORTED_RCDPV2_VERSIONS};
-
-        inline std::vector<ta::version::Version> getClientSupportedRcdpVersions()
-        {
-            const ta::StringArray versions(ClientSupportedRcdpVersions,
-                                           ClientSupportedRcdpVersions + sizeof(ClientSupportedRcdpVersions)/sizeof(ClientSupportedRcdpVersions[0]));
-            return ta::version::parse(versions);
-        }
-
         const std::string ServerSupportedRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
 
         inline std::vector<ta::version::Version> getServerSupportedRcdpVersions()
@@ -562,6 +549,7 @@ namespace resept
             return ta::version::parse(versions);
         }
 
+        const unsigned int RcdpV2ListenPort = ${RCDPV2_LISTEN_PORT};
         const std::string HttpRequestUriPrefix  = ${RCDPV2_HTTP_REQUEST_URI_PREFIX};
         const std::string HttpSidCookieName = ${RCDPV2_HTTP_SID_COOKIE_NAME};
 
@@ -729,7 +717,52 @@ namespace resept
 
     }// rcdpv2
 
+    namespace caapi
+    {
+        const std::string V_1_0 = ${CA_API_VERSION_1_0};
 
+        const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_CA_API_VERSIONS};
+
+        inline std::vector<ta::version::Version> getServerSupportedApiVersions()
+        {
+            const ta::StringArray versions(ServerSupportedApiVersions,
+                                           ServerSupportedApiVersions + sizeof(ServerSupportedApiVersions)/sizeof(ServerSupportedApiVersions[0]));
+            return ta::version::parse(versions);
+        }
+
+        const std::string RequestScriptName  = ${CA_API_REQUEST_SCRIPT_NAME};
+
+        enum CaType
+        {
+            _firstCaType,
+            caSigning = _firstCaType,
+            caPrimary,
+            caRoot,
+            _lastCaType = caRoot
+        };
+        static const std::string CaTypeStrs[] = ${CA_API_CA_TYPES};
+        BOOST_STATIC_ASSERT(sizeof(CaTypeStrs)/sizeof(CaTypeStrs[0]) == _lastCaType-_firstCaType+1);
+        inline std::string str(const CaType aCaType)
+        {
+            return CaTypeStrs[aCaType-_firstCaType];
+        }
+        inline CaType parseCaType(const std::string& aVal)
+        {
+            for (int i = _firstCaType; i <= _lastCaType; ++i)
+            {
+                const CaType myCaType = static_cast<CaType>(i);
+                if (str(myCaType) == aVal)
+                {
+                    return myCaType;
+                }
+            }
+            TA_THROW_MSG(std::invalid_argument, "Cannot parse CA type from string " + aVal);
+        }
+    } // caapi
+
+
+    const unsigned int CaApiAndCertDownloadListenPort = ${CA_API_AND_CERT_DOWNLOAD_LISTEN_PORT};
+    const std::string CertDownloadUrlRequestScriptName  = ${CERT_DOWNLOAD_REQUEST_SCRIPT_NAME};
     const std::string CertDownloadUrlHostPlaceholder = ${CERT_DOWNLOAD_URL_HOST_PLACEHOLDER};
 
 } // resept

@@ -87,6 +87,17 @@ def log(msg):
     print(msg)
 
 
+def fetch_url(url):
+    debug("Fetching URL " + url)
+    try:
+        with urllib.request.urlopen(url) as response:
+            payload = response.read()
+            return payload
+    except Exception as e:
+        log("Error opening URL {}. {}".format(url, e))
+        return None
+
+
 class KeyTalkProtocol(object):
 
     def __init__(self):
@@ -135,17 +146,6 @@ class KeyTalkProtocol(object):
 
         cookie = response.getheader('set-cookie', None)
         return (payload, cookie)
-
-    @staticmethod
-    def _request_simple_url(url):
-        debug("Opening URL " + url)
-        try:
-            with urllib.request.urlopen(url) as response:
-                payload = response.read()
-                return payload
-        except Exception as e:
-            log("Error opening URL {}. {}".format(url, e))
-            return None
 
     @staticmethod
     def _is_true(dict, key):
@@ -563,9 +563,8 @@ class KeyTalkProtocol(object):
             cert_url_templ = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT_URL_TEMPL]
             cert_url = cert_url_templ.replace(
                 "$(" + conf.CERT_DOWNLOAD_URL_HOST_PLACEHOLDER + ")", KEYTALK_SERVER)
-            cert = KeyTalkProtocol._request_simple_url(cert_url)
-            assert not KeyTalkProtocol._request_simple_url(
-                cert_url), "the given certificate can only be downloaded once"
+            cert = fetch_url(cert_url)
+            assert not fetch_url(cert_url), "the given certificate can only be downloaded once"
         else:
             cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
             if format == conf.CERT_FORMAT_P12:
@@ -592,9 +591,8 @@ class KeyTalkProtocol(object):
             cert_url_templ = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT_URL_TEMPL]
             cert_url = cert_url_templ.replace(
                 "$(" + conf.CERT_DOWNLOAD_URL_HOST_PLACEHOLDER + ")", KEYTALK_SERVER)
-            cert = KeyTalkProtocol._request_simple_url(cert_url)
-            assert not KeyTalkProtocol._request_simple_url(
-                cert_url), "the given certificate can only be downloaded once"
+            cert = fetch_url(cert_url)
+            assert not fetch_url(cert_url), "the given certificate can only be downloaded once"
         else:
             cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
 
@@ -605,6 +603,25 @@ class KeyTalkProtocol(object):
 
     def reset_user_password(self, password):
         pass
+
+
+class CaApi(object):
+
+    def __init__(self):
+        self.port = conf.CA_API_AND_CERT_DOWNLOAD_LISTEN_PORT
+        self.script = conf.CA_API_REQUEST_SCRIPT_NAME
+        self.version = conf.CA_API_VERSION_1_0
+
+    def _url(self, ca_name):
+        return "http://{}:{}/{}/{}/{}".format(KEYTALK_SERVER,
+                                              self.port,
+                                              self.script,
+                                              self.version,
+                                              ca_name)
+
+    def fetch_ca(self, ca_name):
+        url = self._url(ca_name)
+        return fetch_url(url)
 
 
 #
@@ -840,6 +857,26 @@ def change_password_and_request_cert(cert_format, cert_with_chain):
     proto.eoc()
 
 
+def fetch_ca_certs():
+    api = CaApi()
+
+    cert = api.fetch_ca(conf.CA_API_SIGNING_CA)
+    debug(
+        "Fetched Signing CA. Subject: {}".format(
+            OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM,
+                cert).get_subject()))
+
+    cert = api.fetch_ca(conf.CA_API_PRIMARY_CA)
+    debug(
+        "Fetched Primary CA. Subject: {}".format(
+            OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM,
+                cert).get_subject()))
+
+    assert not api.fetch_ca(conf.CA_API_ROOT_CA), "Root CA is not expected to be present"
+
+
 #
 # Entry point
 #
@@ -855,3 +892,5 @@ if __name__ == "__main__":
             request_cert_from_csr_with_password_authentication(cert_with_chain)
             request_out_of_band_cert_with_password_authentication(cert_format, cert_with_chain)
             change_password_and_request_cert(cert_format, cert_with_chain)
+
+    fetch_ca_certs()
