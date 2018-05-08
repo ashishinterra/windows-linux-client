@@ -11,11 +11,11 @@ Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 ## Building KeyTalk Linux Client
 
 
-We will create two development environments:
+We will create 2 development environments:
   - Debian 8-based for building KeyTalk clients for Debian 8 and Ubuntu 16.04
   - Debian 9-based for building KeyTalk clients for Debian 9
 
-The reason for creating two separate development environments is incompatibility of OpenSSL libraries on Debian 8 and Debian 9 (app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
+The reason for creating 2 separate development environments is incompatibility of OpenSSL libraries on Debian 8 and Debian 9 (app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
 
 
 ### Setup base system
@@ -41,6 +41,7 @@ Install packages
     # apt -y install gdb vim git ntp ntpdate curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang
     # a2enmod ssl
     # pip install lxml pyopenssl
+    # curl https://bootstrap.pypa.io/get-pip.py | python3
 
 Debain 9 only. Install ccache to speedup C/C++ builds (it seems ccache can't cache clang on Debian 8)
 
