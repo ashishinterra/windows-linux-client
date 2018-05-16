@@ -697,8 +697,7 @@ namespace rclient
 
 #ifdef _WIN32
         curl_tlssessioninfo * myTlsSessionInfo = NULL;
-        myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo);
-        if (myCurlRetCode != CURLE_OK)
+        if ((myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo)) != CURLE_OK)
         {
             TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve TLS backend information. %s") % curl_easy_strerror(myCurlRetCode));
         }
@@ -706,8 +705,7 @@ namespace rclient
         {
             // disable certificate revocation checks for curl built against WinSSL (schannel)
             // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which is way too strict I believe)
-            myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE)) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable CLR option. %s") % curl_easy_strerror(myCurlRetCode));
             }

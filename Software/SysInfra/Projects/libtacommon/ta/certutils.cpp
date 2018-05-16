@@ -343,7 +343,7 @@ namespace ta
             {
                 if (!aKey)
                 {
-                    TA_THROW_MSG(std::invalid_argument, boost::format("Failed to extract private key from PKCS#12 package. PEM_write_bio_PrivateKey failed. %s") % ERR_error_string(ERR_get_error(), NULL));
+                    TA_THROW_MSG(std::invalid_argument, "Cannot convert private key from NULL buffer");
                 }
                 ta::ScopedResource<BIO*> myPrivKeyPemMemBio( BIO_new(BIO_s_mem()), BIO_free);
                 static char pass[] = ""; // no password
