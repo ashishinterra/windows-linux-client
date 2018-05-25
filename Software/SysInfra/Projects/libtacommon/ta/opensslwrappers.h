@@ -29,7 +29,8 @@ namespace ta
         ~OpenSSLCertificateWrapper();
 
         void loadFromFile(const std::string& aPemCertFilePath);
-        void loadFromBuf(const std::vector<unsigned char>& aPemCertBuf);
+        void loadFromBuf(const std::string& aPemCert);
+        void loadFromBuf(const std::vector<unsigned char>& aPemCert);
 
         operator X509*() const;
         X509* operator->() const;

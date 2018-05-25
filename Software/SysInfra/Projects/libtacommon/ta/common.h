@@ -527,6 +527,7 @@ namespace ta
     {
         KeyPair() {}
         KeyPair(const std::vector<unsigned char>& aPrivKey, const std::vector<unsigned char>& aPubKey) : privKey(aPrivKey), pubKey(aPubKey) {}
+        KeyPair(const std::string& aPrivKey, const std::string& aPubKey) : privKey(ta::str2Vec<unsigned char>(aPrivKey)), pubKey(ta::str2Vec<unsigned char>(aPubKey)) {}
         std::vector<unsigned char> privKey; // private key content of id
         std::vector<unsigned char> pubKey;  // public key content or id
     };

@@ -829,9 +829,9 @@ public:
         printCustomRoutes("Restored custom IPv4 routes on " + myIfaceName, myNewRoutesQueried);
         TS_ASSERT(ta::equalIgnoreOrder(myNewRoutesQueried, myOrigRoutes));
 
-        TS_ASSERT_THROWS(applyIpv4CustomRoutes("non-existing-inferface", myOrigRoutes, mySaveScriptPath), std::exception);
+        TS_ASSERT_THROWS(applyIpv4CustomRoutes("non-existing-interface", myOrigRoutes, mySaveScriptPath), std::exception);
         ta::TimeUtils::sleep(2*ta::TimeUtils::MsecsInSecond); // sleep a bit to not annoy service manager with too frequent service restarts
-        const IfacesIPv4Routes myInvalidRoutes = boost::assign::map_list_of("non-existing-inferface", myOrigRoutes);
+        const IfacesIPv4Routes myInvalidRoutes = boost::assign::map_list_of("non-existing-interface", myOrigRoutes);
         TS_ASSERT_THROWS(applyIpv4CustomRoutes(myInvalidRoutes, mySaveScriptPath), std::exception);
         ta::TimeUtils::sleep(2*ta::TimeUtils::MsecsInSecond); // sleep a bit to not annoy service manager with too frequent service restarts
 #else

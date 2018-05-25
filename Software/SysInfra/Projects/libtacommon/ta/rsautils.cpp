@@ -36,6 +36,24 @@ namespace ta
                 return 0;
             }
 
+            std::vector<unsigned char> vec(BIO* aBio)
+            {
+                if (!aBio)
+                {
+                    TA_THROW_MSG(std::invalid_argument, "Cannot serialize NULL-BIO");
+                }
+                BUF_MEM* myMemBuf = NULL;
+                if (BIO_get_mem_ptr(aBio, &myMemBuf) < 0 || myMemBuf->length <= 0)
+                {
+                    TA_THROW_MSG(std::runtime_error, "BIO_get_mem_ptr failed");
+                }
+                return vector<unsigned char>(myMemBuf->data, myMemBuf->data + myMemBuf->length);
+            }
+            string str(BIO* aBio)
+            {
+                return vec2Str(vec(aBio));
+            }
+
             unsigned int getKeySizeBits(const RSA* aKey)
             {
                 if (!aKey)
@@ -56,6 +74,31 @@ namespace ta
                 if (myBlockSize <= 0)
                     TA_THROW_MSG(RsaError, boost::format("Invalid block size %d (RSA key too short)") % myBlockSize);
                 return  myBlockSize;
+            }
+
+            const EVP_CIPHER* getKeyEncryptionCipher(const KeyEncryptionAlgo& aKeyEncryptionAlgo)
+            {
+                switch (aKeyEncryptionAlgo.algo_type)
+                {
+                case keyEncryptionAlgoAesCbcHmac:
+                {
+                    switch (aKeyEncryptionAlgo.key_bit)
+                    {
+                    // Due to HMAC authentication this algorithm does not suffer from Oracle padding attacks
+                    case 128: return EVP_aes_128_cbc_hmac_sha256();
+                    case 256: return EVP_aes_256_cbc_hmac_sha256();
+                    default: TA_THROW_MSG(std::logic_error, boost::format("%s is not supported for key encryption") % str(aKeyEncryptionAlgo));
+                    }
+                }
+                case keyEncryptionAlgoAesGcm:
+                // very secure but needs extra configuration and hence can't be used with PEM_write_XXXPrivateKey() interface and needs manual encryption
+                case keyEncryptionAlgoAesCcm:
+                // the same flaws as GCM
+                default:
+                {
+                    TA_THROW_MSG(std::logic_error, boost::format("%s is not supported for key encryption") % str(aKeyEncryptionAlgo));
+                }
+                }
             }
 
 
@@ -179,22 +222,16 @@ namespace ta
                     }// switch
 
                     // write public key
-                    BUF_MEM *buf = NULL;
-                    BIO_get_mem_ptr(pubKeyBio, &buf);
-                    (void)BIO_set_close(pubKeyBio, BIO_NOCLOSE);
-                    myRetVal.pubKey.assign(buf->data, buf->data + buf->length);
-                    BUF_MEM_free(buf);
+                    myRetVal.pubKey = vec(pubKeyBio);
 
                     // write private key
                     ScopedResource<BIO*> privKeyBio(BIO_new(BIO_s_mem()), BIO_free);
                     if (!PEM_write_bio_RSAPrivateKey(privKeyBio, anRsa, NULL, NULL, 0, NULL, NULL))
                     {
-                        TA_THROW_MSG(RsaError, "PEM_write_bio_RSAPrivateKey failed");
+                        TA_THROW_MSG(RsaError, boost::format("PEM_write_bio_RSAPrivateKey failed. %s") % ERR_error_string(ERR_get_error(), NULL));
                     }
-                    BIO_get_mem_ptr(privKeyBio, &buf);
-                    (void)BIO_set_close(privKeyBio, BIO_NOCLOSE);
-                    myRetVal.privKey.assign(buf->data, buf->data + buf->length);
-                    BUF_MEM_free(buf);
+                    myRetVal.privKey = vec(privKeyBio);
+
                     return myRetVal;
                 }
                 case encDER:
@@ -439,7 +476,7 @@ namespace ta
 #endif
         }
 
-        unsigned int getKeySizeBits(const std::vector<unsigned char>& aModulus, const std::vector<unsigned char>& aPubExponent)
+        unsigned int getKeySizeBits(const vector<unsigned char>& aModulus, const vector<unsigned char>& aPubExponent)
         {
             ScopedResource<RSA*> myRsa(RSA_new(), RSA_free);
 
@@ -472,15 +509,20 @@ namespace ta
             const PrivateKey myPrivateKey = decodePrivateKeyFile(aPemKeyPath, aPemKeyPasswd);
             return getPrivateKeySizeBits(myPrivateKey);
         }
-        unsigned int getPrivateKeySizeBits(const vector<unsigned char>& aKey, const char* aPemKeyPasswd)
+        unsigned int getPrivateKeySizeBits(const string& aPemKey, const char* aPemKeyPasswd)
         {
-            const PrivateKey myPrivateKey = decodePrivateKey(aKey, aPemKeyPasswd);
+            const PrivateKey myPrivateKey = decodePrivateKey(aPemKey, aPemKeyPasswd);
             return getPrivateKeySizeBits(myPrivateKey);
         }
-
-        PrivateKey decodePrivateKey(const vector<unsigned char>& aKey, const char* aKeyPasswd)
+        unsigned int getPrivateKeySizeBits(const vector<unsigned char>& aPemKey, const char* aPemKeyPasswd)
         {
-            ScopedResource<RSA*> myPrivRsa(makeRsaFromPrivKey(aKey, encPEM, aKeyPasswd), RSA_free);
+            return getPrivateKeySizeBits(ta::vec2Str(aPemKey), aPemKeyPasswd);
+        }
+
+        PrivateKey decodePrivateKey(const string& aPemKey, const char* aPemKeyPasswd)
+        {
+            ScopedResource<RSA*> myPrivRsa(makeRsaFromPrivKey(ta::str2Vec<unsigned char>(aPemKey), encPEM, aPemKeyPasswd),
+                                           RSA_free);
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
             // get modulus, public and private exponent
@@ -540,14 +582,19 @@ namespace ta
             return PrivateKey(n, e, d, p, q, dmp1, dmq1, iqmp);
         }
 
-        PrivateKey decodePrivateKeyFile(const std::string& aKeyPath, const char* aKeyPasswd)
+        PrivateKey decodePrivateKey(const vector<unsigned char>& aPemKey, const char* aPemKeyPasswd)
         {
-            if (!ta::isFileExist(aKeyPath))
+            return decodePrivateKey(ta::vec2Str(aPemKey), aPemKeyPasswd);
+        }
+
+        PrivateKey decodePrivateKeyFile(const string& aPemKeyPath, const char* aPemKeyPasswd)
+        {
+            if (!ta::isFileExist(aPemKeyPath))
             {
-                TA_THROW_MSG(std::invalid_argument, boost::format("Cannot decode private key from %s. The file does not exist.") % aKeyPath);
+                TA_THROW_MSG(std::invalid_argument, boost::format("Cannot decode private key from %s. The file does not exist.") % aPemKeyPath);
             }
-            const vector<unsigned char> myKey = ta::readData(aKeyPath);
-            return decodePrivateKey(myKey, aKeyPasswd);
+            const string myPemKey = ta::readData(aPemKeyPath);
+            return decodePrivateKey(myPemKey, aPemKeyPasswd);
         }
 
         ta::KeyPair encodePrivateKey(const PrivateKey& aKey, PubKeyEncoding aPubKeyEncoding)
@@ -615,7 +662,7 @@ namespace ta
         }
 
 
-        PublicKey decodePublicKeyFile(const std::string& aKeyPath, PubKeyEncoding aPubKeyEncoding)
+        PublicKey decodePublicKeyFile(const string& aKeyPath, PubKeyEncoding aPubKeyEncoding)
         {
             if (!ta::isFileExist(aKeyPath))
             {
@@ -625,9 +672,9 @@ namespace ta
             return decodePublicKey(myKey, aPubKeyEncoding);
         }
 
-        PublicKey decodePublicKey(const std::vector<unsigned char>& aKey, PubKeyEncoding aPubKeyEncoding)
+        PublicKey decodePublicKey(const vector<unsigned char>& aPemKey, PubKeyEncoding aPubKeyEncoding)
         {
-            ScopedResource<RSA*> myPubRsa (makeRsaFromPubKey(aKey, encPEM, aPubKeyEncoding), RSA_free);
+            ScopedResource<RSA*> myPubRsa (makeRsaFromPubKey(aPemKey, encPEM, aPubKeyEncoding), RSA_free);
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
             const BIGNUM *n_bn, *e_bn;
@@ -647,7 +694,12 @@ namespace ta
             return PublicKey(n, e);
         }
 
-        std::vector<unsigned char> encodePublicKey(const PublicKey& aKey, PubKeyEncoding aPubKeyEncoding)
+        PublicKey decodePublicKey(const string& aPemKey, PubKeyEncoding aPubKeyEncoding)
+        {
+            return decodePublicKey(ta::str2Vec<unsigned char>(aPemKey), aPubKeyEncoding);
+        }
+
+        string encodePublicKey(const PublicKey& aKey, PubKeyEncoding aPubKeyEncoding)
         {
             ScopedResource<RSA*> myRsa(RSA_new(), RSA_free);
 
@@ -689,12 +741,7 @@ namespace ta
 
             }// switch
 
-            BUF_MEM *buf = NULL;
-            BIO_get_mem_ptr(pubKeyBio, &buf);
-            (void)BIO_set_close(pubKeyBio, BIO_NOCLOSE);
-            const std::vector<unsigned char> myRetVal(buf->data, buf->data + buf->length);
-            BUF_MEM_free(buf);
-
+            const string myRetVal = str(pubKeyBio);
             if (myRetVal.empty())
             {
                 TA_THROW_MSG(RsaError, "The resulted public key is empty");
@@ -703,25 +750,48 @@ namespace ta
             return myRetVal;
         }
 
-        std::vector<unsigned char> unwrapPrivateKey(const std::vector<unsigned char>& aKey, const std::string& aKeyPasswd)
+        string unwrapPrivateKey(const string& aPemKey, const string& aKeyPasswd)
         {
-            const PrivateKey myRsaKey = decodePrivateKey(aKey, aKeyPasswd.c_str());
-            return encodePrivateKey(myRsaKey, pubkeyPKCS1).privKey;
+            const PrivateKey myRsaKey = decodePrivateKey(aPemKey, aKeyPasswd.c_str());
+            return ta::vec2Str(encodePrivateKey(myRsaKey, pubkeyPKCS1).privKey);
         }
 
-        std::vector<unsigned char> unwrapPrivateKeyFile(const std::string& aKeyPath, const std::string& aKeyPasswd)
+        string unwrapPrivateKeyFile(const string& aPemKeyPath, const string& aKeyPasswd)
         {
-            if (!ta::isFileExist(aKeyPath))
+            if (!ta::isFileExist(aPemKeyPath))
             {
-                TA_THROW_MSG(std::invalid_argument, boost::format("Cannot unwrap private key from %s. The file does not exist.") % aKeyPath);
+                TA_THROW_MSG(std::invalid_argument, boost::format("Cannot unwrap private key from %s. The file does not exist.") % aPemKeyPath);
             }
-            const vector<unsigned char> myKey = ta::readData(aKeyPath);
-            return unwrapPrivateKey(myKey, aKeyPasswd);
+            const string myPemKey = ta::readData(aPemKeyPath);
+            return unwrapPrivateKey(myPemKey, aKeyPasswd);
         }
 
-        std::vector<unsigned char> convPrivateKey2Pkcs8Der(const std::vector<unsigned char>& aKey)
+        string wrapPrivateKey(const string& aPemKey, const string& aKeyPasswd, const KeyEncryptionAlgo& aKeyEncryptionAlgo)
         {
-            OpenSSLPrivateKeyWrapper myPrivateKey(aKey);
+            if (aKeyPasswd.empty())
+            {
+                TA_THROW_MSG(std::invalid_argument, "Password to encrypt private key should be non-empty");
+            }
+
+            const EVP_CIPHER* myEncCipher = getKeyEncryptionCipher(aKeyEncryptionAlgo);
+
+            vector<char> myPasswd = ta::str2Vec<char>(aKeyPasswd);
+            myPasswd.push_back('\0');
+
+            ScopedResource<RSA*> myPrivRsa(makeRsaFromPrivKey(ta::str2Vec<unsigned char>(aPemKey), encPEM, NULL),
+                                           RSA_free);
+            ta::ScopedResource<BIO*> myPemMemBio( BIO_new(BIO_s_mem()), BIO_free);
+            if (!PEM_write_bio_RSAPrivateKey(myPemMemBio, myPrivRsa, myEncCipher, NULL, 0, NULL, &myPasswd[0]))
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("PEM_write_bio_RSAPrivateKey failed for privkey. %s") % ERR_error_string(ERR_get_error(), NULL));
+            }
+
+            return str(myPemMemBio);
+        }
+
+        vector<unsigned char> convPrivateKey2Pkcs8Der(const vector<unsigned char>& aPemKey)
+        {
+            OpenSSLPrivateKeyWrapper myPrivateKey(aPemKey);
 
             static char pass[] = "";
             ta::ScopedResource<BIO*> myPemMemBio( BIO_new(BIO_s_mem()), BIO_free);
@@ -729,15 +799,16 @@ namespace ta
             {
                 TA_THROW_MSG(RsaError, boost::format("i2d_PKCS8PrivateKey_bio failed for privkey and no password. %s") % ERR_error_string(ERR_get_error(), NULL));
             }
-            BUF_MEM* myPrivKeyBuf = NULL;
-            if (BIO_get_mem_ptr(myPemMemBio, &myPrivKeyBuf) < 0 || myPrivKeyBuf->length <= 0)
-            {
-                TA_THROW_MSG(RsaError, "BIO_get_mem_ptr failed");
-            }
-            return vector<unsigned char>(myPrivKeyBuf->data, myPrivKeyBuf->data + myPrivKeyBuf->length);
+            return vec(myPemMemBio);
         }
 
-        std::vector<unsigned char> pubKeyPkcs1ToPkcs8(const std::vector<unsigned char>& aPubKey)
+        string convPrivateKeyToPkcs5(const string& aPemKey)
+        {
+            const PrivateKey myRsaKey = decodePrivateKey(aPemKey);
+            return ta::vec2Str(encodePrivateKey(myRsaKey, pubkeyPKCS1).privKey);
+        }
+
+        string pubKeyPkcs1ToPkcs8(const vector<unsigned char>& aPubKey)
         {
             ScopedResource<RSA*> myPubRsa(makeRsaFromPubKey(aPubKey, encPEM, pubkeyPKCS1), RSA_free);
 
@@ -746,13 +817,7 @@ namespace ta
             {
                 TA_THROW_MSG(RsaError, boost::format("PEM_write_bio_RSAPublicKey failed. %s") % ERR_error_string(ERR_get_error(), NULL));
             }
-            BUF_MEM *buf = NULL;
-            BIO_get_mem_ptr(pubKeyBio, &buf);
-            (void)BIO_set_close(pubKeyBio, BIO_NOCLOSE);
-            const vector<unsigned char> myPkcs8PubKey(buf->data, buf->data + buf->length);
-            BUF_MEM_free(buf);
-
-            return myPkcs8PubKey;
+            return str(pubKeyBio);
         }
 
         vector<unsigned char> encrypt(const vector<char>& anSrc,
@@ -773,7 +838,7 @@ namespace ta
         }
 
         vector<unsigned char> encrypt(const vector<unsigned char>& anSrc,
-                                      const std::string& anRsaPubKeyId,
+                                      const string& anRsaPubKeyId,
                                       void* aCookie,
                                       EncryptBlockFunc anEncryptBlockCbk,
                                       GetEncKeyBitsFunc aGetEncKeyBitsCbk)
@@ -793,7 +858,7 @@ namespace ta
             }
         }
 
-        size_t calcEncryptedSize(size_t anSrcSize, const std::vector<unsigned char>& anRsaPubKey, TransportEncoding aKeyTransportEncoding, PubKeyEncoding aPubKeyEncoding)
+        size_t calcEncryptedSize(size_t anSrcSize, const vector<unsigned char>& anRsaPubKey, TransportEncoding aKeyTransportEncoding, PubKeyEncoding aPubKeyEncoding)
         {
             ScopedResource<RSA*> myRsa(makeRsaFromPubKey(anRsaPubKey, aKeyTransportEncoding, aPubKeyEncoding), RSA_free);
             return calcEncryptedSize(anSrcSize, myRsa);
@@ -807,11 +872,11 @@ namespace ta
             ScopedResource<RSA*> myRsa(makeRsaFromPrivKey(anRsaPrivKey, aKeyTransportEncoding, aPemKeyPasswd), RSA_free);
             return ta::vec2Str(decryptPrivate(aCipherText, myRsa));
         }
-        std::vector<unsigned char> decrypt(const vector<unsigned char>& aCipherText,
-                                           const std::string& anRsaPrivKeyId,
-                                           void* aCookie,
-                                           DecryptBlockFunc aDecryptBlockCbk,
-                                           GetDecKeyBitsFunc aGetDecKeyBitsFunc)
+        vector<unsigned char> decrypt(const vector<unsigned char>& aCipherText,
+                                      const string& anRsaPrivKeyId,
+                                      void* aCookie,
+                                      DecryptBlockFunc aDecryptBlockCbk,
+                                      GetDecKeyBitsFunc aGetDecKeyBitsFunc)
         {
             try
             {

@@ -567,7 +567,7 @@ namespace rclient
                     DEBUGLOG(boost::format("Successfully imported DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
                 }
 
-                void importPemCertToTrustedStore(const vector<unsigned char>& aPemCert)
+                void importPemCertToTrustedStore(const string& aPemCert)
                 {
                     DEBUGLOG(boost::format("Importing certificate to %s store") % str(theStoreType));
                     if (theStoreType == storePersonal)
@@ -583,14 +583,14 @@ namespace rclient
                     PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext(X509_ASN_ENCODING, &myDerCert[0], myDerCert.size());
                     if (!pDesiredCert)
                     {
-                        TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot create certificate context for PEM certificate:\n%s") % ta::vec2Str(aPemCert));
+                        TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot create certificate context for PEM certificate:\n%s") % aPemCert);
                     }
 
                     if (!::CertAddCertificateContextToStore(theStore, pDesiredCert, CERT_STORE_ADD_REPLACE_EXISTING, NULL))
                     {
                         const DWORD myLastError = ::GetLastError();
                         ::CertFreeCertificateContext(pDesiredCert);
-                        TA_THROW_MSG(NativeCertStoreImportError, boost::format("CertAddCertificateContextToStore failed for certificate\n%s. Last error is %d") % ta::vec2Str(aPemCert) % myLastError);
+                        TA_THROW_MSG(NativeCertStoreImportError, boost::format("CertAddCertificateContextToStore failed for certificate\n%s. Last error is %d") % aPemCert % myLastError);
                     }
                     ::CertFreeCertificateContext(pDesiredCert);
                     DEBUGLOG(boost::format("Successfully imported certificate %s store") % str(theStoreType));
@@ -1093,12 +1093,12 @@ namespace rclient
                 void importDerCertFileToTrustedStore(const string& aDerCertPath)
                 {
                     DEBUGLOG(boost::format("Importing DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
-                    const vector<unsigned char> myPemCert = ta::CertUtils::convDer2Pem(ta::readData(aDerCertPath));
+                    const string myPemCert = ta::CertUtils::convDer2Pem(ta::readData(aDerCertPath));
                     importPemCertToTrustedStore(myPemCert);
                     DEBUGLOG(boost::format("Successfully imported DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
                 }
 
-                void importPemCertToTrustedStore(const std::vector<unsigned char>& aPemCert)
+                void importPemCertToTrustedStore(const string& aPemCert)
                 {
                     DEBUGLOG(boost::format("Importing PEM certificate to %s store") % str(theStoreType));
                     if (theStoreType == storePersonal)
@@ -1435,10 +1435,10 @@ namespace rclient
                 // import extra signing CAs
                 foreach (const string& path, anExtraSigningCAsPemPaths)
                 {
-                    vector<vector<unsigned char> > myCAs = ta::CertUtils::extractPemCertsFromFile(path);
+                    ta::StringArray myCAs = ta::CertUtils::extractPemCertsFromFile(path);
                     // CAs we receive are ordered from child to parent, but import should happen in reverse direction
                     std::reverse(myCAs.begin(), myCAs.end());
-                    foreach (const vector<unsigned char>& ca, myCAs)
+                    foreach (const string& ca, myCAs)
                     {
                         const string mySha1Fingerprint = getCertInfo(ca).sha1Fingerprint;
                         if (ta::CertUtils::isSelfSignedCert(ca))

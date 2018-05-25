@@ -11,11 +11,11 @@ Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 ## Building KeyTalk Linux Client
 
 
-We will create 2 development environments:
+We will create two development environments:
   - Debian 8-based for building KeyTalk clients for Debian 8 and Ubuntu 16.04
   - Debian 9-based for building KeyTalk clients for Debian 9
 
-The reason for creating 2 separate development environments is incompatibility of OpenSSL libraries on Debian 8 and Debian 9 (app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
+The reason for creating two separate development environments is incompatibility of OpenSSL libraries on Debian 8 and Debian 9 (app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
 
 
 ### Setup base system
@@ -113,3 +113,8 @@ Building KeyTalk client for `KeyTalkClientNotSigned` produces executables and ms
   1. Acquire code signing certificate e.g. from GlobalSign or other certificate issuer.
   2. Store your code signing pfx under `Software\CertKeys\CodeSigning\CodesigningWindows.pfx` and the pfx password to `Software\CertKeys\CodeSigning\CodesigningWindows.pfx.passwd`
   3. Rebuild the client for `Release` target
+
+## Contributing
+  1. Make sure your changes are rebased on origin/master
+  2. Make sure your source code is properly formatted by running 'formatcxx.py --fix' and 'formatpython.py --fix'
+  3. Create a pull-request or commit to the agreed branch.

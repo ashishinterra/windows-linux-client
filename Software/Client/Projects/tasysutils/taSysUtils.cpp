@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
                 const string mySignedKeyPass = myArgs[3];
                 const string mySignedKeyOutPath = myArgs[4];
 
-                vector<unsigned char> myPubKeyBuf = ta::CertUtils::extractPemPubKeyFile(myPemCertPath);
+                string myPubKeyBuf = ta::CertUtils::extractPemPubKeyFile(myPemCertPath);
                 const string myPubKeyFilePath = str(boost::format("%spubkey_%d.tmp") % ta::Process::getTempDir() % (int)time(NULL));
                 ta::writeData(myPubKeyFilePath, myPubKeyBuf);
                 try

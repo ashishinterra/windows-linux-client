@@ -27,8 +27,6 @@ namespace ta
 {
     namespace CertUtils
     {
-        typedef std::vector<unsigned char> MemBuffer;
-
         enum KeyUsage
         {
             // enum values correspond to the keys of key_usage_type_table table defined in v3_bitst.c
@@ -211,9 +209,10 @@ namespace ta
         /**
         	Conversion routines
         */
-        std::vector<unsigned char> convPem2Der(const std::vector<unsigned char>& aCert);
-        std::vector<unsigned char> convDer2Pem(const std::vector<unsigned char>& aCert);
-        std::vector<unsigned char> convX509_2Pem(X509* aCertX509);
+        std::vector<unsigned char> convPem2Der(const std::string& aPemCert);
+        std::vector<unsigned char> convPem2Der(const std::vector<unsigned char>& aPemCert);
+        std::string convDer2Pem(const std::vector<unsigned char>& aDerCert);
+        std::string convX509_2Pem(X509* aCertX509);
         // convert PEM to PFX; private key in PEM should be not password-protected
         std::vector<unsigned char> convPem2Pfx(const std::string& aPemCertKey, const std::string& aPfxPassword, const std::string& aPfxCertKeyFriendlyName = "");
         // Convert PFX into a single PEM file; private key is stored in PEM not password protected
@@ -233,6 +232,14 @@ namespace ta
         void insertCertInChain(const std::string& aCert, ta::StringArray& aChain);
         // order CAs of the given PEM-encoded cert from child towards parent
         ta::StringArray orderCAs(const std::string& aCert, const ta::StringArray& aCAs);
+
+
+        // Creates PEM from the given cert, CAs and private key
+        // aPlainPemKey PEM-encoded plain private key i.e. NOT protected with a password
+        // aKeyPassword password to encrypt the key in the PEM
+        std::string createPEM(X509* aCert, const std::vector<X509*>& aCAs = std::vector<X509*>(), const std::string& aPlainPemKey = "", const std::string& aKeyPassword = "", const ta::RsaUtils::KeyEncryptionAlgo* aKeyEncryptionAlgo = NULL);
+
+        std::string concatPEMs(const ta::StringArray& aPemCertChain, const std::string& aPemKey = "");
 
         // Convenient shortcuts
         inline bool isSelfSignedCertFile(const std::string& aCertFilePath) { return isCertFileIssuedBy(aCertFilePath, aCertFilePath); }
@@ -277,9 +284,9 @@ namespace ta
         /**
           Extract certificates from the PEM file or buffer in the order they appear
          */
-        std::vector<MemBuffer> extractPemCertsFromFile(const std::string& aFilePath);
-        std::vector<MemBuffer> extractPemCerts(const std::string& aPemBuf);
-        std::vector<MemBuffer> extractPemCerts(const std::vector<unsigned char>& aPemBuf);
+        ta::StringArray extractPemCertsFromFile(const std::string& aFilePath);
+        ta::StringArray extractPemCerts(const std::string& aPemBuf);
+        ta::StringArray extractPemCerts(const std::vector<unsigned char>& aPemBuf);
 
         /**
           Extract PEM-encoded private keys from file or buffer in the order they appear
@@ -288,29 +295,24 @@ namespace ta
         {
             keyFilterEncryptedOnly, keyFilterNotEncryptedOnly, keyFilterNone
         };
-        std::vector<MemBuffer> extractPemPrivKeysFromFile(const std::string& aFilePath, KeyFilter aKeyFilter = keyFilterNone);
-        std::vector<MemBuffer> extractPemPrivKeys(const std::string& aPemBuf, KeyFilter aKeyFilter = keyFilterNone);
-
-        /**
-          Extract public key in PKCS#8 SubjectPublicKeyInfo format from the DER-encoded certificate
-         */
-        std::vector<unsigned char> extractRSAPubKeyFile(const std::string& aDerCertPath);
-        std::vector<unsigned char> extractRSAPubKey(const std::vector<unsigned char>& aDerCert);
+        ta::StringArray extractPemPrivKeysFromFile(const std::string& aFilePath, KeyFilter aKeyFilter = keyFilterNone);
+        ta::StringArray extractPemPrivKeys(const std::string& aPemBuf, KeyFilter aKeyFilter = keyFilterNone);
 
         /**
           Extract public key in PKCS#8 SubjectPublicKeyInfo format from the PEM-encoded certificate
           openssl x509 -noout -pubkey -in cert.pem
          */
-        std::vector<unsigned char> extractPemPubKeyFile(const std::string& aPemCertPath);
-        std::vector<unsigned char> extractPemPubKey(const std::vector<unsigned char>& aPemCert);
-        std::vector<unsigned char> extractPemPubKey(const std::string& aPemCert);
+        std::string extractPemPubKeyFile(const std::string& aPemCertPath);
+        std::string extractPemPubKey(const std::vector<unsigned char>& aPemCert);
+        std::string extractPemPubKey(const std::string& aPemCert);
+
 
         /**
             Check whether the public RSA key in the given certificate and private RSA key belong together
         */
-        bool isKeyPairFile(const std::string& aPemCertPath, const std::string& aPemKeyPath, const char* aPemKeyPasswd = NULL);
-        bool isKeyPair(const std::vector<unsigned char>& aPemCert, const std::vector<unsigned char>& aPemKey, const char* aPemKeyPasswd = NULL);
-        bool isKeyPair(const std::string& aPemCert, const std::string& aPemKey, const char* aPemKeyPasswd = NULL);
+        bool isKeyPairFile(const std::string& aPemCertPath, const std::string& aPemKeyPath, const char* aKeyPasswd = NULL);
+        bool isKeyPair(const std::vector<unsigned char>& aPemCert, const std::vector<unsigned char>& aPemKey, const char* aKeyPasswd = NULL);
+        bool isKeyPair(const std::string& aPemCert, const std::string& aPemKey, const char* aKeyPasswd = NULL);
 
         //@return the number of certificates and CAs parsed from the PFX package
         // the extracted private key is encoded in PKCS#8 format ("-----BEGIN PRIVATE KEY----")

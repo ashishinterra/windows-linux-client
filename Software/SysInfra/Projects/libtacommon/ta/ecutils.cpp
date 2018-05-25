@@ -2,10 +2,13 @@
 #include "strings.h"
 #include "scopedresource.hpp"
 #include "common.h"
+
 #include "openssl/x509.h"
 #include "openssl/evp.h"
 #include "openssl/bio.h"
 #include "openssl/pem.h"
+#include "openssl/err.h"
+
 #include <algorithm>
 #include <cassert>
 
@@ -81,7 +84,9 @@ namespace ta
 
             static char pass[] = "";
             if (!PEM_write_bio_PrivateKey(myPrivKeyMem,pkey,NULL,NULL,0,NULL,pass))
-                TA_THROW_MSG(EcError, "PEM_write_bio_PrivateKey failed for EC key");
+            {
+                TA_THROW_MSG(EcError, boost::format("PEM_write_bio_PrivateKey failed for EC key. %s") % ERR_error_string(ERR_get_error(), NULL));
+            }
 
             BUF_MEM* myPemBuf = NULL;
             if (BIO_get_mem_ptr(myPrivKeyMem, &myPemBuf) < 0 || myPemBuf->length <= 0)

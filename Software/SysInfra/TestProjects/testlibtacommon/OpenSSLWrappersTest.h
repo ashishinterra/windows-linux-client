@@ -19,7 +19,7 @@ public:
         const std::vector<unsigned char> myCertPem = ta::readData("CA/cert.pem");
         const std::vector<unsigned char> myCertDer = ta::readData("CA/test.cer");
         const std::vector<unsigned char> myCertKeyPem = ta::readData("CA/certkey.pem");
-        const std::vector<unsigned char> myKeyPem = ta::readData("CA/privkey3.pem");
+        const std::vector<unsigned char> myKeyPem = ta::readData("CA/privkey3_pkcs5.pem");
         ta::OpenSSLCertificateWrapper myWrapper;
 
         TS_ASSERT(!(X509*)ta::OpenSSLCertificateWrapper());
@@ -43,8 +43,8 @@ public:
         TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper cert(myCertDer), std::exception);
         TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper().loadFromBuf(myCertDer), std::exception);
 
-        TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper cert("CA/privkey3.pem"), std::exception);
-        TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper().loadFromFile("CA/privkey3.pem"), std::exception);
+        TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper cert("CA/privkey3_pkcs5.pem"), std::exception);
+        TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper().loadFromFile("CA/privkey3_pkcs5.pem"), std::exception);
         TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper cert(myKeyPem), std::exception);
         TS_ASSERT_THROWS(ta::OpenSSLCertificateWrapper().loadFromBuf(myKeyPem), std::exception);
 
@@ -60,14 +60,14 @@ public:
     void testPrivateKeyWrapper()
     {
         const std::vector<unsigned char> myEncryptedKeyPem = ta::readData("CA/privkey.pem");
-        const std::vector<unsigned char> myKeyPem = ta::readData("CA/privkey3.pem");
+        const std::vector<unsigned char> myKeyPem = ta::readData("CA/privkey3_pkcs5.pem");
         const std::vector<unsigned char> myCertKeyPem = ta::readData("CA/certkey.pem");
         const std::vector<unsigned char> myPubKeyPem = ta::readData("CA/pubkey.pem");
         const std::vector<unsigned char> myCertPem = ta::readData("CA/cert.pem");
         ta::OpenSSLPrivateKeyWrapper myWrapper;
 
         TS_ASSERT(!(EVP_PKEY*)ta::OpenSSLPrivateKeyWrapper());
-        TS_ASSERT((EVP_PKEY*)ta::OpenSSLPrivateKeyWrapper("CA/privkey3.pem"));
+        TS_ASSERT((EVP_PKEY*)ta::OpenSSLPrivateKeyWrapper("CA/privkey3_pkcs5.pem"));
         TS_ASSERT((EVP_PKEY*)ta::OpenSSLPrivateKeyWrapper(myKeyPem));
         TS_ASSERT((EVP_PKEY*)ta::OpenSSLPrivateKeyWrapper("CA/privkey.pem", "kaaskaas"));
         TS_ASSERT((EVP_PKEY*)ta::OpenSSLPrivateKeyWrapper(myEncryptedKeyPem, "kaaskaas"));
@@ -77,7 +77,7 @@ public:
         TS_ASSERT((EVP_PKEY*)myWrapper);
         myWrapper.loadFromBuf(myEncryptedKeyPem, "kaaskaas");
         TS_ASSERT((EVP_PKEY*)myWrapper);
-        myWrapper.loadFromFile("CA/privkey3.pem");
+        myWrapper.loadFromFile("CA/privkey3_pkcs5.pem");
         TS_ASSERT((EVP_PKEY*)myWrapper);
         myWrapper.loadFromFile("CA/privkey.pem", "kaaskaas");
         TS_ASSERT((EVP_PKEY*)myWrapper);
@@ -114,7 +114,7 @@ public:
         const std::vector<unsigned char> myPubKeyPem = ta::readData("CA/pubkey.pem");
         const std::vector<unsigned char> myRsaPubKeyPem = ta::readData("CA/rsapubkey.pem");
         const std::vector<unsigned char> myCertKeyPem = ta::readData("CA/certkey.pem");
-        const std::vector<unsigned char> myPrivKeyPem = ta::readData("CA/privkey3.pem");
+        const std::vector<unsigned char> myPrivKeyPem = ta::readData("CA/privkey3_pkcs5.pem");
         const std::vector<unsigned char> myCertPem = ta::readData("CA/cert.pem");
         ta::OpenSSLPublicKeyWrapper myWrapper;
 

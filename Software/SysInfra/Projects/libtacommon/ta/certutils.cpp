@@ -52,6 +52,20 @@ namespace ta
             const string X509_CRL_URI_Prefix = "URI:";
             const string X509_OCSP_URI_Prefix = "OCSP;URI:";
 
+            string str(BIO* aBio)
+            {
+                if (!aBio)
+                {
+                    TA_THROW_MSG(std::invalid_argument, "Cannot serialize NULL-BIO");
+                }
+                BUF_MEM* myMemBuf = NULL;
+                if (BIO_get_mem_ptr(aBio, &myMemBuf) < 0 || myMemBuf->length <= 0)
+                {
+                    TA_THROW_MSG(std::runtime_error, "BIO_get_mem_ptr failed");
+                }
+                return string((const char*)myMemBuf->data, myMemBuf->length);
+            }
+
             //
             // Convert ASN1_TIME to UCT time_t. Adapted from http://www.mail-archive.com/openssl-users@openssl.org/msg33365.html
             //
@@ -351,12 +365,7 @@ namespace ta
                 {
                     TA_THROW_MSG(std::runtime_error, boost::format("Failed to convert private key. PEM_write_bio_PrivateKey failed. %s") % ERR_error_string(ERR_get_error(), NULL));
                 }
-                BUF_MEM* myPrivKeyBuf = NULL;
-                if (BIO_get_mem_ptr(myPrivKeyPemMemBio, &myPrivKeyBuf) < 0 || myPrivKeyBuf->length <= 0)
-                {
-                    TA_THROW_MSG(std::runtime_error, "BIO_get_mem_ptr failed");
-                }
-                return string(myPrivKeyBuf->data, myPrivKeyBuf->length);
+                return str(myPrivKeyPemMemBio);
             }
 
             void addSubjectEntry(X509_NAME* aSubject, int aNid, const string& aValue)
@@ -982,73 +991,73 @@ namespace ta
             return getCertInfo(ta::str2Vec<unsigned char>(aCert), aCertEnc);
         }
 
-        vector<MemBuffer> extractPemCertsFromFile(const string& aFilePath)
+        ta::StringArray extractPemCertsFromFile(const string& aFilePath)
         {
             if (!isFileExist(aFilePath))
             {
-                return vector<MemBuffer>();
+                return ta::StringArray();
             }
 
-            const string pemData = readData(aFilePath);
-            return extractPemCerts(pemData);
+            const string pem = readData(aFilePath);
+            return extractPemCerts(pem);
         }
 
-        vector<MemBuffer> extractPemCerts(const string& aPemBuf)
+        ta::StringArray extractPemCerts(const string& aPem)
         {
-            vector<MemBuffer> certs;
-            foreach (const string& certText, parsePemCerts(aPemBuf))
+            ta::StringArray certs;
+            foreach (const string& certText, parsePemCerts(aPem))
             {
-                certs.push_back(str2Vec<unsigned char>(certText));
+                certs.push_back(certText);
             }
             return certs;
         }
 
-        vector<MemBuffer> extractPemCerts(const vector<unsigned char>& aPemBuf)
+        ta::StringArray extractPemCerts(const vector<unsigned char>& aPem)
         {
-            return extractPemCerts(vec2Str(aPemBuf));
+            return extractPemCerts(vec2Str(aPem));
         }
 
-        vector<MemBuffer> extractPemPrivKeysFromFile(const string& aFilePath, KeyFilter aKeyFilter)
+        ta::StringArray extractPemPrivKeysFromFile(const string& aFilePath, KeyFilter aKeyFilter)
         {
             if (!isFileExist(aFilePath))
             {
-                return vector<MemBuffer>();
+                return ta::StringArray();
             }
 
-            const string pemData = readData(aFilePath);
-            return extractPemPrivKeys(pemData, aKeyFilter);
+            const string pem = readData(aFilePath);
+            return extractPemPrivKeys(pem, aKeyFilter);
         }
 
-        vector<MemBuffer> extractPemPrivKeys(const string& aPemBuf, KeyFilter aKeyFilter)
+        ta::StringArray extractPemPrivKeys(const string& aPem, KeyFilter aKeyFilter)
         {
-            vector<MemBuffer> keys;
+            ta::StringArray keys;
             switch (aKeyFilter)
             {
             case keyFilterEncryptedOnly:
             {
-                foreach (const string& keyText, parsePemEncryptedPrivKeys(aPemBuf))
+                foreach (const string& key, parsePemEncryptedPrivKeys(aPem))
                 {
-                    keys.push_back(str2Vec<unsigned char>(keyText));
+                    keys.push_back(key);
                 }
                 return keys;
             }
             case keyFilterNotEncryptedOnly:
             {
-                const ta::StringArray myEncrypted = parsePemEncryptedPrivKeys(aPemBuf);
-                foreach (const string& keyText, parsePemPrivKeys(aPemBuf))
+                const ta::StringArray myEncrypted = parsePemEncryptedPrivKeys(aPem);
+                foreach (const string& key, parsePemPrivKeys(aPem))
                 {
-                    if (!isElemExist(keyText, myEncrypted))
+                    if (!isElemExist(key, myEncrypted))
                     {
-                        keys.push_back(str2Vec<unsigned char>(keyText));
+                        keys.push_back(key);
                     }
                 }
                 return keys;
             }
             case keyFilterNone:
             {
-                foreach (const string& keyText, parsePemPrivKeys(aPemBuf))
+                foreach (const string& key, parsePemPrivKeys(aPem))
                 {
-                    keys.push_back(str2Vec<unsigned char>(keyText));
+                    keys.push_back(key);
                 }
                 return keys;
             }
@@ -1061,29 +1070,28 @@ namespace ta
         {
             vector<CertInfo> certInfos;
 
-            vector<MemBuffer> certs = extractPemCertsFromFile(aFilePath);
-            foreach (const MemBuffer& cert, certs)
+            foreach (const string pem, extractPemCertsFromFile(aFilePath))
             {
-                certInfos.push_back(getCertInfo(cert, PEM));
+                certInfos.push_back(getCertInfo(pem, PEM));
             }
 
             return certInfos;
         }
 
-        vector<CertInfo> getPemCertsInfo(const string& aPemBuf)
+        vector<CertInfo> getPemCertsInfo(const string& aPem)
         {
             vector<CertInfo> certInfos;
 
-            foreach (const string& certText, parsePemCerts(aPemBuf))
+            foreach (const string& pem, parsePemCerts(aPem))
             {
-                certInfos.push_back(getCertInfo(str2Vec<unsigned char>(certText), PEM));
+                certInfos.push_back(getCertInfo(pem, PEM));
             }
 
             return certInfos;
         }
-        vector<CertInfo> getPemCertsInfo(const vector<unsigned char>& aPemBuf)
+        vector<CertInfo> getPemCertsInfo(const vector<unsigned char>& aPem)
         {
-            return getPemCertsInfo(vec2Str(aPemBuf));
+            return getPemCertsInfo(vec2Str(aPem));
         }
 
 
@@ -1127,10 +1135,10 @@ namespace ta
             return getCertX509(ta::str2Vec<unsigned char>(aCert), aCertEnc);
         }
 
-        vector<X509*> getPemCertsX509(const string& aPemBuf)
+        vector<X509*> getPemCertsX509(const string& aPem)
         {
             vector<X509*> myParsedCerts;
-            foreach (const string& cert, parsePemCerts(aPemBuf))
+            foreach (const string& cert, parsePemCerts(aPem))
             {
                 X509* myX509Ptr = getCertX509(cert);
                 if (myX509Ptr)
@@ -1157,14 +1165,14 @@ namespace ta
             std::for_each(aCerts.begin(), aCerts.end(), X509_free);
         }
 
-        vector<unsigned char> convPem2Der(const vector<unsigned char>& aCert)
+        vector<unsigned char> convPem2Der(const string& aPemCert)
         {
-            if (aCert.empty())
+            if (aPemCert.empty())
             {
                 TA_THROW_MSG(std::invalid_argument, "Invalid PEM certificate (empty)");
             }
 
-            ta::OpenSSLCertificateWrapper myCert(getCertX509(aCert));
+            ta::OpenSSLCertificateWrapper myCert(getCertX509(aPemCert));
             const int myDerLen = i2d_X509((X509*)myCert, NULL);
             if (myDerLen <= 0)
             {
@@ -1178,54 +1186,65 @@ namespace ta
             return myRetVal;
         }
 
-        vector<unsigned char> convDer2Pem(const vector<unsigned char>& aCert)
+        std::vector<unsigned char> convPem2Der(const std::vector<unsigned char>& aPemCert)
         {
-            if (aCert.empty())
+            return convPem2Der(ta::vec2Str(aPemCert));
+        }
+
+        string convDer2Pem(const vector<unsigned char>& aDerCert)
+        {
+            if (aDerCert.empty())
+            {
                 TA_THROW_MSG(std::invalid_argument, "Invalid DER certificate (empty)");
+            }
 
             ScopedResource<BIO*> myMemBio( BIO_new(BIO_s_mem()), BIO_free);
-            const int mySize = (int)aCert.size();
-            const int myWritten = BIO_write(myMemBio, ta::getSafeBuf(aCert), mySize);
+            const int mySize = (int)aDerCert.size();
+            const int myWritten = BIO_write(myMemBio, ta::getSafeBuf(aDerCert), mySize);
             if (myWritten != mySize)
-                TA_THROW_MSG(std::runtime_error, boost::format("BIO_write failed trying to write %1% bytes or DER certificate. Actually written: %2% bytes.") % mySize % myWritten);
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("BIO_write failed trying to write %d bytes or DER certificate. Actually written: %d bytes.") % mySize % myWritten);
+            }
 
             ScopedResource<X509*> myX509(d2i_X509_bio(myMemBio, NULL), X509_free);
             if (!myX509)
+            {
                 TA_THROW_MSG(std::runtime_error, "Failed to read X509 DER cert from the memory buffer");
+            }
 
             return convX509_2Pem(myX509);
         }
 
-        vector<unsigned char> convX509_2Pem(X509* aCertX509)
+        string convX509_2Pem(X509* aCertX509)
         {
             if (!aCertX509)
+            {
                 TA_THROW_MSG(std::invalid_argument, "Invalid X509 certificate (NULL)");
+            }
 
             ScopedResource<BIO*> myPemMemBio( BIO_new(BIO_s_mem()), BIO_free);
             if (!PEM_write_bio_X509(myPemMemBio, aCertX509))
+            {
                 TA_THROW_MSG(std::runtime_error, "PEM_write_bio_X509 failed for certificate");
-            BUF_MEM* myPemBuf = NULL;
-            if (BIO_get_mem_ptr(myPemMemBio, &myPemBuf) < 0 || myPemBuf->length <= 0)
-                TA_THROW_MSG(std::runtime_error, "BIO_get_mem_ptr failed");
-
-            return vector<unsigned char>(myPemBuf->data, myPemBuf->data + myPemBuf->length);
+            }
+            return str(myPemMemBio);
         }
 
         vector<unsigned char> convPem2Pfx(const string& aPemCertKey, const string& aPfxPassword, const string& aPfxCertKeyFriendlyName)
         {
-            const vector<MemBuffer> myPrivKeys = extractPemPrivKeys(aPemCertKey);
+            const ta::StringArray myPrivKeys = extractPemPrivKeys(aPemCertKey);
             if (myPrivKeys.size() != 1)
             {
                 TA_THROW_MSG(std::invalid_argument, boost::format("%d keys found in the input PEM file to create PFX from") % myPrivKeys.size());
             }
-            const vector<MemBuffer> myCertChain = extractPemCerts(aPemCertKey);
+            const ta::StringArray myCertChain = extractPemCerts(aPemCertKey);
             if (myCertChain.empty())
             {
                 TA_THROW_MSG(std::invalid_argument, "No certificate found in the input PEM file to create PFX from");
             }
 
-            ta::OpenSSLCertificateWrapper myCertificate(myCertChain[0]);
-            ta::OpenSSLPrivateKeyWrapper myPrivateKey(myPrivKeys[0]);
+            ta::OpenSSLCertificateWrapper myCertificate(ta::str2Vec<unsigned char>(myCertChain[0]));
+            ta::OpenSSLPrivateKeyWrapper myPrivateKey(ta::str2Vec<unsigned char>(myPrivKeys[0]));
 
             vector<char> myExportPasword(ta::str2Vec<char>(aPfxPassword));
             myExportPasword.push_back('\0');
@@ -1448,44 +1467,93 @@ namespace ta
             return myOrderedChain;
         }
 
+        string createPEM(X509* aCert, const vector<X509*>& aCAs, const string& aPlainPemKey, const string& aKeyPassword, const ta::RsaUtils::KeyEncryptionAlgo* aKeyEncryptionAlgo)
+        {
+            ta::StringArray myPemCertChain;
+
+            myPemCertChain.push_back(convX509_2Pem(aCert));
+            foreach (X509* ca, aCAs)
+            {
+                myPemCertChain.push_back(convX509_2Pem(ca));
+            }
+
+            if (!aPlainPemKey.empty())
+            {
+                if (!aKeyPassword.empty())
+                {
+                    if (!aKeyEncryptionAlgo)
+                    {
+                        TA_THROW_MSG(std::invalid_argument, "Cannot create PEM with password-protected private key and without encryption password specified");
+                    }
+                    const string myEncryptedPemKey = RsaUtils::wrapPrivateKey(aPlainPemKey, aKeyPassword, *aKeyEncryptionAlgo);
+                    return concatPEMs(myPemCertChain, myEncryptedPemKey);
+                }
+                else
+                {
+                    const string myPlainPemKey = RsaUtils::convPrivateKeyToPkcs5(aPlainPemKey);
+                    return concatPEMs(myPemCertChain, myPlainPemKey);
+                }
+            }
+            else
+            {
+                return concatPEMs(myPemCertChain);
+            }
+        }
+
+        string concatPEMs(const ta::StringArray& aPemCertChain, const std::string& aPemKey)
+        {
+            string myPEM;
+            foreach (const string& cert, aPemCertChain)
+            {
+                myPEM += boost::trim_copy(cert) + "\n";
+            }
+            if (!aPemKey.empty())
+            {
+                myPEM += boost::trim_copy(aPemKey) + "\n";
+            }
+            return myPEM;
+        }
+
         bool fileHasPemCert(const string& aFilePath, string* aParsedCertsBuf)
         {
             if (!isFileExist(aFilePath))
             {
-                TA_THROW_MSG(std::invalid_argument, boost::format("Cannot check/extract certificate from %s. File does not exist") % aFilePath);
+                TA_THROW_MSG(std::invalid_argument, boost::format("Cannot check/extract certificate from file %s. File does not exist") % aFilePath);
             }
             const string myFileData = ta::readData(aFilePath);
             return hasPemCert(myFileData, aParsedCertsBuf);
         }
 
-        bool hasPemCert(const string& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemCert(const string& aPem, string* aParsedCertsBuf)
         {
             string myCerts;
-            foreach (const string& cert, parsePemCerts(aPemBuf))
+            foreach (const string& cert, parsePemCerts(aPem))
             {
-                try { getCertInfo(str2Vec<char>(cert), PEM); }// validate
+                try { getCertInfo(cert, PEM); }
                 catch (...) { continue; }
                 myCerts += cert + "\n";
             }
             if (aParsedCertsBuf)
+            {
                 *aParsedCertsBuf = myCerts;
+            }
             return !myCerts.empty();
         }
-        bool hasPemCert(const vector<char>& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemCert(const vector<char>& aPem, string* aParsedCertsBuf)
         {
-            return hasPemCert(ta::vec2Str(aPemBuf), aParsedCertsBuf);
+            return hasPemCert(ta::vec2Str(aPem), aParsedCertsBuf);
         }
-        bool hasPemCert(const vector<unsigned char>& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemCert(const vector<unsigned char>& aPem, string* aParsedCertsBuf)
         {
-            return hasPemCert(ta::vec2Str(aPemBuf), aParsedCertsBuf);
+            return hasPemCert(ta::vec2Str(aPem), aParsedCertsBuf);
         }
 
-        bool hasPemCertEx(const string& aPemBuf, string& anErrorMsg, string* aParsedCertsBuf)
+        bool hasPemCertEx(const string& aPem, string& anErrorMsg, string* aParsedCertsBuf)
         {
             try
             {
                 string myCerts;
-                foreach (const string& cert, parsePemCerts(aPemBuf))
+                foreach (const string& cert, parsePemCerts(aPem))
                 {
                     getCertInfo(str2Vec<char>(cert), PEM); // validate
                     myCerts += cert + "\n";
@@ -1505,13 +1573,13 @@ namespace ta
                 return false;
             }
         }
-        bool hasPemCertEx(const vector<char>& aPemBuf, string& anErrorMsg, string* aParsedCertsBuf)
+        bool hasPemCertEx(const vector<char>& aPem, string& anErrorMsg, string* aParsedCertsBuf)
         {
-            return hasPemCertEx(ta::vec2Str(aPemBuf), anErrorMsg, aParsedCertsBuf);
+            return hasPemCertEx(ta::vec2Str(aPem), anErrorMsg, aParsedCertsBuf);
         }
-        bool hasPemCertEx(const vector<unsigned char>& aPemBuf, string& anErrorMsg, string* aParsedCertsBuf)
+        bool hasPemCertEx(const vector<unsigned char>& aPem, string& anErrorMsg, string* aParsedCertsBuf)
         {
-            return hasPemCertEx(ta::vec2Str(aPemBuf), anErrorMsg, aParsedCertsBuf);
+            return hasPemCertEx(ta::vec2Str(aPem), anErrorMsg, aParsedCertsBuf);
         }
 
         bool hasDerCert(const vector<unsigned char>& aBuf)
@@ -1566,10 +1634,10 @@ namespace ta
             return !myKeys.empty();
         }
 
-        bool hasPemPrivKey(const string& aPemBuf, string* aParsedKeysBuf)
+        bool hasPemPrivKey(const string& aPem, string* aParsedKeysBuf)
         {
             string myKeys;
-            foreach (const string& key, parsePemPrivKeys(aPemBuf))
+            foreach (const string& key, parsePemPrivKeys(aPem))
             {
                 myKeys += key + "\n";
             }
@@ -1577,13 +1645,13 @@ namespace ta
                 *aParsedKeysBuf = myKeys;
             return !myKeys.empty();
         }
-        bool hasPemPrivKey(const vector<char>& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemPrivKey(const vector<char>& aPem, string* aParsedCertsBuf)
         {
-            return hasPemPrivKey(ta::vec2Str(aPemBuf), aParsedCertsBuf);
+            return hasPemPrivKey(ta::vec2Str(aPem), aParsedCertsBuf);
         }
-        bool hasPemPrivKey(const vector<unsigned char>& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemPrivKey(const vector<unsigned char>& aPem, string* aParsedCertsBuf)
         {
-            return hasPemPrivKey(ta::vec2Str(aPemBuf), aParsedCertsBuf);
+            return hasPemPrivKey(ta::vec2Str(aPem), aParsedCertsBuf);
         }
 
         bool fileHasPemPubKey(const string& aFilePath, string* aParsedKeysBuf)
@@ -1595,10 +1663,10 @@ namespace ta
             const string myFileData = ta::readData(aFilePath);
             return hasPemPubKey(myFileData, aParsedKeysBuf);
         }
-        bool hasPemPubKey(const string& aPemBuf, string* aParsedKeysBuf)
+        bool hasPemPubKey(const string& aPem, string* aParsedKeysBuf)
         {
             string myKeys;
-            foreach (const string& key, parsePemPubKeys(aPemBuf))
+            foreach (const string& key, parsePemPubKeys(aPem))
             {
                 myKeys += key + "\n";
             }
@@ -1606,94 +1674,83 @@ namespace ta
                 *aParsedKeysBuf = myKeys;
             return !myKeys.empty();
         }
-        bool hasPemPubKey(const vector<char>& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemPubKey(const vector<char>& aPem, string* aParsedCertsBuf)
         {
-            return hasPemPubKey(ta::vec2Str(aPemBuf), aParsedCertsBuf);
+            return hasPemPubKey(ta::vec2Str(aPem), aParsedCertsBuf);
         }
-        bool hasPemPubKey(const vector<unsigned char>& aPemBuf, string* aParsedCertsBuf)
+        bool hasPemPubKey(const vector<unsigned char>& aPem, string* aParsedCertsBuf)
         {
-            return hasPemPubKey(ta::vec2Str(aPemBuf), aParsedCertsBuf);
-        }
-
-        vector<unsigned char> extractRSAPubKeyFile(const string& aDerCertPath)
-        {
-            vector<unsigned char> myDerCert = readData(aDerCertPath);
-            return extractRSAPubKey(myDerCert);
+            return hasPemPubKey(ta::vec2Str(aPem), aParsedCertsBuf);
         }
 
-        vector<unsigned char> extractRSAPubKey(const vector<unsigned char>& aDerCert)
+        string extractPemPubKeyFile(const string& aPemCertPath)
         {
-            if (aDerCert.empty())
-                TA_THROW_MSG(std::invalid_argument, "The certificate is invalid (empty)");
-            vector<unsigned char>::size_type myCertBufSize = aDerCert.size();
-            const unsigned char* myCertBuf = ta::getSafeBuf(aDerCert);
-            ScopedResource<X509*> x509Cert(d2i_X509(NULL, &myCertBuf, (long)myCertBufSize), X509_free);
-            if (!x509Cert)
-                TA_THROW_MSG(std::invalid_argument, "The certificate is invalid");
-            ScopedResource<EVP_PKEY*> pPublicKey(X509_get_pubkey(x509Cert), EVP_PKEY_free);
-            if (!pPublicKey)
-                TA_THROW_MSG(std::runtime_error, "Failed to extract pubkey from the certificate");
-            ScopedResource<RSA*> myPubKeyRsa(EVP_PKEY_get1_RSA(pPublicKey), RSA_free);
-            const int myKeySize = i2d_RSA_PUBKEY(myPubKeyRsa, NULL);
-            vector<unsigned char> myPk(myKeySize);
-            unsigned char* pKey = (unsigned char*)ta::getSafeBuf(myPk);
-            i2d_RSA_PUBKEY(myPubKeyRsa, &pKey);
-            return myPk;
-        }
-
-        vector<unsigned char> extractPemPubKeyFile(const string& aPemCertPath)
-        {
-            vector<unsigned char> myPemCert = readData(aPemCertPath);
+            const vector<unsigned char> myPemCert = readData(aPemCertPath);
             return extractPemPubKey(myPemCert);
         }
 
-        vector<unsigned char> extractPemPubKey(const vector<unsigned char>& aPemCert)
+        string extractPemPubKey(const vector<unsigned char>& aPemCert)
         {
             if (aPemCert.empty())
+            {
                 TA_THROW_MSG(std::invalid_argument, "The certificate is invalid (empty)");
+            }
             ScopedResource<BIO*> myCertMemBio( BIO_new(BIO_s_mem()), BIO_free);
             const int mySize = (int)aPemCert.size();
             const int myWritten = BIO_write(myCertMemBio, ta::getSafeBuf(aPemCert), mySize);
             if (myWritten != mySize)
-                TA_THROW_MSG(std::runtime_error, boost::format("BIO_write failed trying to write %1% bytes of PEM certificate. Actually written: %2% bytes.") % mySize % myWritten);
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("BIO_write failed trying to write %d bytes of PEM certificate. Actually written: %d bytes.") % mySize % myWritten);
+            }
 
             ScopedResource<X509*> myX509ScopedPtr(PEM_read_bio_X509(myCertMemBio, NULL, NULL, NULL), X509_free);
             if (!myX509ScopedPtr)
+            {
                 TA_THROW_MSG(std::runtime_error, "Failed to read X509 PEM cert from the memory buffer");
+            }
             ta::ScopedResource<EVP_PKEY*> myPubKey(X509_get_pubkey(myX509ScopedPtr), EVP_PKEY_free);
             if (!myPubKey)
+            {
                 TA_THROW_MSG(std::runtime_error, "X509_get_pubkey failed");
+            }
             ScopedResource<BIO*> myPubKeyMemBio( BIO_new(BIO_s_mem()), BIO_free);
             if (!PEM_write_bio_PUBKEY(myPubKeyMemBio, myPubKey))
+            {
                 TA_THROW_MSG(std::runtime_error, "PEM_write_bio_PUBKEY failed for pubkey");
+            }
 
-            BUF_MEM* myPubKeyBuf = NULL;
-            if (BIO_get_mem_ptr(myPubKeyMemBio, &myPubKeyBuf) < 0 || myPubKeyBuf->length <= 0)
-                TA_THROW_MSG(std::runtime_error, "BIO_get_mem_ptr failed");
-            return vector<unsigned char>(myPubKeyBuf->data, myPubKeyBuf->data + myPubKeyBuf->length);
+            return str(myPubKeyMemBio);
         }
 
-        vector<unsigned char> extractPemPubKey(const string& aPemCert)
+        string extractPemPubKey(const string& aPemCert)
         {
             return extractPemPubKey(ta::str2Vec<unsigned char>(aPemCert));
         }
 
-        bool isKeyPairFile(const string& aPemCertPath, const string& aPemKeyPath, const char* aPemKeyPasswd)
+
+        bool isKeyPairFile(const string& aPemCertPath, const string& aPemKeyPath, const char* aKeyPasswd)
         {
-            const vector<unsigned char> myCertPemPubKey = extractPemPubKeyFile(aPemCertPath);
-            const vector<unsigned char> myPemPrivKey = readData(aPemKeyPath);
-            return RsaUtils::isKeyPair(KeyPair(myPemPrivKey, myCertPemPubKey), RsaUtils::encPEM, RsaUtils::pubkeySubjectPublicKeyInfo, aPemKeyPasswd);
+            const string myCertPemPubKey = extractPemPubKeyFile(aPemCertPath);
+            const string myPemPrivKey = readData(aPemKeyPath);
+            return RsaUtils::isKeyPair(KeyPair(myPemPrivKey, myCertPemPubKey),
+                                       RsaUtils::encPEM,
+                                       RsaUtils::pubkeySubjectPublicKeyInfo,
+                                       aKeyPasswd);
         }
 
-        bool isKeyPair(const vector<unsigned char>& aPemCert, const vector<unsigned char>& aPemKey, const char* aPemKeyPasswd)
+        bool isKeyPair(const vector<unsigned char>& aPemCert, const vector<unsigned char>& aPemKey, const char* aKeyPasswd)
         {
-            const vector<unsigned char> myCertPemPubKey = extractPemPubKey(aPemCert);
-            return RsaUtils::isKeyPair(KeyPair(aPemKey, myCertPemPubKey), RsaUtils::encPEM, RsaUtils::pubkeySubjectPublicKeyInfo, aPemKeyPasswd);
+            return isKeyPair(ta::vec2Str(aPemCert),
+                             ta::vec2Str(aPemKey),
+                             aKeyPasswd);
         }
 
-        bool isKeyPair(const string& aPemCert, const string& aPemKey, const char* aPemKeyPasswd)
+        bool isKeyPair(const string& aPemCert, const string& aPemKey, const char* aKeyPasswd)
         {
-            return isKeyPair(ta::str2Vec<unsigned char>(aPemCert), ta::str2Vec<unsigned char>(aPemKey), aPemKeyPasswd);
+            return RsaUtils::isKeyPair(KeyPair(aPemKey, extractPemPubKey(aPemCert)),
+                                       RsaUtils::encPEM,
+                                       RsaUtils::pubkeySubjectPublicKeyInfo,
+                                       aKeyPasswd);
         }
 
         size_t parsePfx(const vector<unsigned char>& aPfx, const string& aPassword)
@@ -1740,7 +1797,7 @@ namespace ta
             if (cert)
             {
                 ++myNumParsedCerts;
-                anExtractedPemCert = ta::vec2Str(convX509_2Pem(cert));
+                anExtractedPemCert = convX509_2Pem(cert);
             }
             anExtractedPemKey = convPrivKey2Pem(pkey);
             if (cas)
@@ -1751,7 +1808,7 @@ namespace ta
                     for (int i = 0; i < myNumCAs; ++i)
                     {
                         X509 *ca = sk_X509_value(cas, i);
-                        anExtractedPemCAs.push_back(ta::vec2Str(convX509_2Pem(ca)));
+                        anExtractedPemCAs.push_back(convX509_2Pem(ca));
                     }
                     myNumParsedCerts += anExtractedPemCAs.size();
                 }
@@ -2382,12 +2439,7 @@ namespace ta
             {
                 TA_THROW_MSG(std::runtime_error, "PEM_write_bio_X509_REQ failed for CSR");
             }
-            BUF_MEM* myPemBuf = NULL;
-            if (BIO_get_mem_ptr(myPemMemBio, &myPemBuf) < 0 || myPemBuf->length <= 0)
-            {
-                TA_THROW_MSG(std::runtime_error, "BIO_get_mem_ptr failed");
-            }
-            return string((const char*)myPemBuf->data, myPemBuf->length);
+            return str(myPemMemBio);
         }
 
         X509_REQ* convPEM_2X509_REQ(const string& aCsrPem)
@@ -2479,7 +2531,7 @@ namespace ta
             parseSingleSAN(aSAN);
         }
 
-        void validateSAN(const std::string& aSAN)
+        void validateSAN(const string& aSAN)
         {
             deserializeSAN(aSAN);
         }

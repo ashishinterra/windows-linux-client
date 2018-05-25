@@ -224,7 +224,7 @@ public:
         vector<string> myExtraSigningIntCAsFingerprints, myExtraSigningRootCAsFingerprints;
         foreach (const string& path, myExtraSigningCAsPemPaths)
         {
-            foreach (const vector<unsigned char>& ca, ta::CertUtils::extractPemCertsFromFile(path))
+            foreach (const string& ca, ta::CertUtils::extractPemCertsFromFile(path))
             {
                 const string myFingerprint = ta::CertUtils::getCertInfo(ca).sha1Fingerprint;
                 if (ta::CertUtils::isSelfSignedCert(ca)) {

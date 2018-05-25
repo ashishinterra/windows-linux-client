@@ -40,6 +40,36 @@ namespace ta
             return aVal >= _firstPubKeyEncoding && aVal <= _lastPubKeyEncoding;
         }
 
+        // Symmetric algorithm to encrypt and decrypt private keys
+        enum KeyEncryptionAlgoType
+        {
+            _firstKeyEncryptionAlgo,
+            keyEncryptionAlgoAesCbcHmac = _firstKeyEncryptionAlgo,
+            keyEncryptionAlgoAesGcm,
+            keyEncryptionAlgoAesCcm,
+            _lastKeyEncryptionAlgo =  keyEncryptionAlgoAesCcm
+        };
+        static const std::string KeyEncryptionAlgoTypeStrs[] = {"AES CBC HMAC", "AES GCM", "AES CCM" };
+        BOOST_STATIC_ASSERT(_firstKeyEncryptionAlgo <= _lastKeyEncryptionAlgo);
+        BOOST_STATIC_ASSERT(sizeof(KeyEncryptionAlgoTypeStrs)/sizeof(KeyEncryptionAlgoTypeStrs[0]) == _lastKeyEncryptionAlgo-_firstKeyEncryptionAlgo+1);
+        inline std::string str(const KeyEncryptionAlgoType anAlgoType)
+        {
+            return KeyEncryptionAlgoTypeStrs[anAlgoType - _firstKeyEncryptionAlgo];
+        }
+
+        struct KeyEncryptionAlgo
+        {
+            KeyEncryptionAlgo(const KeyEncryptionAlgoType anAlgoType, const unsigned int aKeyBit)
+                : algo_type(anAlgoType), key_bit(aKeyBit)
+            {}
+            const KeyEncryptionAlgoType algo_type;
+            const  unsigned int key_bit;
+        };
+        inline std::string str(const KeyEncryptionAlgo anAlgo)
+        {
+            return str(boost::format("%s %d") % str(anAlgo.algo_type) % anAlgo.key_bit);
+        }
+
         struct PrivateKey
         {
             PrivateKey() {}
@@ -109,7 +139,7 @@ namespace ta
         };
 
         /**
-         Generates RSA keypair with private key in PKCS#5 format (“-----BEGIN RSA PRIVATE KEY----“)
+         Generate RSA keypair
 
          @param[in]  anRsaKeyBit RSA key length (bits)
          @param[in]  aKeyTransportEncoding desired transport key encoding
@@ -130,31 +160,43 @@ namespace ta
         unsigned int getPublicKeySizeBits(const PublicKey& aPublicKey);
         unsigned int getPrivateKeySizeBits(const PrivateKey& aPrivateKey);
         unsigned int getPrivateKeySizeBitsFile(const std::string& aPemKeyPath, const char* aPemKeyPasswd = NULL);
-        unsigned int getPrivateKeySizeBits(const std::vector<unsigned char>& aKey, const char* aPemKeyPasswd = NULL);
+        unsigned int getPrivateKeySizeBits(const std::string& aPemKey, const char* aPemKeyPasswd = NULL);
+        unsigned int getPrivateKeySizeBits(const std::vector<unsigned char>& aPemKey, const char* aPemKeyPasswd = NULL);
 
         // Decode PEM-encoded private key
-        PrivateKey decodePrivateKey(const std::vector<unsigned char>& aKey, const char* aKeyPasswd = NULL);
-        PrivateKey decodePrivateKeyFile(const std::string& aKeyPath, const char* aKeyPasswd = NULL);
+        PrivateKey decodePrivateKey(const std::string& aPemKey, const char* aPemKeyPasswd = NULL);
+        PrivateKey decodePrivateKey(const std::vector<unsigned char>& aPemKey, const char* aPemKeyPasswd = NULL);
+        PrivateKey decodePrivateKeyFile(const std::string& aPemKeyPath, const char* aPemKeyPasswd = NULL);
 
-        // PEM-encode private key.
+        // PEM-encode private key
         ta::KeyPair encodePrivateKey(const PrivateKey& aKey, PubKeyEncoding aPubKeyEncoding);
 
         // Decode PEM-encoded public key
-        PublicKey decodePublicKey(const std::vector<unsigned char>& aKey, PubKeyEncoding aPubKeyEncoding);
+        PublicKey decodePublicKey(const std::vector<unsigned char>& aPemKey, PubKeyEncoding aPubKeyEncoding);
+        PublicKey decodePublicKey(const std::string& aPemKey, PubKeyEncoding aPubKeyEncoding);
         PublicKey decodePublicKeyFile(const std::string& aKeyPath, PubKeyEncoding aPubKeyEncoding);
 
         // PEM-encode public key
-        std::vector<unsigned char> encodePublicKey(const PublicKey& aKey, PubKeyEncoding aPubKeyEncoding);
+        std::string encodePublicKey(const PublicKey& aKey, PubKeyEncoding aPubKeyEncoding);
 
         // Removes the password from the given password-protected private PEM key
-        std::vector<unsigned char> unwrapPrivateKey(const std::vector<unsigned char>& aKey, const std::string& aKeyPasswd);
-        std::vector<unsigned char> unwrapPrivateKeyFile(const std::string& aKeyPath, const std::string& aKeyPasswd);
+        // @return PKCS#5 private key (i.e. with  -----BEGIN RSA PRIVATE KEY-----)
+        std::string unwrapPrivateKey(const std::string& aPemKey, const std::string& aKeyPasswd);
+        std::string unwrapPrivateKeyFile(const std::string& aPemKeyPath, const std::string& aKeyPasswd);
+
+        // Encrypts (wraps) the PEM private key with AES algorithm of the given  with the given password
+        // @return PKCS#5 encrypted private key (i.e. with  -----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED...)
+        std::string wrapPrivateKey(const std::string& aPemKey, const std::string& aKeyPasswd, const KeyEncryptionAlgo& aKeyEncryptionAlgo);
 
         // Converts PEM-encoded private key to DER-encoded PKCS#8 PrivateKeyInfo format
-        std::vector<unsigned char> convPrivateKey2Pkcs8Der(const std::vector<unsigned char>& aKey);
+        std::vector<unsigned char> convPrivateKey2Pkcs8Der(const std::vector<unsigned char>& aPemKey);
+
+        //@pre aPemKey is not encrypted
+        // @return PKCS#5 private key (i.e. with  -----BEGIN RSA PRIVATE KEY-----)
+        std::string convPrivateKeyToPkcs5(const std::string& aPemKey);
 
         // Convert public key from PKCS#1 ("BEGIN RSA PUBLIC KEY") to PKCS#8 SubjectPublicKeyInfo ("BEGIN PUBLIC KEY")
-        std::vector<unsigned char> pubKeyPkcs1ToPkcs8(const std::vector<unsigned char>& aPubKey);
+        std::string pubKeyPkcs1ToPkcs8(const std::vector<unsigned char>& aPubKey);
 
         /**
             Encrypt memory buffer or string with EME-OAEP padding with SHA-1, MGF1 and an empty encoding parameter.

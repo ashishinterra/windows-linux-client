@@ -72,9 +72,9 @@ public:
         const string my1024BitPrivKeyNoPassName = "CA/certkey.pem";
         const string my1024BitPrivKeyWithPassName = "CA/signingcertkey.pem";
         const string my1024BitPubKeyName = "CA/pubkey.pem";
-        const std::vector<unsigned char> my1024BitPrivKeyNoPass = ta::readData(my1024BitPrivKeyNoPassName);
-        const std::vector<unsigned char> my1024BitPrivKeyWithPass = ta::readData(my1024BitPrivKeyWithPassName);
-        const std::vector<unsigned char> my1024BitPubKey = ta::readData(my1024BitPubKeyName);
+        const string my1024BitPrivKeyNoPass = ta::readData(my1024BitPrivKeyNoPassName);
+        const string my1024BitPrivKeyWithPass = ta::readData(my1024BitPrivKeyWithPassName);
+        const string my1024BitPubKey = ta::readData(my1024BitPubKeyName);
 
         // private key without password
         TS_ASSERT_EQUALS(RsaUtils::getPrivateKeySizeBitsFile(my1024BitPrivKeyNoPassName), 1024U);
@@ -106,7 +106,7 @@ public:
         TS_ASSERT_THROWS(RsaUtils::getPrivateKeySizeBits(my1024BitPrivKeyWithPass, "invalid_password"), std::exception);
 
         TS_ASSERT_THROWS(RsaUtils::getPrivateKeySizeBitsFile("CA/_NIONEXISTING_KEY.pem"), std::exception);
-        TS_ASSERT_THROWS(RsaUtils::getPrivateKeySizeBits(std::vector<unsigned char>()), std::exception);
+        TS_ASSERT_THROWS(RsaUtils::getPrivateKeySizeBits(""), std::exception);
     }
 
     void testDerEncryptDecryptWithGeneratedKeys()
@@ -356,7 +356,7 @@ public:
         TS_ASSERT_EQUALS(RsaUtils::getPrivateKeySizeBits(myRsaPrivateKey), 1024U);
 
         // invalid input
-        TS_ASSERT_THROWS(RsaUtils::decodePrivateKey(std::vector<unsigned char>()), std::exception);
+        TS_ASSERT_THROWS(RsaUtils::decodePrivateKey(""), std::exception);
         TS_ASSERT_THROWS(RsaUtils::decodePrivateKeyFile("non-existing-file"), std::exception);
         TS_ASSERT_THROWS(RsaUtils::decodePrivateKeyFile("CA/privkey2.pem", "invalid-password"), std::exception);
         TS_ASSERT_THROWS(RsaUtils::decodePrivateKeyFile("CA/privkey2.pem"), std::exception); // no password
@@ -417,10 +417,10 @@ public:
             TS_ASSERT_EQUALS(RsaUtils::getPublicKeySizeBits(myRsaPublicKey), myRsakeySize);
 
             // when
-            const std::vector<unsigned char> mPubKey = RsaUtils::encodePublicKey(myRsaPublicKey, myPubKeyEncoding);
+            const string mPemPubKey = RsaUtils::encodePublicKey(myRsaPublicKey, myPubKeyEncoding);
 
             // then, after subsequent decoding and encoding we get the original keypair
-            TS_ASSERT_EQUALS(mPubKey, myKeyPair.pubKey);
+            TS_ASSERT_EQUALS(mPemPubKey, ta::vec2Str(myKeyPair.pubKey));
 
 
             // invalid input
@@ -433,16 +433,16 @@ public:
         }
     }
 
-    void testUnwrapPrivateKey()
+    void testUnwrapAndDecodePrivateKey()
     {
         const string myWrappedKeyPath = "CA/privkey2.pem";
         const string myNotWrappedKeyPath = "CA/FIXEDprivkey.pem";
         const string myWrappedKeyPassword = "kaaskaas";
-        const vector<unsigned char> myWrappedKeyBuf = ta::readData(myWrappedKeyPath);
-        const vector<unsigned char> myNotWrappedKeyBuf = ta::readData(myNotWrappedKeyPath);
+        const string myWrappedKeyBuf = ta::readData(myWrappedKeyPath);
+        const string myNotWrappedKeyBuf = ta::readData(myNotWrappedKeyPath);
 
         // when
-        std::vector<unsigned char> myUnwrappedKey = RsaUtils::unwrapPrivateKeyFile(myWrappedKeyPath, myWrappedKeyPassword);
+        std::string myUnwrappedKey = RsaUtils::unwrapPrivateKeyFile(myWrappedKeyPath, myWrappedKeyPassword);
         // then
         TS_ASSERT_EQUALS(RsaUtils::decodePrivateKey(myUnwrappedKey), RsaUtils::decodePrivateKeyFile(myWrappedKeyPath, myWrappedKeyPassword.c_str()));
         TS_ASSERT_EQUALS(RsaUtils::unwrapPrivateKey(myWrappedKeyBuf, myWrappedKeyPassword), myUnwrappedKey);
@@ -457,7 +457,83 @@ public:
         TS_ASSERT_THROWS(RsaUtils::unwrapPrivateKeyFile(myWrappedKeyPath, myWrappedKeyPassword + "_invalid"), std::exception);
         TS_ASSERT_THROWS(RsaUtils::unwrapPrivateKey(myWrappedKeyBuf, myWrappedKeyPassword + "_invalid"), std::exception);
         TS_ASSERT_THROWS(RsaUtils::unwrapPrivateKeyFile("non-existing-file", myWrappedKeyPassword ), std::exception);
-        TS_ASSERT_THROWS(RsaUtils::unwrapPrivateKey(vector<unsigned char>(), myWrappedKeyPassword), std::exception);
+        TS_ASSERT_THROWS(RsaUtils::unwrapPrivateKey("", myWrappedKeyPassword), std::exception);
+    }
+
+    void testWrapAndUnwrapPrivateKey()
+    {
+        using std::string;
+        using ta::RsaUtils::wrapPrivateKey;
+        using ta::RsaUtils::unwrapPrivateKey;
+        using ta::RsaUtils::KeyEncryptionAlgo;
+
+        // given, the same key, in different formats (PKCS#5 and PKCS#8), plain and encrypted with password 'secret'
+        // to convert PKCS#5 to PKCS#8: openssl pkcs8 -in privkey3_pkcs5.pem -topk8 -nocrypt -out privkey3_pkcs8.pem
+        // to convert PKCS#8 to PKCS#5: openssl rsa -in privkey3_pkcs8.pem -out privkey3_pkcs5.pem
+        // to encrypt PKCS#5: openssl rsa -in privkey3_pkcs5.pem -aes-256-cbc-hmac-sha256 -out privkey3_pkcs5_encrypted.pem
+        // to encrypt PKCS#8: openssl pkcs8 -in privkey3_pkcs8.pem -topk8 aes-256-cbc-hmac-sha256 > privkey3_pkcs8_encrypted.pem
+        const string myPkcs5Key = ta::readData("CA/privkey3_pkcs5.pem");
+        const string myPkcs8Key = ta::readData("CA/privkey3_pkcs8.pem");
+        const string myPkcs5EncryptedKey = ta::readData("CA/privkey3_pkcs5_encrypted.pem");
+        const string myPkcs8EncryptedKey = ta::readData("CA/privkey3_pkcs8_encrypted.pem");
+        const KeyEncryptionAlgo myAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 256);
+
+        // our encryption/decryption functions always output key in PKCS#5 format
+
+        {
+            // when, encrypt key in PKCS#5 format
+            const string myEncryptedKey = wrapPrivateKey(myPkcs5Key, "secret", myAlgo);
+            // then
+            TS_ASSERT_EQUALS(unwrapPrivateKey(myEncryptedKey, "secret"), myPkcs5Key);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, ""), std::exception);
+        }
+
+        {
+            // when, encrypt key in PKCS#8 format
+            const string myEncryptedKey = wrapPrivateKey(myPkcs8Key, "secret", myAlgo);
+            // then
+            TS_ASSERT_EQUALS(unwrapPrivateKey(myEncryptedKey, "secret"), ta::RsaUtils::convPrivateKeyToPkcs5(myPkcs8Key));
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, ""), std::exception);
+        }
+
+        {
+            // when, decrypt key in PKCS#5 format
+            const string myDecryptedKey = unwrapPrivateKey(myPkcs5EncryptedKey, "secret");
+            // then
+            TS_ASSERT_EQUALS(myDecryptedKey, myPkcs5Key);
+            // when-then
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedKey, ""), std::exception);
+        }
+
+        {
+            // when, decrypt key in PKCS#8 format
+            const string myDecryptedKey = unwrapPrivateKey(myPkcs8EncryptedKey, "secret");
+            // then
+            TS_ASSERT_EQUALS(myDecryptedKey, ta::RsaUtils::convPrivateKeyToPkcs5(myPkcs8Key));
+            // when-then
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedKey, ""), std::exception);
+        }
+
+        {
+            // when-then: other encryption algos
+            TS_ASSERT_EQUALS(unwrapPrivateKey(
+                                    wrapPrivateKey(myPkcs8Key, "secret", KeyEncryptionAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 128)),
+                                    "secret"),
+                            myPkcs5Key);
+        }
+
+        // when-then
+        TS_ASSERT_THROWS(wrapPrivateKey(myPkcs5Key, "", myAlgo), std::exception);
+        TS_ASSERT_THROWS(wrapPrivateKey(wrapPrivateKey(myPkcs5Key, "secret", myAlgo), "secret", myAlgo), std::exception);
+
+        // given
+        const string myDerKey = ta::readData("CA/privkey2.der");
+        // when-then
+        TS_ASSERT_THROWS(wrapPrivateKey(myDerKey, "secret", myAlgo), std::exception);
     }
 
     void testConvertPrivateKeyToPkcs8()

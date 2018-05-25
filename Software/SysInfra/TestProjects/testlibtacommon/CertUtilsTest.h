@@ -3,6 +3,7 @@
 #include "ta/rsautils.h"
 #include "ta/signutils.h"
 #include "ta/process.h"
+#include "ta/opensslwrappers.h"
 #include "ta/utils.h"
 #include "ta/scopedresource.hpp"
 #include "cxxtest/TestSuite.h"
@@ -292,7 +293,7 @@ public:
         using namespace ta::CertUtils;
 
         // when
-        std::vector<MemBuffer> myCerts = extractPemCertsFromFile("CA/certkey.pem");
+        ta::StringArray myCerts = extractPemCertsFromFile("CA/certkey.pem");
         // then
         TS_ASSERT_EQUALS(myCerts.size(), 1U);
         std::string myCertsBuf = ta::readData("CA/certkey.pem");
@@ -330,7 +331,7 @@ public:
         using namespace ta::CertUtils;
 
         // when
-        std::vector<MemBuffer> myKeys = extractPemPrivKeysFromFile("CA/certkey.pem");
+        ta::StringArray myKeys = extractPemPrivKeysFromFile("CA/certkey.pem");
         // then
         TS_ASSERT_EQUALS(myKeys.size(), 1U);
         std::string myKeysBuf = ta::readData("CA/certkey.pem");
@@ -609,50 +610,47 @@ public:
 
     void testConvertDerPem()
     {
-    	const std::vector<unsigned char> myTestPemCert = ta::readData("CA/cert.pem");
+    	const std::string myTestPemCert = ta::readData("CA/cert.pem");
     	const std::vector<unsigned char> myTestDerCert = ta::readData("CA/cert.der");
     	const std::vector<unsigned char> myOtherDerCert = ta::readData("CA/SCERT.cer");
 
     	// compare PEM as strings for pretty printing
-    	TS_ASSERT_EQUALS(ta::vec2Str(ta::CertUtils::convDer2Pem(myTestDerCert)), ta::vec2Str(myTestPemCert));
+    	TS_ASSERT_EQUALS(ta::CertUtils::convDer2Pem(myTestDerCert), myTestPemCert);
     	TS_ASSERT_EQUALS(ta::CertUtils::convPem2Der(myTestPemCert), myTestDerCert);
-    	TS_ASSERT_DIFFERS(ta::vec2Str(ta::CertUtils::convDer2Pem(myOtherDerCert)), ta::vec2Str(myTestPemCert));
+    	TS_ASSERT_DIFFERS(ta::CertUtils::convDer2Pem(myOtherDerCert), myTestPemCert);
 
-    	TS_ASSERT_THROWS(ta::CertUtils::convDer2Pem(myTestPemCert), std::exception);
-    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(myTestDerCert), std::exception);
-    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(std::vector<unsigned char>()), std::exception);
-    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(std::vector<unsigned char>()), std::exception);
-    }
-
-    void testExtractRSAPubkey()
-    {
-        TS_ASSERT_THROWS(ta::CertUtils::extractRSAPubKeyFile("CA/__NONEXISTING_SCERT.cer__"), std::exception);
-        const std::vector<unsigned char> myPk = ta::CertUtils::extractRSAPubKeyFile("CA/SCERT.cer");
-        TS_ASSERT_EQUALS(myPk.size(), 162U);
+    	TS_ASSERT_THROWS(ta::CertUtils::convDer2Pem(ta::str2Vec<unsigned char>(myTestPemCert)), std::exception);
+    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(ta::vec2Str(myTestDerCert)), std::exception);
+    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(""), std::exception);
+    	TS_ASSERT_THROWS(ta::CertUtils::convDer2Pem(std::vector<unsigned char>()), std::exception);
     }
 
     void testExtractPemPubKey()
     {
         // openssl x509 -noout -pubkey -in cert.pem
+        // given
+        const std::string myPemKey = ta::CertUtils::extractPemPubKeyFile("CA/certkey.pem");
+        // when-then
+        TS_ASSERT(ta::CertUtils::hasPemPubKey(myPemKey));
+        TS_ASSERT(!ta::CertUtils::hasPemCert(myPemKey));
+        TS_ASSERT(!ta::CertUtils::hasPemPrivKey(myPemKey));
+
+        // when-then
         TS_ASSERT_THROWS(ta::CertUtils::extractPemPubKeyFile("CA/__NONEXISTING_SCERT.cer__"), std::exception);
-        const std::vector<unsigned char> myPk = ta::CertUtils::extractPemPubKeyFile("CA/certkey.pem");
-        TS_ASSERT(ta::CertUtils::hasPemPubKey(ta::vec2Str(myPk)));
-        TS_ASSERT(!ta::CertUtils::hasPemCert(ta::vec2Str(myPk)));
-        TS_ASSERT(!ta::CertUtils::hasPemPrivKey(ta::vec2Str(myPk)));
     }
 
     void testIsKeyPair()
     {
         using std::vector;
 
-        const vector<unsigned char> myBadKeyBuf = ta::readData("CA/privkey3.pem");
+        const vector<unsigned char> myBadKeyBuf = ta::readData("CA/privkey3_pkcs5.pem");
 
         // No password-protected key
         vector<unsigned char> myCertBuf = ta::readData("CA/certkey.pem");
         vector<unsigned char> myKeyBuf = ta::readData("CA/certkey.pem");
         TS_ASSERT(ta::CertUtils::isKeyPairFile("CA/certkey.pem", "CA/certkey.pem"));
         TS_ASSERT(ta::CertUtils::isKeyPair(myCertBuf, myKeyBuf));
-        TS_ASSERT(!ta::CertUtils::isKeyPairFile("CA/certkey.pem", "CA/privkey3.pem"));
+        TS_ASSERT(!ta::CertUtils::isKeyPairFile("CA/certkey.pem", "CA/privkey3_pkcs5.pem"));
         TS_ASSERT(!ta::CertUtils::isKeyPair(myCertBuf, myBadKeyBuf));
 
         // Password-protected key
@@ -663,7 +661,7 @@ public:
         TS_ASSERT_THROWS(ta::CertUtils::isKeyPairFile("CA/signingcertkey.pem", "CA/signingcertkey.pem"), std::exception);
         TS_ASSERT(ta::CertUtils::isKeyPair(myCertBuf, myKeyBuf, "kaaskaas"));
         TS_ASSERT(ta::CertUtils::isKeyPair(ta::vec2Str(myCertBuf), ta::vec2Str(myKeyBuf), "kaaskaas"));
-        TS_ASSERT(!ta::CertUtils::isKeyPairFile("CA/signingcertkey.pem", "CA/privkey3.pem"));
+        TS_ASSERT(!ta::CertUtils::isKeyPairFile("CA/signingcertkey.pem", "CA/privkey3_pkcs5.pem"));
         TS_ASSERT(!ta::CertUtils::isKeyPair(myCertBuf, myBadKeyBuf));
         TS_ASSERT(!ta::CertUtils::isKeyPair(ta::vec2Str(myCertBuf), ta::vec2Str(myBadKeyBuf)));
 
@@ -754,12 +752,12 @@ public:
         // when
         const std::string myPem = convPfx2Pem(myPfx, myPfxPassword);
         // then
-        const std::vector<ta::CertUtils::MemBuffer> myPrivKeyPem = ta::CertUtils::extractPemPrivKeys(myPem);
-        const std::vector<ta::CertUtils::MemBuffer> myCertChainPem = ta::CertUtils::extractPemCerts(myPem);
-        TS_ASSERT_EQUALS(myPrivKeyPem.size(), 1);
-        TS_ASSERT_EQUALS(boost::trim_copy(ta::vec2Str(myPrivKeyPem.at(0))), myPfxPrivKey);
+        const ta::StringArray myPemPrivKeys = ta::CertUtils::extractPemPrivKeys(myPem);
+        const ta::StringArray myCertChainPem = ta::CertUtils::extractPemCerts(myPem);
+        TS_ASSERT_EQUALS(myPemPrivKeys.size(), 1);
+        TS_ASSERT_EQUALS(boost::trim_copy(myPemPrivKeys.at(0)), myPfxPrivKey);
         TS_ASSERT_EQUALS(myCertChainPem.size(), 1);
-        TS_ASSERT_EQUALS(boost::trim_copy(ta::vec2Str(myCertChainPem.at(0))), boost::trim_copy(myParsedCert));
+        TS_ASSERT_EQUALS(boost::trim_copy(myCertChainPem.at(0)), boost::trim_copy(myParsedCert));
 
         // when-then
         TS_ASSERT_EQUALS(convPfx2Pem(convPem2Pfx(myPem, myPfxPassword), myPfxPassword), myPem);
@@ -834,14 +832,14 @@ public:
         // when
         const std::string myPem = convPfx2Pem(myPfx, myPfxPassword);
         // then
-        const std::vector<ta::CertUtils::MemBuffer> myPrivKeyPem = ta::CertUtils::extractPemPrivKeys(myPem);
-        const std::vector<ta::CertUtils::MemBuffer> myCertChainPem = ta::CertUtils::extractPemCerts(myPem);
-        TS_ASSERT_EQUALS(myPrivKeyPem.size(), 1);
-        TS_ASSERT_EQUALS(boost::trim_copy(ta::vec2Str(myPrivKeyPem.at(0))), myPfxPrivKey);
+        const ta::StringArray myPemPrivKeys = ta::CertUtils::extractPemPrivKeys(myPem);
+        const ta::StringArray myCertChainPem = ta::CertUtils::extractPemCerts(myPem);
+        TS_ASSERT_EQUALS(myPemPrivKeys.size(), 1);
+        TS_ASSERT_EQUALS(boost::trim_copy(myPemPrivKeys.at(0)), myPfxPrivKey);
         TS_ASSERT_EQUALS(myCertChainPem.size(), 3);
-        TS_ASSERT_EQUALS(boost::trim_copy(ta::vec2Str(myCertChainPem.at(0))), boost::trim_copy(myParsedCert));
-        TS_ASSERT_EQUALS(boost::trim_copy(ta::vec2Str(myCertChainPem.at(1))), boost::trim_copy(myParsedCAs.at(0)));
-        TS_ASSERT_EQUALS(boost::trim_copy(ta::vec2Str(myCertChainPem.at(2))), boost::trim_copy(myParsedCAs.at(1)));
+        TS_ASSERT_EQUALS(boost::trim_copy(myCertChainPem.at(0)), boost::trim_copy(myParsedCert));
+        TS_ASSERT_EQUALS(boost::trim_copy(myCertChainPem.at(1)), boost::trim_copy(myParsedCAs.at(0)));
+        TS_ASSERT_EQUALS(boost::trim_copy(myCertChainPem.at(2)), boost::trim_copy(myParsedCAs.at(1)));
 
         // when-then
         TS_ASSERT_EQUALS(convPfx2Pem(convPem2Pfx(myPem, myPfxPassword), myPfxPassword), myPem);
@@ -1356,6 +1354,63 @@ public:
         // Test no email address
         std::vector<unsigned char> myCertBufNoEmail = ta::readData("CA/smime_cert_no_email.pem");
         TS_ASSERT_THROWS(ta::CertUtils::getEmailFromSmime(ta::vec2Str(myCertBufNoEmail)), std::invalid_argument);
+    }
+
+    void testCreatePEM()
+    {
+        using boost::trim_copy;
+
+        // given
+        const std::string myPemCert = ta::readData("CA/cert.pem");
+        const std::string myPemCerts = ta::readData("CA/3cert.pem");
+        const std::string myPemKey = ta::readData("CA/privkey3_pkcs5.pem");
+        const std::string myEncryptedPemKey = ta::readData("CA/privkey3_pkcs5_encrypted.pem");
+
+        {
+            // given
+            ta::OpenSSLCertificateWrapper myCert(ta::str2Vec<unsigned char>(myPemCert));
+            // when-then
+            TS_ASSERT_EQUALS(ta::CertUtils::createPEM(myCert), myPemCert);
+            // when-then
+            TS_ASSERT_THROWS(ta::CertUtils::createPEM(NULL), std::exception);
+        }
+
+        {
+            // given
+            ta::OpenSSLCertificateWrapper myCert(ta::str2Vec<unsigned char>(myPemCert));
+            std::vector<X509*> myCerts = ta::CertUtils::getPemCertsX509(myPemCerts);
+            // when
+            const std::string myPEM = ta::CertUtils::createPEM(myCert, myCerts);
+            ta::CertUtils::freeX509Certs(myCerts);
+            // then
+            TS_ASSERT_EQUALS(myPEM, trim_copy(myPemCert) + "\n" + trim_copy(myPemCerts) + "\n");
+        }
+
+        {
+            // given
+            ta::OpenSSLCertificateWrapper myCert(ta::str2Vec<unsigned char>(myPemCert));
+            std::vector<X509*> myCerts = ta::CertUtils::getPemCertsX509(myPemCerts);
+            // when
+            const std::string myPEM = ta::CertUtils::createPEM(myCert, myCerts, myPemKey);
+            ta::CertUtils::freeX509Certs(myCerts);
+            // then
+            TS_ASSERT_EQUALS(myPEM, trim_copy(myPemCert) + "\n" + trim_copy(myPemCerts) + "\n" + trim_copy(myPemKey) + "\n");
+        }
+
+        {
+            // given
+            ta::OpenSSLCertificateWrapper myCert(ta::str2Vec<unsigned char>(myPemCert));
+            std::vector<X509*> myCerts = ta::CertUtils::getPemCertsX509(myPemCerts);
+            const ta::RsaUtils::KeyEncryptionAlgo myEncryptionAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 128);
+            // when
+            const std::string myPEM = ta::CertUtils::createPEM(myCert, myCerts, myPemKey, "secret", &myEncryptionAlgo);
+            ta::CertUtils::freeX509Certs(myCerts);
+            // then
+            TS_ASSERT(boost::starts_with(myPEM, trim_copy(myPemCert) + "\n" + trim_copy(myPemCerts) + "\n"));
+            const ta::StringArray myExtractedKeys = ta::CertUtils::extractPemPrivKeys(myPEM, ta::CertUtils::keyFilterEncryptedOnly);
+            TS_ASSERT_EQUALS(myExtractedKeys.size(), 1);
+            TS_ASSERT_EQUALS(ta::RsaUtils::unwrapPrivateKey(myExtractedKeys.at(0), "secret"), myPemKey);
+        }
     }
 
 private:

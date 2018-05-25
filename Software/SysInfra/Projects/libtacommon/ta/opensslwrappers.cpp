@@ -9,6 +9,9 @@
 
 #include <stdexcept>
 
+using std::string;
+using std::vector;
+
 namespace ta
 {
     // OpenSSLCertificateWrapper
@@ -17,13 +20,13 @@ namespace ta
         : theCertificate(NULL)
     {}
 
-    OpenSSLCertificateWrapper::OpenSSLCertificateWrapper(const std::string& aPemCertFilePath)
+    OpenSSLCertificateWrapper::OpenSSLCertificateWrapper(const string& aPemCertFilePath)
         : theCertificate(NULL)
     {
         loadFromFile(aPemCertFilePath);
     }
 
-    OpenSSLCertificateWrapper::OpenSSLCertificateWrapper(const std::vector<unsigned char>& aPemCertBuf)
+    OpenSSLCertificateWrapper::OpenSSLCertificateWrapper(const vector<unsigned char>& aPemCertBuf)
         : theCertificate(NULL)
     {
         loadFromBuf(aPemCertBuf);
@@ -41,7 +44,7 @@ namespace ta
     }
 
 
-    void OpenSSLCertificateWrapper::loadFromFile(const std::string& aPemCertFilePath)
+    void OpenSSLCertificateWrapper::loadFromFile(const string& aPemCertFilePath)
     {
         if (!ta::CertUtils::fileHasPemCert(aPemCertFilePath))
         {
@@ -61,20 +64,25 @@ namespace ta
         reset(myCertificate);
     }
 
-    void OpenSSLCertificateWrapper::loadFromBuf(const std::vector<unsigned char>& aPemCertBuf)
+    void OpenSSLCertificateWrapper::loadFromBuf(const string& aPemCert)
     {
-        std::string myError;
-        if (!ta::CertUtils::hasPemCertEx(aPemCertBuf, myError))
+        string myError;
+        if (!ta::CertUtils::hasPemCertEx(aPemCert, myError))
         {
             TA_THROW_MSG(std::runtime_error, myError);
         }
 
-        X509* myCertificate = ta::CertUtils::getCertX509(aPemCertBuf);
+        X509* myCertificate = ta::CertUtils::getCertX509(aPemCert);
         if (!myCertificate)
         {
             TA_THROW_MSG(std::runtime_error, "Failed to read X509 PEM cert from the memory buffer");
         }
         reset(myCertificate);
+    }
+
+    void OpenSSLCertificateWrapper::loadFromBuf(const vector<unsigned char>& aPemCert)
+    {
+        loadFromBuf(ta::vec2Str(aPemCert));
     }
 
     void OpenSSLCertificateWrapper::reset(X509* aCertificate)
@@ -103,13 +111,13 @@ namespace ta
         : theKey(NULL)
     {}
 
-    OpenSSLPrivateKeyWrapper::OpenSSLPrivateKeyWrapper(const std::string& aPemKeyFilePath, const char* aKeyPassword)
+    OpenSSLPrivateKeyWrapper::OpenSSLPrivateKeyWrapper(const string& aPemKeyFilePath, const char* aKeyPassword)
         : theKey(NULL)
     {
         loadFromFile(aPemKeyFilePath, aKeyPassword);
     }
 
-    OpenSSLPrivateKeyWrapper::OpenSSLPrivateKeyWrapper(const std::vector<unsigned char>& aPemKeyBuf, const char* aKeyPassword)
+    OpenSSLPrivateKeyWrapper::OpenSSLPrivateKeyWrapper(const vector<unsigned char>& aPemKeyBuf, const char* aKeyPassword)
         : theKey(NULL)
     {
         loadFromBuf(aPemKeyBuf, aKeyPassword);
@@ -120,7 +128,7 @@ namespace ta
         reset(NULL);
     }
 
-    void OpenSSLPrivateKeyWrapper::loadFromFile(const std::string& aPemKeyFilePath, const char* aKeyPassword)
+    void OpenSSLPrivateKeyWrapper::loadFromFile(const string& aPemKeyFilePath, const char* aKeyPassword)
     {
         if (!ta::CertUtils::fileHasPemPrivKey(aPemKeyFilePath))
         {
@@ -135,7 +143,7 @@ namespace ta
         EVP_PKEY* myKey = NULL;
         if (aKeyPassword)
         {
-            std::vector<char> myKeyPassword = str2Vec<char>(aKeyPassword); // because PEM_read_PrivateKey needs non-const password
+            vector<char> myKeyPassword = str2Vec<char>(aKeyPassword); // because PEM_read_PrivateKey needs non-const password
             myKeyPassword.push_back('\0');
             myKey = PEM_read_PrivateKey(myKeyFile, NULL, NULL, getSafeBuf(myKeyPassword));
             if (!myKey)
@@ -156,7 +164,7 @@ namespace ta
         reset(myKey);
     }
 
-    void OpenSSLPrivateKeyWrapper::loadFromBuf(const std::vector<unsigned char>& aPemKeyBuf, const char* aKeyPassword)
+    void OpenSSLPrivateKeyWrapper::loadFromBuf(const vector<unsigned char>& aPemKeyBuf, const char* aKeyPassword)
     {
         if (!ta::CertUtils::hasPemPrivKey(aPemKeyBuf))
         {
@@ -178,7 +186,7 @@ namespace ta
 
         if (aKeyPassword)
         {
-            std::vector<char> myKeyPassword = str2Vec<char>(aKeyPassword); // because PEM_read_PrivateKey needs non-const password
+            vector<char> myKeyPassword = str2Vec<char>(aKeyPassword); // because PEM_read_PrivateKey needs non-const password
             myKeyPassword.push_back('\0');
             EVP_PKEY* myKey = PEM_read_bio_PrivateKey(myMemBio, NULL, NULL, getSafeBuf(myKeyPassword));
             if (!myKey)
@@ -224,7 +232,7 @@ namespace ta
         : theKey(NULL)
     {}
 
-    OpenSSLPublicKeyWrapper::OpenSSLPublicKeyWrapper(const std::vector<unsigned char>& aPemKeyBuf, const ta::RsaUtils::PubKeyEncoding anEncoding)
+    OpenSSLPublicKeyWrapper::OpenSSLPublicKeyWrapper(const vector<unsigned char>& aPemKeyBuf, const ta::RsaUtils::PubKeyEncoding anEncoding)
         : theKey(NULL)
     {
         loadFromBuf(aPemKeyBuf, anEncoding);
@@ -235,7 +243,7 @@ namespace ta
         reset(NULL);
     }
 
-    void OpenSSLPublicKeyWrapper::loadFromBuf(const std::vector<unsigned char>& aPemKeyBuf, const ta::RsaUtils::PubKeyEncoding anEncoding)
+    void OpenSSLPublicKeyWrapper::loadFromBuf(const vector<unsigned char>& aPemKeyBuf, const ta::RsaUtils::PubKeyEncoding anEncoding)
     {
         if (!ta::CertUtils::hasPemPubKey(aPemKeyBuf))
         {
