@@ -35,30 +35,14 @@ namespace ta
         {
             caseUpper, caseLower
         };
-        /**
-          Convert buffer to hex representation
 
-          @param[in] aBuf Hex value to be converted
-          @param[in] aLen Length of hex value
-          @param[in] aCase desired case of Hex letters
-         */
+        //@nothrow
         std::string toHex(const unsigned char* aBuf, size_t aLen, CharCase aCase = caseLower);
-
-        /**
-          Convert buffer to hex representation
-
-          @param[in] aBuf Hex value to be converted
-          @param[in] aCase desired case of Hex letters
-         */
+        //@nothrow
         std::string toHex(const std::vector<unsigned char>& aBuf, CharCase aCase = caseLower);
+        //@nothrow
+        std::string toHex(const std::string& aBuf, CharCase aCase = caseLower);
 
-        /**
-          Convert from hex representation
-
-          @param[in] aHexStr String format of hex value
-          @return Hex value
-          @throw std::invalid_argument if the input is not a correct HEX string
-         */
         std::vector<unsigned char> fromHex(const std::string& aHexStr);
 
         /**
@@ -66,15 +50,15 @@ namespace ta
         */
         enum AdjacentSepsMergeMode
         {
-            sepsMergeOff,     // split("ab;;cd", ';') -> ["ab", "", "cd"]
-            sepsMergeOn       // split("ab;;cd", ';') -> ["ab", "cd"]
+            sepsMergeOff,     // split("ab//cd", '/') -> ["ab", "", "cd"]
+            sepsMergeOn       // split("ab//cd", '/') -> ["ab", "cd"]
         };
         enum EmptyTokensPolicy
         {
-            emptyTokensPreserve,  // split(";ab;", ';') -> ["", "ab", ""]
-            // split("", ';') -> [""]
-            emptyTokensDrop       // split(";ab;", ';') -> ["ab"]
-            // split("", ';') -> []
+            emptyTokensPreserve,  // split("/ab/", '/') -> ["", "ab", ""]
+            // split("", '/') -> [""]
+            emptyTokensDrop       // split("/ab/", '/') -> ["ab"]
+            // split("", '/') -> []
         };
         std::vector<std::string> split(const std::string& anSrc, char aSep,
                                        AdjacentSepsMergeMode anAdjacentSepsMergeMode = sepsMergeOff,
@@ -106,7 +90,6 @@ namespace ta
           To output the template part that occasionally matches one of the mapping keys quote it by doubling the dollar sign like: "$$(what)"
           All placeholders specified in aTempl and missing in aMappings will appear in the resulting string intact
           @pre mapping keys should be ASCII strings consisting of alphanumeric ASCII symbols, "_" or "-"
-          @throw std::invalid_argument precondition is not satisfied
         */
         std::string substTemplate(const std::string& aTempl, const StringDict& aMappings);
 

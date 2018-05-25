@@ -112,6 +112,10 @@ namespace ta
         {
             return toHex(getSafeBuf(aBuf), aBuf.size(), aCase);
         }
+        string toHex(const string& aBuf, CharCase aCase)
+        {
+            return toHex((const unsigned char*)aBuf.c_str(), aBuf.length(), aCase);
+        }
 
         vector<unsigned char> fromHex(const string& aHexStr)
         {
