@@ -391,7 +391,7 @@ namespace rclient
                         if (*myAttrVal == anAttrVal)
                         {
                             const vector<unsigned char> myDerCert(myCertCtx->pbCertEncoded, myCertCtx->pbCertEncoded + myCertCtx->cbCertEncoded);
-                            return ta::vec2Str(ta::CertUtils::convDer2Pem(myDerCert));
+                            return ta::CertUtils::convDer2Pem(myDerCert);
                         }
                     }
                     return boost::none;
