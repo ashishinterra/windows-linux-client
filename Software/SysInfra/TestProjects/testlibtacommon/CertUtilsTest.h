@@ -1364,7 +1364,7 @@ public:
         const std::string myPemCert = ta::readData("CA/cert.pem");
         const std::string myPemCerts = ta::readData("CA/3cert.pem");
         const std::string myPemKey = ta::readData("CA/privkey3_pkcs5.pem");
-        const std::string myEncryptedPemKey = ta::readData("CA/privkey3_pkcs5_encrypted.pem");
+        const std::string myEncryptedPemKey = ta::readData("CA/privkey3_pkcs5_encrypted-aes256.pem");
 
         {
             // given
