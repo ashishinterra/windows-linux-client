@@ -470,70 +470,134 @@ public:
         // given, the same key, in different formats (PKCS#5 and PKCS#8), plain and encrypted with password 'secret'
         // to convert PKCS#5 to PKCS#8: openssl pkcs8 -in privkey3_pkcs5.pem -topk8 -nocrypt -out privkey3_pkcs8.pem
         // to convert PKCS#8 to PKCS#5: openssl rsa -in privkey3_pkcs8.pem -out privkey3_pkcs5.pem
-        // to encrypt PKCS#5: openssl rsa -in privkey3_pkcs5.pem -aes-256-cbc-hmac-sha256 -out privkey3_pkcs5_encrypted.pem
-        // to encrypt PKCS#8: openssl pkcs8 -in privkey3_pkcs8.pem -topk8 aes-256-cbc-hmac-sha256 > privkey3_pkcs8_encrypted.pem
+        // to encrypt PKCS#5: openssl rsa -in privkey3_pkcs5.pem -aes-256-cbc-hmac-sha256 -out privkey3_pkcs5_encrypted-aes256_hmac_sha256.pem
+        // to encrypt PKCS#5: openssl rsa -in privkey3_pkcs5.pem -aes256 -out privkey3_pkcs5_encrypted-aes256.pem
+        // to encrypt PKCS#8: openssl pkcs8 -in privkey3_pkcs8.pem -topk8 aes-256-cbc-hmac-sha256 > privkey3_pkcs8_encrypted-aes256_hmac_sha256.pem
+        // to encrypt PKCS#8: openssl pkcs8 -in privkey3_pkcs8.pem -topk8 aes256 > privkey3_pkcs8_encrypted-aes256.pem
         const string myPkcs5Key = ta::readData("CA/privkey3_pkcs5.pem");
         const string myPkcs8Key = ta::readData("CA/privkey3_pkcs8.pem");
-        const string myPkcs5EncryptedKey = ta::readData("CA/privkey3_pkcs5_encrypted.pem");
-        const string myPkcs8EncryptedKey = ta::readData("CA/privkey3_pkcs8_encrypted.pem");
-        const KeyEncryptionAlgo myAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 256);
+        const string myPkcs5EncryptedAes256HmacKey = ta::readData("CA/privkey3_pkcs5_encrypted-aes256_hmac_sha256.pem");
+        const string myPkcs8EncryptedAes256HmacKey = ta::readData("CA/privkey3_pkcs8_encrypted-aes256_hmac_sha256.pem");
+        const string myPkcs5EncryptedAes256Key = ta::readData("CA/privkey3_pkcs5_encrypted-aes256.pem");
+        const string myPkcs8EncryptedAes256Key = ta::readData("CA/privkey3_pkcs8_encrypted-aes256.pem");
+        const KeyEncryptionAlgo myAesCbcAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbc, 256);
+        const KeyEncryptionAlgo myAesCbcHmacAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 256);
 
         // our encryption/decryption functions always output key in PKCS#5 format
 
         {
-            // when, encrypt key in PKCS#5 format
-            const string myEncryptedKey = wrapPrivateKey(myPkcs5Key, "secret", myAlgo);
+            // when, encrypt key with AES-CBC in PKCS#5 format
+            const string myEncryptedKey = wrapPrivateKey(myPkcs5Key, "secret", myAesCbcAlgo);
             // then
             TS_ASSERT_EQUALS(unwrapPrivateKey(myEncryptedKey, "secret"), myPkcs5Key);
             TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, "invalid-password"), std::exception);
             TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, ""), std::exception);
         }
 
+#ifdef RESEPT_SERVER
         {
-            // when, encrypt key in PKCS#8 format
-            const string myEncryptedKey = wrapPrivateKey(myPkcs8Key, "secret", myAlgo);
+            // when, encrypt key with AES-CBC-HMAC  in PKCS#5 format
+            const string myEncryptedKey = wrapPrivateKey(myPkcs5Key, "secret", myAesCbcHmacAlgo);
+            // then
+            TS_ASSERT_EQUALS(unwrapPrivateKey(myEncryptedKey, "secret"), myPkcs5Key);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, ""), std::exception);
+        }
+#endif
+
+        {
+            // when, encrypt key with AES-CBC in PKCS#8 format
+            const string myEncryptedKey = wrapPrivateKey(myPkcs8Key, "secret", myAesCbcAlgo);
             // then
             TS_ASSERT_EQUALS(unwrapPrivateKey(myEncryptedKey, "secret"), ta::RsaUtils::convPrivateKeyToPkcs5(myPkcs8Key));
             TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, "invalid-password"), std::exception);
             TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, ""), std::exception);
         }
 
+#ifdef RESEPT_SERVER
         {
-            // when, decrypt key in PKCS#5 format
-            const string myDecryptedKey = unwrapPrivateKey(myPkcs5EncryptedKey, "secret");
+            // when, encrypt key with AES-CBC-HMAC in PKCS#8 format
+            const string myEncryptedKey = wrapPrivateKey(myPkcs8Key, "secret", myAesCbcHmacAlgo);
+            // then
+            TS_ASSERT_EQUALS(unwrapPrivateKey(myEncryptedKey, "secret"), ta::RsaUtils::convPrivateKeyToPkcs5(myPkcs8Key));
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myEncryptedKey, ""), std::exception);
+        }
+#endif
+
+        {
+            // when, decrypt key encrypted with AES-CBC in PKCS#5 format
+            const string myDecryptedKey = unwrapPrivateKey(myPkcs5EncryptedAes256Key, "secret");
             // then
             TS_ASSERT_EQUALS(myDecryptedKey, myPkcs5Key);
             // when-then
-            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedKey, "invalid-password"), std::exception);
-            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedKey, ""), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedAes256Key, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedAes256Key, ""), std::exception);
         }
 
+#ifdef RESEPT_SERVER
         {
-            // when, decrypt key in PKCS#8 format
-            const string myDecryptedKey = unwrapPrivateKey(myPkcs8EncryptedKey, "secret");
+            // when, decrypt key encrypted with AES-CBC-HMAC in PKCS#5 format
+            const string myDecryptedKey = unwrapPrivateKey(myPkcs5EncryptedAes256HmacKey, "secret");
+            // then
+            TS_ASSERT_EQUALS(myDecryptedKey, myPkcs5Key);
+            // when-then
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedAes256HmacKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs5EncryptedAes256HmacKey, ""), std::exception);
+        }
+#endif
+
+        {
+            // when, decrypt key encrypted with AES-CBC in PKCS#8 format
+            const string myDecryptedKey = unwrapPrivateKey(myPkcs8EncryptedAes256Key, "secret");
             // then
             TS_ASSERT_EQUALS(myDecryptedKey, ta::RsaUtils::convPrivateKeyToPkcs5(myPkcs8Key));
             // when-then
-            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedKey, "invalid-password"), std::exception);
-            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedKey, ""), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedAes256Key, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedAes256Key, ""), std::exception);
         }
+
+#ifdef RESEPT_SERVER
+        {
+            // when, decrypt key encrypted with AES-CBC-HMAC in PKCS#8 format
+            const string myDecryptedKey = unwrapPrivateKey(myPkcs8EncryptedAes256HmacKey, "secret");
+            // then
+            TS_ASSERT_EQUALS(myDecryptedKey, ta::RsaUtils::convPrivateKeyToPkcs5(myPkcs8Key));
+            // when-then
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedAes256HmacKey, "invalid-password"), std::exception);
+            TS_ASSERT_THROWS(unwrapPrivateKey(myPkcs8EncryptedAes256HmacKey, ""), std::exception);
+        }
+#endif
 
         {
             // when-then: other encryption algos
             TS_ASSERT_EQUALS(unwrapPrivateKey(
+                                    wrapPrivateKey(myPkcs8Key, "secret", KeyEncryptionAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbc, 128)),
+                                    "secret"),
+                            myPkcs5Key);
+#ifdef RESEPT_SERVER
+            TS_ASSERT_EQUALS(unwrapPrivateKey(
                                     wrapPrivateKey(myPkcs8Key, "secret", KeyEncryptionAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 128)),
                                     "secret"),
                             myPkcs5Key);
+#endif
         }
 
         // when-then
-        TS_ASSERT_THROWS(wrapPrivateKey(myPkcs5Key, "", myAlgo), std::exception);
-        TS_ASSERT_THROWS(wrapPrivateKey(wrapPrivateKey(myPkcs5Key, "secret", myAlgo), "secret", myAlgo), std::exception);
+        TS_ASSERT_THROWS(wrapPrivateKey(myPkcs5Key, "", myAesCbcAlgo), std::exception);
+#ifdef RESEPT_SERVER
+        TS_ASSERT_THROWS(wrapPrivateKey(myPkcs5Key, "", myAesCbcHmacAlgo), std::exception);
+#endif
+        TS_ASSERT_THROWS(wrapPrivateKey(wrapPrivateKey(myPkcs5Key, "secret", myAesCbcAlgo), "secret", myAesCbcAlgo), std::exception);
+#ifdef RESEPT_SERVER
+        TS_ASSERT_THROWS(wrapPrivateKey(wrapPrivateKey(myPkcs5Key, "secret", myAesCbcHmacAlgo), "secret", myAesCbcHmacAlgo), std::exception);
+#endif
 
         // given
         const string myDerKey = ta::readData("CA/privkey2.der");
-        // when-then
-        TS_ASSERT_THROWS(wrapPrivateKey(myDerKey, "secret", myAlgo), std::exception);
+        // when-then (only PEM is supported)
+        TS_ASSERT_THROWS(wrapPrivateKey(myDerKey, "secret", myAesCbcAlgo), std::exception);
+        TS_ASSERT_THROWS(wrapPrivateKey(myDerKey, "secret", myAesCbcHmacAlgo), std::exception);
     }
 
     void testConvertPrivateKeyToPkcs8()

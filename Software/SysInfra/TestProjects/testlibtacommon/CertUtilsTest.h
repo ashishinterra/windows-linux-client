@@ -1401,7 +1401,7 @@ public:
             // given
             ta::OpenSSLCertificateWrapper myCert(ta::str2Vec<unsigned char>(myPemCert));
             std::vector<X509*> myCerts = ta::CertUtils::getPemCertsX509(myPemCerts);
-            const ta::RsaUtils::KeyEncryptionAlgo myEncryptionAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbcHmac, 128);
+            const ta::RsaUtils::KeyEncryptionAlgo myEncryptionAlgo(ta::RsaUtils::keyEncryptionAlgoAesCbc, 256);
             // when
             const std::string myPEM = ta::CertUtils::createPEM(myCert, myCerts, myPemKey, "secret", &myEncryptionAlgo);
             ta::CertUtils::freeX509Certs(myCerts);

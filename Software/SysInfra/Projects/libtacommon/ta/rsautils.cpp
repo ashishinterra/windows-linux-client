@@ -80,8 +80,18 @@ namespace ta
             {
                 switch (aKeyEncryptionAlgo.algo_type)
                 {
+                case keyEncryptionAlgoAesCbc:
+                {
+                    switch (aKeyEncryptionAlgo.key_bit)
+                    {
+                    case 128: return EVP_aes_128_cbc();
+                    case 256: return EVP_aes_256_cbc();
+                    default: TA_THROW_MSG(std::logic_error, boost::format("%s is not supported for key encryption") % str(aKeyEncryptionAlgo));
+                    }
+                }
                 case keyEncryptionAlgoAesCbcHmac:
                 {
+#ifdef RESEPT_SERVER
                     switch (aKeyEncryptionAlgo.key_bit)
                     {
                     // Due to HMAC authentication this algorithm does not suffer from Oracle padding attacks
@@ -89,6 +99,9 @@ namespace ta
                     case 256: return EVP_aes_256_cbc_hmac_sha256();
                     default: TA_THROW_MSG(std::logic_error, boost::format("%s is not supported for key encryption") % str(aKeyEncryptionAlgo));
                     }
+#else
+                    // not all systems still support AES HMAC encryption (e.g. Debian 8 with OpenSSL 1.0.1t)
+#endif
                 }
                 case keyEncryptionAlgoAesGcm:
                 // very secure but needs extra configuration and hence can't be used with PEM_write_XXXPrivateKey() interface and needs manual encryption

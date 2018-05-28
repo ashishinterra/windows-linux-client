@@ -44,12 +44,13 @@ namespace ta
         enum KeyEncryptionAlgoType
         {
             _firstKeyEncryptionAlgo,
-            keyEncryptionAlgoAesCbcHmac = _firstKeyEncryptionAlgo,
+            keyEncryptionAlgoAesCbc = _firstKeyEncryptionAlgo,
+            keyEncryptionAlgoAesCbcHmac,
             keyEncryptionAlgoAesGcm,
             keyEncryptionAlgoAesCcm,
             _lastKeyEncryptionAlgo =  keyEncryptionAlgoAesCcm
         };
-        static const std::string KeyEncryptionAlgoTypeStrs[] = {"AES CBC HMAC", "AES GCM", "AES CCM" };
+        static const std::string KeyEncryptionAlgoTypeStrs[] = {"AES CBC", "AES CBC HMAC", "AES GCM", "AES CCM" };
         BOOST_STATIC_ASSERT(_firstKeyEncryptionAlgo <= _lastKeyEncryptionAlgo);
         BOOST_STATIC_ASSERT(sizeof(KeyEncryptionAlgoTypeStrs)/sizeof(KeyEncryptionAlgoTypeStrs[0]) == _lastKeyEncryptionAlgo-_firstKeyEncryptionAlgo+1);
         inline std::string str(const KeyEncryptionAlgoType anAlgoType)
