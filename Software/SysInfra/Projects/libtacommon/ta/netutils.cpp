@@ -55,6 +55,10 @@ namespace ta
 #ifdef __linux__
             const string NetIfacesConfigFilePath = "/etc/network/interfaces";
             const string LoopbackIfaceName       = "lo";
+            const ta::StringArray HttpProxyEnvVariableNames = boost::assign::list_of("http_proxy")
+                    ("HTTP_PROXY")
+                    ("https_proxy")
+                    ("HTTPS_PROXY");
 
             bool isIfaceConfigBlockStarted(const string& anIfaceName, const string& aLine)
             {
@@ -575,12 +579,64 @@ namespace ta
                 return myIpv6;
             }
 
-#endif
-        } // end of private stuff
+            bool isLineContainsHttpProxyEnvVar(const string& aLine)
+            {
+                const string myLine = boost::trim_copy(aLine);
+
+                foreach (const string& env_var, HttpProxyEnvVariableNames)
+                {
+                    if (boost::starts_with(myLine, env_var + "="))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            void applyHttpProxy(const RemoteAddress& aProxy, const bool aReboot, const string& aSaveFilePath)
+            {
+                ta::StringArray myLines;
+
+                if (ta::isFileExist(aSaveFilePath))
+                {
+                    std::ifstream myFile(aSaveFilePath.c_str());
+                    if (!myFile.is_open() || myFile.fail())
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to open %s for reading") % aSaveFilePath);
+                    }
+                    string myLine;
+                    while (std::getline(myFile, myLine))
+                    {
+                        if (!isLineContainsHttpProxyEnvVar(myLine))
+                        {
+                            myLines.push_back(boost::trim_copy(myLine));
+                        }
+                    }// getline
+                }
+
+                const string myHost = boost::trim_copy(aProxy.host);
+                if (!myHost.empty())
+                {
+                    foreach (const string& proxy_var_name, HttpProxyEnvVariableNames)
+                    {
+                        myLines.push_back(str(boost::format("%s=http://%s:%d/") % proxy_var_name % myHost % aProxy.port));
+                    }
+                }
+
+                ta::writeData(aSaveFilePath, ta::Strings::join(myLines, "\n") + "\n");
+
+                if (aReboot)
+                {
+                    ta::Process::checkedShellExecSync("sudo reboot");
+                }
+            }
+
+#endif // __linux__
+        } // end of private API
 
 
         //
-        // Public stuff
+        // Public API
         //
 
         SockInitializer::SockInitializer()
@@ -1542,6 +1598,36 @@ namespace ta
             }
 
             return connectivityOk;
+        }
+
+        boost::optional<RemoteAddress> getHttpProxy()
+        {
+            foreach (const string& kv, ta::Process::getEnvVars())
+            {
+                if (isLineContainsHttpProxyEnvVar(kv))
+                {
+                    const string myProxyUrl = boost::trim_copy_if(
+                                                  ta::Strings::split(kv, '=').at(1),
+                                                  boost::is_any_of(" \t\""));
+                    const url::Authority::Parts myParsedProxy = url::parse(myProxyUrl).authority_parts;
+                    unsigned int myPort = 80;
+                    if (myParsedProxy.port.empty() || isValidPort(myParsedProxy.port, &myPort))
+                    {
+                        return RemoteAddress(myParsedProxy.host, myPort);
+                    }
+                }
+            }
+            return boost::none;
+        }
+
+        void enableHttpProxy(const RemoteAddress& aProxy, const bool aReboot, const string& aSaveFilePath)
+        {
+            applyHttpProxy(aProxy, aReboot, aSaveFilePath);
+        }
+
+        void disableHttpProxy(const bool aReboot, const string& aSaveFilePath)
+        {
+            applyHttpProxy(RemoteAddress(), aReboot, aSaveFilePath);
         }
 #endif
 

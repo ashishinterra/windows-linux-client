@@ -1,7 +1,7 @@
 Release Notes of KeyTalk
 ==============================================
 
-server-5.3.1, in development
+server-5.3.1, 29 May 2018
 ----------------------------
 Supports upgrades from v5.2.1 and higher
 Supports RCDP 2.2.0, 2.1.0 and 2.0.0
@@ -9,6 +9,7 @@ Supports import of settings created in v5.2.0-v5.3.1, v4.6.0 and v4.6.2
     - ADDED: Allow signing CSR using REST API v2.2.0
     - ADDED: Allow retrieving Signing CA chain from the server using CA REST API
     - ADDED: Allow optionally encrypting private keys for user certificate in the Db
+    - ADDED: Add support for HTTP proxy
 
 server-5.3.0, 13 April 2018
 ------------------------
@@ -16,22 +17,22 @@ Supports upgrades from v5.2.1 and higher
 Supports RCDP 2.1.0 and 2.0.0
 Supports import of settings created in v5.2.0-v5.3.0, v4.6.0 and v4.6.2
 
-    - CHANGED: phased out executable and relay authentication modules
-    - CHANGED: always use DevID to store and check HWSIG, MySQL authentication module can additionally check HWSIG itself
-    - CHANGED: allow reusing a previously issued user certificate
-    - CHANGED: added service admin account to manage KeyTalk via the web admin panel
-    - CHANGED: added DevID self-service account to manage self devices via the KeyTalk web admin panel
+    - CHANGED: Phased out executable and relay authentication modules
+    - CHANGED: Always use DevID to store and check HWSIG, MySQL authentication module can additionally check HWSIG itself
+    - CHANGED: Allow reusing a previously issued user certificate
+    - CHANGED: Added service admin account to manage KeyTalk via the web admin panel
+    - CHANGED: Added DevID self-service account to manage self devices via the KeyTalk web admin panel
     - CHANGED: 4-eye principle to allow service operator download certificate and key
-    - CHANGED: flexible hashing of the MySQL credentials
-    - CHANGED: added client certificate authentication against MySQL connector Db
-    - CHANGED: flexible MySQL Db field mapping for MySQL user table
+    - CHANGED: Flexible hashing of the MySQL credentials
+    - CHANGED: Added client certificate authentication against MySQL connector Db
+    - CHANGED: Flexible MySQL Db field mapping for MySQL user table
     - CHANGED: Reduced max validity for GlobalSign Organization SSL certificates from 36 to 24 months
     - CHANGED: Allow MS CA as 3rd party certificate provider
     - CHANGED: Add ePKI S/MIME GlobalSign as 3rd party certificate provider
-    - CHANGED: store issued S/MIME certificate to AD and OpenLDAP
-    - CHANGED: Allow RCDP caller to request a certificate download URL iso certificate BLOB
-    - FIXED: improve robustness of server PR generation
-    - FIXED: excessive server logging results in huge PR file
+    - CHANGED: Store issued S/MIME certificate to AD and OpenLDAP
+    - CHANGED: Allow RCDP caller to request a certificate download URL in addition to certificate BLOB
+    - FIXED: Improved robustness of server PR generation
+    - FIXED: Excessive server logging results in huge PR file
     - FIXED: KeyTalk server runs out of disk space
 
 

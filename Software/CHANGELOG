@@ -1,7 +1,7 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
-server-5.3.1, in development
+server-5.3.1, 29 May 2018
 ----------------------------
 Supports upgrades from v5.2.1 and higher
 Supports RCDP 2.2.0, 2.1.0 and 2.0.0
@@ -9,6 +9,7 @@ Supports import of settings created in v5.2.0-v5.3.1, v4.6.0 and v4.6.2
     - ADDED: Allow signing CSR using REST API v2.2.0 (KEYTALK-398)
     - ADDED: Allow retrieving Signing CA chain from the server using CA REST API
     - ADDED: Allow optionally encrypting private keys for user certificate in the Db (KEYTALK-410)
+    - ADDED: Add support for HTTP proxy on the server
 
 server-5.3.0, 13 April 2018
 ----------------------------
@@ -16,15 +17,15 @@ Supports upgrades from v5.2.1 and higher
 Supports RCDP 2.1.0 and 2.0.0
 Supports import of settings created in v5.2.0-v5.3.0, v4.6.0 and v4.6.2
     - CHANGED: Reduced max validity for GlobalSign Organization SSL certificates from 36 to 24 months
-    - CHANGED: phased out relay authentication modules
+    - CHANGED: Phased out relay authentication modules
     - CHANGED: Allow MS CA as 3rd party certificate provider (KEYTALK-430)
-    - CHANGED: Add ePKI S/MIME GlobalSign as 3rd party certificate provider (KEYTALK-455)
-    - CHANGED: Remove Signing Portal from the upstream (SIGNING_PORTAL_MAINTENANCE branch)
+    - CHANGED: Added ePKI S/MIME GlobalSign as 3rd party certificate provider (KEYTALK-455)
+    - CHANGED: Removed Signing Portal from the upstream (SIGNING_PORTAL_MAINTENANCE branch)
     - CHANGED: Tag "developer" log entries iso encrypting them
-    - CHANGED: Allow RCDP caller to request a certificate download URL iso certificate BLOB (KEYTALK-456)
-    - CHANGED: store issued S/MIME certificate to AD and OpenLDAP (KEYTALK-439, KEYTALK-441)
-    - CHANGED: add HwSig check for MySQL connector (KEYTALK-413)
-    - CHANGED: store S/MIME to a separate LDAP Address Book server (KEYTALK-454)
+    - CHANGED: Allow RCDP caller to request a certificate download URL in addition to certificate BLOB (KEYTALK-456)
+    - CHANGED: Store issued S/MIME certificate to AD and OpenLDAP (KEYTALK-439, KEYTALK-441)
+    - CHANGED: Added HwSig check for MySQL connector (KEYTALK-413)
+    - CHANGED: Store S/MIME to a separate LDAP Address Book server (KEYTALK-454)
     - FIXED: Error connecting with KeyTalk Windows 7 client by IP (KEYATLK-451)
     - FIXED: KeyTalk server runs out of disk space (KEYTALK-452)
     - FIXED: Inconsistent behavior of fw scripts and C++ code wrt localhost Db connection (KEYTALK-412)

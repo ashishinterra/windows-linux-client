@@ -11,6 +11,7 @@
 #include "boost/algorithm/string.hpp"
 #include "boost/assign/list_of.hpp"
 #include "boost/format.hpp"
+#include "boost/optional.hpp"
 
 struct sockaddr_in6;
 
@@ -577,6 +578,13 @@ namespace ta
         };
         const std::vector<RemoteAddress> DefaultTestTcpServers = boost::assign::list_of(RemoteAddress("google.com", 80))(RemoteAddress("google.com", 443));
         ConnectivityStatus checkConnectivity(const std::vector<RemoteAddress>& aTestTcpServers = DefaultTestTcpServers);
+
+        // Retrieves HTTP and HTTPS proxy
+        boost::optional<RemoteAddress> getHttpProxy();
+        // Effectuates HTTP and HTTPS proxy settings rebooting the system, making the changes persistent across reboots
+        //@param aSaveFilePath, aReboot are for test only, do NOT change them in production environment!
+        void enableHttpProxy(const RemoteAddress& aProxy, const bool aReboot = true, const std::string& aSaveFilePath = "/etc/environment");
+        void disableHttpProxy(const bool aReboot = true, const std::string& aSaveFilePath = "/etc/environment");
 #endif
 
         std::string normalizeDomainName(const std::string& aDomainName);

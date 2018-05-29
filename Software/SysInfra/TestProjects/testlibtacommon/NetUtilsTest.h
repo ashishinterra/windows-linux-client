@@ -3,6 +3,7 @@
 #include "ta/common.h"
 #include "ta/netutils.h"
 #include "ta/timeutils.h"
+#include "ta/utils.h"
 #include "cxxtest/TestSuite.h"
 #include <string>
 #include <vector>
@@ -621,6 +622,67 @@ public:
 #endif
     }
 
+        void test_http_proxy()
+        {
+    #ifdef _WIN32
+            TS_SKIP("HTTP Proxy configuration is not implemented on Windows");
+    #else
+            {
+                // when-then (the best check we can do)
+                boost::optional<ta::NetUtils::RemoteAddress> myProxy = ta::NetUtils::getHttpProxy();
+                if (myProxy)
+                {
+                    TS_TRACE(str("HTTP Proxy: " + str(*myProxy)).c_str());
+                }
+                else
+                {
+                    TS_TRACE("No HTTP Proxy defined");
+                }
+            }
+
+            // given
+            const std::string mySaveFilePath = "./etc.environment.local";
+            const bool myRebootNo = false;
+
+            {
+                // given
+                ta::writeData(mySaveFilePath, std::string("name1=val1\n"));
+                // when
+                ta::NetUtils::enableHttpProxy(ta::NetUtils::RemoteAddress("proxy.com", 8080), myRebootNo, mySaveFilePath);
+                // then
+                TS_ASSERT_EQUALS((std::string)ta::readData(mySaveFilePath), "name1=val1\nhttp_proxy=http://proxy.com:8080/\nHTTP_PROXY=http://proxy.com:8080/\nhttps_proxy=http://proxy.com:8080/\nHTTPS_PROXY=http://proxy.com:8080/\n");
+
+                // when
+                ta::NetUtils::enableHttpProxy(ta::NetUtils::RemoteAddress("proxy2.com", 80), myRebootNo, mySaveFilePath);
+                // then
+                TS_ASSERT_EQUALS((std::string)ta::readData(mySaveFilePath), "name1=val1\nhttp_proxy=http://proxy2.com:80/\nHTTP_PROXY=http://proxy2.com:80/\nhttps_proxy=http://proxy2.com:80/\nHTTPS_PROXY=http://proxy2.com:80/\n");
+            }
+
+            {
+                // given
+                std::remove(mySaveFilePath.c_str());
+                // when
+                ta::NetUtils::enableHttpProxy(ta::NetUtils::RemoteAddress("proxy2.com", 80), myRebootNo, mySaveFilePath);
+                // then
+                TS_ASSERT_EQUALS((std::string)ta::readData(mySaveFilePath), "http_proxy=http://proxy2.com:80/\nHTTP_PROXY=http://proxy2.com:80/\nhttps_proxy=http://proxy2.com:80/\nHTTPS_PROXY=http://proxy2.com:80/\n");
+
+                // when
+                ta::NetUtils::disableHttpProxy(myRebootNo, mySaveFilePath);
+                // then
+                TS_ASSERT_EQUALS((std::string)ta::readData(mySaveFilePath), "\n");
+            }
+
+            {
+                // given
+                ta::writeData(mySaveFilePath, std::string("name1=val1\n"));
+                // when
+                ta::NetUtils::disableHttpProxy(myRebootNo, mySaveFilePath);
+                // then
+                TS_ASSERT_EQUALS((std::string)ta::readData(mySaveFilePath), "name1=val1\n");
+            }
+    #endif
+        }
+
 
 private:
 #ifndef _WIN32
@@ -801,9 +863,9 @@ public:
 
     void testApplyIpv4CustomRoutes()
     {
+#ifdef RESEPT_SERVER
         using namespace ta::NetUtils;
 
-#ifdef RESEPT_SERVER
         // given
         const DefGateway myDefGw = getDefIpv4Gateway();
         const string myIfaceName = myDefGw.iface;
