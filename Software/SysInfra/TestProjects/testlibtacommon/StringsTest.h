@@ -289,5 +289,20 @@ public:
         TS_ASSERT_EQUALS(mySet.size(), 3U);
         TS_ASSERT_EQUALS(mySet.count("use$(id") + mySet.count("ain") + mySet.count("string"), 3U);
     }
+    void testWideMbyteConversions()
+    {
+        std::wstring myWstr;
+        string myStr = "AbCd";
+        TS_ASSERT_THROWS_NOTHING(myWstr = ta::Strings::toWide(myStr));
+        TS_ASSERT_EQUALS(myWstr, L"AbCd");
+        TS_ASSERT_THROWS_NOTHING(myStr = ta::Strings::toMbyte(myWstr));
+        TS_ASSERT_EQUALS(myStr, "AbCd");
+
+        myStr = "";
+        TS_ASSERT_THROWS_NOTHING(myWstr = ta::Strings::toWide(myStr));
+        TS_ASSERT_EQUALS(myWstr, L"");
+        TS_ASSERT_THROWS_NOTHING(myStr = ta::Strings::toMbyte(myWstr));
+        TS_ASSERT_EQUALS(myStr, "");
+    }
 
 };

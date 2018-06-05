@@ -252,6 +252,10 @@ namespace rclient
             {
                 myAuthRequirements.calc_service_uris_digest = parseBoolVal(myResponseTree, responseParamNameCalcServiceUrisDigest);
             }
+            if (isScalarParamExist<bool>(myResponseTree, responseParamNameUseTpmVscAuthentication))
+            {
+                myAuthRequirements.use_tpm_vsc = parseBoolVal(myResponseTree, responseParamNameUseTpmVscAuthentication);
+            }
 
             return myAuthRequirements;
         }
@@ -421,7 +425,6 @@ namespace rclient
                 TA_THROW_MSG(ParseError, boost::format("Cannot parse PEM certificate from %s response: '%s'. %s") % str(myExpectedResponseType) % aResponse % e.what());
             }
         }
-
 
     } // rcdpv2response
 } // rclient

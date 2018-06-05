@@ -65,7 +65,7 @@ namespace ta
             aTcpClient.sendAll(mySerializedMsg);
         }
 
-        // Use this function to receive the message type when it is now known apriori
+        // Use this function to receive the message type when it is now known a priori
         template <class MsgT>
         MsgT receiveMsgType(ta::TcpClient& aTcpClient)
         {

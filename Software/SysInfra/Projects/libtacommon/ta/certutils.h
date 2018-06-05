@@ -494,6 +494,8 @@ namespace ta
         };
         CsrInfo parseSignedCSR(const std::string& aCsrPem);
 
+        bool isValidCsr(const std::string& aCsr);
+
         void validateSAN(const std::string& aSAN);
 
         std::string serializeSAN(const ta::StringArray& aSAN);

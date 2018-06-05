@@ -8,6 +8,7 @@
 #include "rclient/Settings.h"
 #include "rclient/RcdpHandler.h"
 #include "rclient/Common.h"
+#include "ta/WinSmartCardUtil.h"
 #include "ta/url.h"
 #include "ta/version.h"
 #include "ta/logappender.h"
@@ -336,6 +337,13 @@ namespace rclient
             const string myUserMsg = "Failed to import certificate. Please contact " + resept::ProductName +  " administrator.";
             ERRORLOG2(myUserMsg, boost::format("Failed to import user certificates into the system store. %s") % e.what());
             QMessageBox::warning(NULL, "Failed to import certificate", myUserMsg.c_str());
+            return false;
+        }
+        catch (ta::WinSmartCardUtilNoSmartCardError& e)
+        {
+            const string myUserMsg = "This service provider requires a (Virtual) Smart Card to be set up. Please contact " + resept::ProductName + " administrator on how to set up a (Virtual) Smart Card.";
+            ERRORLOG2(myUserMsg, e.what());
+            QMessageBox::warning(NULL, "No Smart Card Found", myUserMsg.c_str());
             return false;
         }
         catch (std::exception& e)

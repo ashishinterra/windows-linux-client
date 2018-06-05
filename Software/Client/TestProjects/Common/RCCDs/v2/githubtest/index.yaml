@@ -1,0 +1,8 @@
+ConfigVersion: 2.0.1
+ContentVersion: 2018033001
+ProviderName: KeyTalk_GitHub_TEST
+Logo: content/logo.png
+PCA: content/pcacert.der
+SCA: content/commcacert.der
+UCA: content/signingcacert.der
+UserConfig: content/user.yaml

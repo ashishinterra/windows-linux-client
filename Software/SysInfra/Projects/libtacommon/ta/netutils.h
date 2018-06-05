@@ -21,6 +21,10 @@ namespace ta
     {
         explicit IpResolveError(const std::string& aMessage = ""): std::runtime_error(aMessage) {}
     };
+    struct NetworkUnreachableError : std::runtime_error
+    {
+        explicit NetworkUnreachableError(const std::string& aMessage = ""): std::runtime_error(aMessage) {}
+    };
 
     namespace NetUtils
     {
@@ -392,13 +396,19 @@ namespace ta
         IPv4Routes getIpv4CustomRoutes(const std::string& anIfaceName);
         IfacesIPv4Routes getIpv4CustomRoutes();
 
+        // Validate and normalize custom routes
+        //@return normalized routes without duplicates and with network addresses fixed according to their netmask (e.g. 198.168.10.44/255.255.255.0 becomes 198.168.10.0)
+        IPv4Routes normalizeCustomIpv4Routes(const IPv4Routes& aRoutes);
+
         /**
           Effectuate custom IPv4 routes and make the changes persistent across reboots
           @note to make the changes persistent across reboots you should make sure that
           the supplied routes creation script aSaveScriptPath is executed on the system boot
           (e.g. sourced from /etc/rc.local)
+          @throw NetworkUnreachableError when the network is not reachable, typically when the gateway cannot be reached
+          @throw std::exception for the rest errors
          */
-        void applyIpv4CustomRoutes(const std::string& anIfaceName, const IPv4Routes& aRoutes, const std::string& aSaveScriptPath);
+        void applyIpv4CustomRoutesForIface(const std::string& anIfaceName, const IPv4Routes& aRoutes, const std::string& aSaveScriptPath);
         void applyIpv4CustomRoutes(const IfacesIPv4Routes& aRoutes, const std::string& aSaveScriptPath);
 #endif
 
@@ -415,6 +425,11 @@ namespace ta
         // Convert prefix length of IPv4 subnet mask (CIDR notation) to dot-decimal form
         // 24 => "255.255.255.0"
         std::string convIpv4CidrNetmaskToDotDecimal(const unsigned int aPrefixLen);
+
+        // e.g. 198.168.10.44/255.255.255.0 => 198.168.10.0
+        //      198.168.10.44/255.255.255.248 => 198.168.10.40
+        //      198.168.10.44/255.255.255.255 =>  198.168.10.44
+        std::string calcIpv4NetworkAddress(const std::string& anIp, const std::string& aNetMask);
 
 #ifndef _WIN32
         bool isLoopback(const std::string& anIfaceName);

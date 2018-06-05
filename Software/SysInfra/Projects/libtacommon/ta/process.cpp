@@ -648,14 +648,15 @@ namespace ta
             return myRetVal;
         }
 
-        void checkedShellExecSync(const string& aCommand)
+        string checkedShellExecSync(const string& aCommand)
         {
             string myStdOut, myStdErr;
-            int myExecCode = shellExecSync(aCommand, myStdOut, myStdErr);
+            const int myExecCode = shellExecSync(aCommand, myStdOut, myStdErr);
             if (myExecCode != 0)
             {
                 TA_THROW_MSG(ProcessExecError, boost::format("Command '%s' finished with code %d. Stdout: %s. Stderr: %s") % aCommand % myExecCode % myStdOut % myStdErr);
             }
+            return myStdOut;
         }
 #else
         int shellExecSync(const string& aCommand, std::vector<unsigned char>& anStdOut, std::vector<unsigned char>& anStdErr, const std::vector<unsigned char>& anStdIn)
@@ -803,12 +804,15 @@ namespace ta
             return myRetVal;
         }
 
-        void checkedShellExecSync(const string& aCommand, const std::string& anStdIn)
+        string checkedShellExecSync(const string& aCommand, const std::string& anStdIn)
         {
             string myStdOut, myStdErr;
-            int myExecCode = shellExecSync(aCommand, myStdOut, myStdErr, anStdIn);
+            const int myExecCode = shellExecSync(aCommand, myStdOut, myStdErr, anStdIn);
             if (myExecCode != 0)
+            {
                 TA_THROW_MSG(ProcessExecError, boost::format("Command '%s' finished with code %d. Stdout: %s. Stderr: %s") % aCommand % myExecCode % myStdOut % myStdErr);
+            }
+            return myStdOut;
         }
 #endif
 
@@ -1185,7 +1189,7 @@ namespace ta
                 TA_THROW_MSG(std::runtime_error, boost::format("IEGetWriteableFolderPath failed. Hresult: %ld") % hr);
             if (!lwszDir)
                 TA_THROW_MSG(std::runtime_error, "IEGetWriteableFolderPath succeeded but lwszDir is NULL");
-            const string myRetVal = EncodingUtils::toMbyte(wszDir);
+            const string myRetVal = Strings::toMbyte(wszDir);
             CoTaskMemFree(wszDir);
             return myRetVal;
 #else
@@ -1203,7 +1207,7 @@ namespace ta
                 TA_THROW_MSG(std::runtime_error, boost::format("SHGetKnownFolderPath failed. Hresult: %ld") % hr);
             if (!wszDir)
                 TA_THROW_MSG(std::runtime_error, "SHGetKnownFolderPath succeeded but wszDir is NULL");
-            const string myRetVal = EncodingUtils::toMbyte(wszDir);
+            const string myRetVal = Strings::toMbyte(wszDir);
             CoTaskMemFree(wszDir);
             return myRetVal;
 #endif

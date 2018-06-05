@@ -160,7 +160,6 @@ namespace rclient
         setWizardStyle(ModernStyle);
         setWindowIcon(QIcon(":/RClientAppCommon/logo.png"));
         setPixmap(QWizard::LogoPixmap, QPixmap(":/RClientAppCommon/logo.png"));
-        setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
         setWindowTitle("Authentication Agent");
 
         setButtonText(FinishButton, "Connect");

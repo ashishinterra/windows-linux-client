@@ -244,29 +244,6 @@ namespace ta
             return myEncoded;
         }
 
-        wstring toWide(const string& aStr)
-        {
-            size_t myWsLen = mbstowcs(NULL, aStr.c_str(), 0);
-            if (myWsLen == (size_t)(-1))
-                TA_THROW_MSG(EncodeError, "Invalid multibyte string");
-            wchar_t* myPtr = new wchar_t[myWsLen];
-            mbstowcs(myPtr, aStr.c_str(), myWsLen);
-            wstring myRetVal(myPtr, myWsLen);
-            delete []myPtr;
-            return myRetVal;
-        }
-        string toMbyte(const wstring& aWstr)
-        {
-            size_t myMbyteLen = wcstombs(NULL, aWstr.c_str(), aWstr.length()*sizeof(wchar_t)+1);
-            if (myMbyteLen == (size_t)(-1))
-                TA_THROW_MSG(EncodeError, "Invalid wide character string");
-            char* myPtr = new char[myMbyteLen];
-            wcstombs(myPtr, aWstr.c_str(), myMbyteLen);
-            string myRetVal(myPtr, myMbyteLen);
-            delete []myPtr;
-            return myRetVal;
-        }
-
         ptree toTree(const ta::StringArray& anArray)
         {
             ptree tree;

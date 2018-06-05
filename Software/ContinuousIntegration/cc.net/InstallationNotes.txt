@@ -19,7 +19,7 @@
 8 Create minimal KeyTalk client installation:
   - Change path in ContinuousIntegration\cc.net\resept.ini if needed
   - Import CertKeys\CommunicationAndSigning\pcacert.der to the "Trusted Root" Windows certificate store
-  - Import CertKeys\CommunicationAndSigning\signingcacert.der to the "Intermediate" Windows certificate store.
+  - Import CertKeys\CommunicationAndSigning\signingcacert.der and CertKeys\CommunicationAndSigning\commcacert.der to the "Intermediate" Windows certificate store.
 
 9. [optionally] Download, install and configure CcTray tool (from http://sourceforge.net/projects/ccnet/files/CruiseControl.NET%20Releases/CruiseControl.NET%201.8.5/ or later version)
    - make sure to allow firewall to allow monitoring of CC.NET server from the outside

@@ -192,6 +192,7 @@ public:
     void test_IPv4_netmask_check_rejects_invalid_netmask()
     {
         using namespace ta::NetUtils;
+        TS_ASSERT(!isValidIpv4NetMask("255.0.0"));
         TS_ASSERT(!isValidIpv4NetMask("256.0.0.0"));
         TS_ASSERT(!isValidIpv4NetMask("255.333.0.0"));
         TS_ASSERT(!isValidIpv4NetMask("253.0.0.0"));
@@ -683,6 +684,26 @@ public:
     #endif
         }
 
+        void test_calc_network_address()
+        {
+            using ta::NetUtils::calcIpv4NetworkAddress;
+
+            // when-then
+            TS_ASSERT_EQUALS(calcIpv4NetworkAddress("198.168.10.44", "255.0.0.0"), "198.0.0.0");
+            TS_ASSERT_EQUALS(calcIpv4NetworkAddress("198.168.10.44", "255.255.0.0"), "198.168.0.0");
+            TS_ASSERT_EQUALS(calcIpv4NetworkAddress("198.168.10.44", "255.255.255.0"), "198.168.10.0");
+            TS_ASSERT_EQUALS(calcIpv4NetworkAddress("198.168.10.44", "255.255.255.248"), "198.168.10.40");
+            TS_ASSERT_EQUALS(calcIpv4NetworkAddress("198.168.10.44", "255.255.255.255"), "198.168.10.44");
+
+            // when-then (invalid IP)
+            TS_ASSERT_THROWS(calcIpv4NetworkAddress("invalid-ip", "255.0.0.0"), std::exception);
+            TS_ASSERT_THROWS(calcIpv4NetworkAddress("", "255.0.0.0"), std::exception);
+            // when-then (invalid netmask)
+            TS_ASSERT_THROWS(calcIpv4NetworkAddress("198.168.10.44", "invalid-netmask"), std::exception);
+            TS_ASSERT_THROWS(calcIpv4NetworkAddress("198.168.10.44", ""), std::exception);
+            TS_ASSERT_THROWS(calcIpv4NetworkAddress("198.168.10.44", "255.255.255.223"), std::exception);
+    }
+
 
 private:
 #ifndef _WIN32
@@ -870,32 +891,57 @@ public:
         const DefGateway myDefGw = getDefIpv4Gateway();
         const string myIfaceName = myDefGw.iface;
         const IPv4Routes myOrigRoutes = getIpv4CustomRoutes(myIfaceName);
+        const string mySaveScriptPath = "./custom-routes.temp";
         printCustomRoutes("Original custom IPv4 routes on " + myIfaceName, myOrigRoutes);
 
-        // given
-        IPv4Routes myNewRoutesSet = myOrigRoutes;
-        myNewRoutesSet.push_back(IPv4Route(IPv4("192.168.34.0", "255.255.255.0"), myDefGw.ip));
-        const string mySaveScriptPath = "./custom-routes.temp";
-        // when (add new route)
-        applyIpv4CustomRoutes(myIfaceName, myNewRoutesSet, mySaveScriptPath);
-        // then
-        IPv4Routes myNewRoutesQueried = getIpv4CustomRoutes(myIfaceName);
-        printCustomRoutes("New custom IPv4 routes on " + myIfaceName, myNewRoutesQueried);
-        TS_ASSERT(ta::equalIgnoreOrder(myNewRoutesQueried, myNewRoutesSet));
+        {
+            // given
+            IPv4Routes myNewRoutesSet = myOrigRoutes;
+            // add network route (notice, 192.168.34.12 should be fixed to 192.168.34.0)
+            myNewRoutesSet.push_back(IPv4Route(IPv4("192.168.34.12", "255.255.255.0"), myDefGw.ip));
+            // add IP route
+            myNewRoutesSet.push_back(IPv4Route(IPv4("192.168.35.1", "255.255.255.255"), myDefGw.ip));
+            // when (apply)
+            applyIpv4CustomRoutesForIface(myIfaceName, myNewRoutesSet, mySaveScriptPath);
+            // then
+            const IPv4Routes myRoutesQueried = getIpv4CustomRoutes(myIfaceName);
+            printCustomRoutes("New custom IPv4 routes on " + myIfaceName, myRoutesQueried);
+            TS_ASSERT(ta::equalIgnoreOrder(myRoutesQueried, normalizeCustomIpv4Routes(myNewRoutesSet)));
+        }
 
-        // when (restore the original routes)
-        ta::TimeUtils::sleep(2*ta::TimeUtils::MsecsInSecond); // sleep a bit to not annoy service manager with too frequent service restarts
-        applyIpv4CustomRoutes(myIfaceName, myOrigRoutes, mySaveScriptPath);
-        // then
-        myNewRoutesQueried = getIpv4CustomRoutes(myIfaceName);
-        printCustomRoutes("Restored custom IPv4 routes on " + myIfaceName, myNewRoutesQueried);
-        TS_ASSERT(ta::equalIgnoreOrder(myNewRoutesQueried, myOrigRoutes));
+        {
+            // when (restore the original routes)
+            applyIpv4CustomRoutesForIface(myIfaceName, myOrigRoutes, mySaveScriptPath);
+            // then
+            const IPv4Routes myRoutesQueried = getIpv4CustomRoutes(myIfaceName);
+            printCustomRoutes("Restored custom IPv4 routes on " + myIfaceName, myRoutesQueried);
+            TS_ASSERT(ta::equalIgnoreOrder(myRoutesQueried, myOrigRoutes));
+        }
 
-        TS_ASSERT_THROWS(applyIpv4CustomRoutes("non-existing-interface", myOrigRoutes, mySaveScriptPath), std::exception);
-        ta::TimeUtils::sleep(2*ta::TimeUtils::MsecsInSecond); // sleep a bit to not annoy service manager with too frequent service restarts
-        const IfacesIPv4Routes myInvalidRoutes = boost::assign::map_list_of("non-existing-interface", myOrigRoutes);
-        TS_ASSERT_THROWS(applyIpv4CustomRoutes(myInvalidRoutes, mySaveScriptPath), std::exception);
-        ta::TimeUtils::sleep(2*ta::TimeUtils::MsecsInSecond); // sleep a bit to not annoy service manager with too frequent service restarts
+        {
+            // given (make sure to pick up the gateway for which no route exists)
+            const string myUnreachableGw = "192.168.34.12";
+            TS_ASSERT_DIFFERS(myUnreachableGw, myDefGw.ip);
+            IPv4Routes myNewRoutes = myOrigRoutes;
+            // add network route (notice, 192.168.34.12 should be fixed to 192.168.34.0)
+            myNewRoutes.push_back(IPv4Route(IPv4("192.168.35.0", "255.255.255.0"), myUnreachableGw));
+            // when-then
+            TS_ASSERT_THROWS(applyIpv4CustomRoutesForIface(myIfaceName, myNewRoutes, mySaveScriptPath), NetworkUnreachableError);
+            // then (check nothing changed)
+            TS_ASSERT(ta::equalIgnoreOrder(getIpv4CustomRoutes(myIfaceName), myOrigRoutes));
+        }
+
+        {
+            // when-then
+            TS_ASSERT_THROWS(applyIpv4CustomRoutesForIface("non-existing-interface", myOrigRoutes, mySaveScriptPath), std::exception);
+        }
+
+        {
+            // given
+            const IfacesIPv4Routes myInvalidRoutes = boost::assign::map_list_of("non-existing-interface", myOrigRoutes);
+            // when-then
+            TS_ASSERT_THROWS(applyIpv4CustomRoutes(myInvalidRoutes, mySaveScriptPath), std::exception);
+        }
 #else
         TS_SKIP("Network interface modification tests are only needed by KeyTalk server, skipping them for this platform");
 #endif

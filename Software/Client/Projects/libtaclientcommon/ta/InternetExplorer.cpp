@@ -123,7 +123,7 @@ namespace ta
                 delete []wszBuf;
                 return false;
             }
-            aCmd = ta::EncodingUtils::toMbyte(wszBuf);
+            aCmd = ta::Strings::toMbyte(wszBuf);
             delete []wszBuf;
 
             lpAddress = ProcParam.CurrentDirectory.Buffer;
@@ -135,7 +135,7 @@ namespace ta
                 delete []wszBuf;
                 return false;
             }
-            aCurDir = ta::EncodingUtils::toMbyte(wszBuf);
+            aCurDir = ta::Strings::toMbyte(wszBuf);
             delete []wszBuf;
 
             return true;

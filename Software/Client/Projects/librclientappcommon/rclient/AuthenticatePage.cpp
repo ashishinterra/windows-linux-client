@@ -23,6 +23,7 @@
 #include "ta/utils.h"
 #include "ta/timeutils.h"
 #include "ta/assert.h"
+#include "ta/WinSmartCardUtil.h"
 
 #include "boost/bind.hpp"
 #include <vector>
@@ -369,7 +370,15 @@ namespace rclient
         }
 
         // Request cert and finish
-        requestCertificate();
+
+        if (theAuthReqs.use_tpm_vsc)
+        {
+            requestTpmVscCertificate();
+        }
+        else
+        {
+            requestCertificate();
+        }
 
         TimedNotificationBox::show(this, CertificateNotificationDelaySec, "Authenticated successfully", "Authenticated successfully.");
         return true;
@@ -491,6 +500,11 @@ namespace rclient
         theRcdpClient->hello();
         theRcdpClient->handshake();
         theAuthReqs = theRcdpClient->getAuthRequirements(rclient::Settings::getLatestService());
+
+        if (theAuthReqs.use_tpm_vsc && !ta::WinSmartCardUtil::hasSmartCard())
+        {
+            TA_THROW_MSG(ta::WinSmartCardUtilNoSmartCardError, "No Smart Card Found");
+        }
     }
 
     void AuthenticatePage::adjustUserIdUi()
@@ -862,6 +876,22 @@ namespace rclient
         theRcdpClient->eoc();
 
         theExecuteSync = myCertResponse.execute_sync;
+    }
+
+    void AuthenticatePage::requestTpmVscCertificate()
+    {
+        WaitDialog myWaitDialog("Retrieving certificate from Virtual Smart Card...", this);
+
+        if (!ta::WinSmartCardUtil::hasSmartCard())
+        {
+            TA_THROW_MSG(ta::WinSmartCardUtilNoSmartCardError, "No Smart Card Found");
+        }
+
+        const resept::CsrRequirements myCsrRequirements = theRcdpClient->getCsrRequirements();
+        const string myCsr = ta::WinSmartCardUtil::requestCsr(myCsrRequirements);
+        const bool myWithChain = rclient::Settings::isCertChain();
+        const string myCert = ta::vec2Str(theRcdpClient->signCSR(myCsr, myWithChain).cert);
+        NativeCertStore::installCert(myCert);
     }
 
     ta::StringArrayDict AuthenticatePage::resolveURIs() const

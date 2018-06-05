@@ -2492,6 +2492,20 @@ namespace ta
                            myPubKey.bit);
         }
 
+        bool isValidCsr(const string& aCsr)
+        {
+            ScopedResource<X509_REQ*> myReqPtr;
+            try
+            {
+                myReqPtr.assign(convPEM_2X509_REQ(aCsr), X509_REQ_free);
+            }
+            catch (std::exception)
+            {
+                return false;
+            }
+            return myReqPtr != NULL;
+        }
+
         // "DNS:example.com" => ("DNS", "example.com")
         boost::tuple<string, string> parseSingleSAN(const string& aSAN)
         {

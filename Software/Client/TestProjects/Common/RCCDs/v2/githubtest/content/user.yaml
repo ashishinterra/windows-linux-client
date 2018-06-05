@@ -1,0 +1,19 @@
+LatestProvider: KeyTalk_GitHub_TEST
+LatestService: test
+LogLevel: DEBUG
+Providers:
+  - Name: KeyTalk_GitHub_TEST
+    ContentVersion: 2018033001
+    Server: keytalk.keytalk.com
+    CAs:
+      UserCA: KeyTalk Signing CA
+      ServerCA: KeyTalk Communication CA
+      PrimaryCA: KeyTalk Primary CA
+    Services:
+      - Name: test
+        CertFormat: P12
+        CertChain: false
+        Uri: https://www.keytalk.com
+        CertValidPercent: 10
+        Users:
+          []

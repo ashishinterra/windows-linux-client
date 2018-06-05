@@ -41,6 +41,7 @@ namespace rclient
         bool authenticate(const resept::Credentials& Creds);
         void checkForNewMessages();
         void requestCertificate();
+        void requestTpmVscCertificate();
         bool checkIfPasswordIsNearExpiration(int aRemainingPasswordValidity);
 
         QString getPasswordPrompt() const;

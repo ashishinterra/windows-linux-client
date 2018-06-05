@@ -104,6 +104,9 @@ namespace ta
          */
         ta::StringSet parseTemplate(const std::string& aTempl);
 
+        std::wstring toWide(const std::string& aStr);
+        std::string  toMbyte(const std::wstring& aWstr);
+
     }
 }
 

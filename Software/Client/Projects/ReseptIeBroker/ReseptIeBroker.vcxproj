@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
@@ -39,7 +39,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\librclientappcommon;..\librclientcore;..\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\librclientappcommon;..\librclientcore;..\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(OPENSSL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
@@ -51,7 +51,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/SAFESEH /NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>librclientappcommon.lib;librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;libconfig++.lib;libyaml-cppmd.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>librclientappcommon.lib;librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;libconfig++.lib;libyaml-cppmd.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Export;..\..\..\Common\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>

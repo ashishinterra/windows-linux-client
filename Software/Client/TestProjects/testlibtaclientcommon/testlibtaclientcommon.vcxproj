@@ -42,7 +42,7 @@
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\Projects\libtaclientcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\cxxtest;..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Common\Projects\libreseptcommon;..\..\Projects\libtaclientcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\cxxtest;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(OPENSSL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;CXXTEST_HAVE_EH;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
@@ -50,8 +50,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;zlibwapi.lib;setupapi.lib;Iphlpapi.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(ZLIB_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libtaclientcommon.lib;libreseptcommon.lib;libtacommon.lib;libtalogger.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;zlibwapi.lib;setupapi.lib;Iphlpapi.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\Common\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(ZLIB_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -70,7 +70,6 @@ IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy .\test.zip "$(OutDir)"
 IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy log.conf  "$(OutDir)"
-
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -84,6 +83,7 @@ copy log.conf  "$(OutDir)"
     <ClInclude Include="ExceptionDumperTest.h" />
     <ClInclude Include="FileVersionInfoTest.h" />
     <ClInclude Include="InternetExplorerTest.h" />
+    <ClInclude Include="WinSmartCardUtilTest.h" />
     <ClInclude Include="ZipTest.h" />
   </ItemGroup>
   <ItemGroup>

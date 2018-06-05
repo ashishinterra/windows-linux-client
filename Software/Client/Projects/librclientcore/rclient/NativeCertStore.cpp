@@ -11,7 +11,6 @@
 #include "ta/encodingutils.h"
 #include "ta/assert.h"
 #include "ta/hashutils.h"
-#include "ta/certutils.h"
 #include "ta/strings.h"
 #include "ta/process.h"
 #include "ta/logger.h"
@@ -147,7 +146,7 @@ namespace rclient
                     TA_THROW_MSG(NativeCertStoreError, "Container name is empty");
                 wstring myContainerNameW = myCryptKeyProvInfoPtr->pwszContainerName;
                 boost::to_lower(myContainerNameW);
-                string myContainerName = ta::EncodingUtils::toMbyte(myContainerNameW);
+                string myContainerName = ta::Strings::toMbyte(myContainerNameW);
                 myContainerName += '\0';
                 vector<unsigned char> myMd5ContainerNameBin  = ta::HashUtils::getMd5Bin (myContainerName);
                 TA_ASSERT(myMd5ContainerNameBin.size() == 16);
@@ -274,6 +273,8 @@ namespace rclient
                 }
                 return false;
             }
+
+
 
             class Store
             {
@@ -640,7 +641,7 @@ namespace rclient
                     const LPCWSTR pwszSystemStore = (LPCWSTR)pvSystemStore;
                     static int line_counter = 0;
 
-                    pEnumArg->push_back(ta::EncodingUtils::toMbyte(pwszSystemStore));
+                    pEnumArg->push_back(ta::Strings::toMbyte(pwszSystemStore));
                     return TRUE;
                 }
             public:
@@ -760,7 +761,7 @@ namespace rclient
                 CRYPT_DATA_BLOB myPFX;
                 myPFX.cbData = (DWORD)aPfx.data.size();
                 myPFX.pbData = (BYTE*)ta::getSafeBuf(aPfx.data);
-                std::wstring myPassUni = ta::EncodingUtils::toWide(aPfx.password);
+                std::wstring myPassUni = ta::Strings::toWide(aPfx.password);
 
                 // Extract PFX to the temporary store
                 ta::ScopedResource<HCERTSTORE> myTempStore(::PFXImportCertStore(&myPFX, myPassUni.c_str(), 0), closeCertStore);
@@ -791,6 +792,24 @@ namespace rclient
                 DEBUGLOG(boost::format("Importing certificate with CN %s and sha1 fingerprint %s to the Personal system store") % (*myCertSubjCn) % (*mySha1Fingerprint));
                 Store(storePersonal).addToStore(myCertCtx, CERT_STORE_ADD_REPLACE_EXISTING);
                 return *mySha1Fingerprint;
+            }
+
+            // add signed DER certificate to the Personal Store
+            void importDerWin32(const vector<unsigned char> &aDerCert)
+            {
+                DEBUGLOG("Importing DER to Win32");
+                Store store(storePersonal);
+                PCCERT_CONTEXT myCertCtx = ::CertCreateCertificateContext((X509_ASN_ENCODING | PKCS_7_ASN_ENCODING), ta::getSafeBuf(aDerCert), aDerCert.size());
+                if (myCertCtx == NULL)
+                {
+                    TA_THROW_MSG(NativeCertStoreImportError, boost::format("CertCreateCertificateContext failed. Errorcode: %d") % GetLastError());
+                }
+                ScopedResource<PCCERT_CONTEXT> scopedCertCtx(myCertCtx, ::CertFreeCertificateContext);
+
+                if (!::CertAddEncodedCertificateToStore(store, (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING), ta::getSafeBuf(aDerCert), aDerCert.size(), CERT_STORE_ADD_REPLACE_EXISTING, &myCertCtx))
+                {
+                    TA_THROW_MSG(NativeCertStoreImportError, boost::format("CertAddEncodedCertificateToStore failed. Errorcode: %d") % GetLastError());
+                }
             }
 
 #else // non Windows
@@ -1562,7 +1581,24 @@ namespace rclient
         {
             return ta::isElemExist(aStoreName, getStoreNames());
         }
-#endif
+
+        void installCert(const string& aCert)
+        {
+            try
+            {
+                importDerWin32(ta::CertUtils::convPem2Der(aCert));
+            }
+            catch (NativeCertStoreImportError&)
+            {
+                throw;
+            }
+            catch (std::exception& e)
+            {
+                TA_THROW_MSG(NativeCertStoreImportError, e.what());
+            }
+        }
+
+#endif // _WIN32
     }// NativeCertStore
 }// rclient
 

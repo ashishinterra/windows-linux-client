@@ -179,12 +179,13 @@ namespace ta
 #endif
         /**
             Effectively calls shellExecuteSync and throws ProcessExecError if this call does not return 0
+            @return standard output
             This function is provided for convenience.
         */
 #ifdef _WIN32
-        void checkedShellExecSync(const std::string& aCommand);
+        std::string checkedShellExecSync(const std::string& aCommand);
 #else
-        void checkedShellExecSync(const std::string& aCommand, const std::string& anStdIn = "");
+        std::string checkedShellExecSync(const std::string& aCommand, const std::string& anStdIn = "");
 #endif
 
         /**

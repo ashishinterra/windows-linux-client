@@ -12,6 +12,7 @@
 #include "rclient/Common.h"
 #include "resept/Common.h"
 #include "ta/InternetExplorer.h"
+#include "ta/WinSmartCardUtil.h"
 #include "ta/logger.h"
 #include "ta/browser.h"
 #include "ta/netutils.h"
@@ -360,6 +361,13 @@ void ReseptDesktopClientApp::execute()
         const string myUserMsg = "Failed to import certificate. Please contact " + resept::ProductName + " administrator.";
         ERRORLOG2(myUserMsg, boost::format("Failed to import user certificates into the system store. %s") % e.what());
         QMessageBox::warning(NULL, "Failed to import user certificates", myUserMsg.c_str());
+        TA_THROW(ReseptDesktopClientAppError);
+    }
+    catch (ta::WinSmartCardUtilNoSmartCardError& e)
+    {
+        const string myUserMsg = "This service provider requires a (Virtual) Smart Card to be set up. Please contact " + resept::ProductName + " administrator on how to set up a (Virtual) Smart Card.";
+        ERRORLOG2(myUserMsg, e.what());
+        QMessageBox::warning(NULL, "No Smart Card Found", myUserMsg.c_str());
         TA_THROW(ReseptDesktopClientAppError);
     }
     catch (BrowserSelectonError& e)

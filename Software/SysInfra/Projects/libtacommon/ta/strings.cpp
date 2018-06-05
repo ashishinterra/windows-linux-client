@@ -17,6 +17,7 @@
 
 #ifdef _WIN32
 #define snprintf _snprintf
+#include <windows.h>
 #endif
 
 using namespace std;
@@ -413,6 +414,29 @@ namespace ta
                 i++;
             }
             return result;
+        }
+
+        wstring toWide(const string& aStr)
+        {
+            size_t myWsLen = mbstowcs(NULL, aStr.c_str(), 0);
+            if (myWsLen == (size_t)(-1))
+                TA_THROW_MSG(std::invalid_argument, "Invalid multibyte string");
+            wchar_t* myPtr = new wchar_t[myWsLen];
+            mbstowcs(myPtr, aStr.c_str(), myWsLen);
+            wstring myRetVal(myPtr, myWsLen);
+            delete []myPtr;
+            return myRetVal;
+        }
+        string toMbyte(const wstring& aWstr)
+        {
+            size_t myMbyteLen = wcstombs(NULL, aWstr.c_str(), aWstr.length()*sizeof(wchar_t)+1);
+            if (myMbyteLen == (size_t)(-1))
+                TA_THROW_MSG(std::invalid_argument, "Invalid wide character string");
+            char* myPtr = new char[myMbyteLen];
+            wcstombs(myPtr, aWstr.c_str(), myMbyteLen);
+            string myRetVal(myPtr, myMbyteLen);
+            delete []myPtr;
+            return myRetVal;
         }
 
     }// namespace Strings

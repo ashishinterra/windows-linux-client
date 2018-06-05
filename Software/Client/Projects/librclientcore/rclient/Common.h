@@ -80,24 +80,27 @@ namespace rclient
 
     struct AuthRequirements
     {
-        AuthRequirements(): resolve_service_uris(false), calc_service_uris_digest(false) {}
+        AuthRequirements() : resolve_service_uris(false), calc_service_uris_digest(false), use_tpm_vsc(false) {}
         resept::CredentialTypes cred_types;
         std::string hwsig_formula;
         std::string password_prompt;
         std::vector<std::string> service_uris;
         bool resolve_service_uris;
         bool calc_service_uris_digest;
+        bool use_tpm_vsc;
     };
 
     inline std::string str(const AuthRequirements& aReq)
     {
-        return str(boost::format("credential types: %s, HWSIG formula: %s, password prompt: %s, service URIs: %s, resolve service URIs: %s, calculate service URIs digest: %s")
+        return str(boost::format("credential types: %s, HWSIG formula: %s, password prompt: %s, service URIs: %s, resolve service URIs: %s, calculate service URIs digest: %s, use TPM VSC: %s")
                    % fmtCredTypes(aReq.cred_types)
                    % aReq.hwsig_formula
                    % aReq.password_prompt
                    % ta::Strings::join(aReq.service_uris, ',')
                    % (aReq.resolve_service_uris ? "yes" : "no")
-                   % (aReq.calc_service_uris_digest ? "yes" : "no"));
+                   % (aReq.calc_service_uris_digest ? "yes" : "no")
+                   % (aReq.use_tpm_vsc ? "yes" : "no")
+                  );
     }
 
     struct AuthResponse

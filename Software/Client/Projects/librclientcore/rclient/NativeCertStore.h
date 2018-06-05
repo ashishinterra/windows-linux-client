@@ -123,6 +123,13 @@ namespace rclient
          @return true if the specified store name exists in root store "LocalMachine", false otherwise
         */
         bool isStoreExists(const std::string& aStoreName);
+
+        /**
+          Install certificate into Personal Certificate Store, Windows only
+          @param aCert signed certificate in PEM format
+          @throw NativeCertStoreImportError
+        */
+        void installCert(const std::string& aCert);
 #endif
     }
 }

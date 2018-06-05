@@ -3,6 +3,7 @@
 #include "resept/common.h"
 #include "rclient/Common.h"
 #include "ta/netutils.h"
+#include "ta/certutils.h"
 
 #include "boost/utility.hpp"
 #include <string>

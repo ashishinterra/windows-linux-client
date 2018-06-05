@@ -83,23 +83,6 @@ public:
         TS_ASSERT_THROWS(dataUriDecodePngImage(""), std::exception);
         TS_ASSERT_THROWS(dataUriDecodePngImage("data:image/png;base64,NOT-A-PNG-IMAGE"), std::exception);
     }
-    void testWideMbyteConversions()
-    {
-        using namespace ta::EncodingUtils;
-
-        std::wstring myWstr;
-        string myStr = "AbCd";
-        TS_ASSERT_THROWS_NOTHING(myWstr = toWide(myStr));
-        TS_ASSERT_EQUALS(myWstr, L"AbCd");
-        TS_ASSERT_THROWS_NOTHING(myStr = toMbyte(myWstr));
-        TS_ASSERT_EQUALS(myStr, "AbCd");
-
-        myStr = "";
-        TS_ASSERT_THROWS_NOTHING(myWstr = toWide(myStr));
-        TS_ASSERT_EQUALS(myWstr, L"");
-        TS_ASSERT_THROWS_NOTHING(myStr = toMbyte(myWstr));
-        TS_ASSERT_EQUALS(myStr, "");
-    }
 
     void testPropertyTreeEncodeDecode()
     {

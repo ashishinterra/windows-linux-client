@@ -267,7 +267,7 @@ void KeyTalkIeClient::redirect(const string& aUrl, DISPPARAMS* aDispParamsPtr)
 
     myBrowserPtr->Stop();
 
-    CComBSTR newURL = ta::EncodingUtils::toWide(aUrl).c_str();
+    CComBSTR newURL = ta::Strings::toWide(aUrl).c_str();
     myBrowserPtr->Navigate(newURL, NULL, NULL, NULL, NULL); //@todo why losing POST and other headers data by passing all NULLs?
     (aDispParamsPtr->rgvarg)[0].boolVal = VARIANT_TRUE;
 }

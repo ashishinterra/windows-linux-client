@@ -86,12 +86,6 @@ namespace ta
          */
         std::string htmlEncode(const std::string& anSrc);
 
-        // @throw EncodeError
-        std::wstring toWide(const std::string& aStr);
-
-        //@throw EncodeError
-        std::string  toMbyte(const std::wstring& aWstr);
-
         // property tree encoding/decoding routines
         boost::property_tree::ptree toTree(const ta::StringArray& anArray);
         boost::property_tree::ptree toTree(const ta::StringDict& aDict);

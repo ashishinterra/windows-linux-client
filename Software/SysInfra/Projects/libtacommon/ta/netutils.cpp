@@ -37,7 +37,6 @@
 #include <vector>
 #include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
-#include "boost/tokenizer.hpp"
 #include "boost/regex.hpp"
 
 using std::string;
@@ -327,37 +326,6 @@ namespace ta
                 return myOrigNetIfacesConfigContents;
             }
 
-            // Validate and normalize custom routes
-            //@return normalized routes without duplicates
-            IPv4Routes normalizeCustomIpv4Routes(const IPv4Routes& aRoutes)
-            {
-                IPv4Routes myNormalizedRoutes;
-
-                foreach (const IPv4Route& route, ta::removeDuplicates(aRoutes))
-                {
-                    const string myAddr = boost::trim_copy(route.network.addr);
-                    if (!isValidIpv4(myAddr))
-                    {
-                        TA_THROW_MSG(std::invalid_argument, boost::format("Invalid network IPv4 network '%s'") % myAddr);
-                    }
-
-                    const string myNetmask = boost::trim_copy(route.network.netmask);
-                    if (!isValidIpv4NetMask(myNetmask))
-                    {
-                        TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 netmask '%s'") % myNetmask);
-                    }
-
-                    const string myGw = boost::trim_copy(route.gateway);
-                    if (!isValidIpv4(myGw))
-                    {
-                        TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 gateway '%s'") % myGw);
-                    }
-
-                    myNormalizedRoutes.push_back(IPv4Route(IPv4(myAddr, myNetmask), myGw));
-                }
-                return myNormalizedRoutes;
-            }
-
             // Validates and normalize default gateway
             //@return normalized gateway
             DefGateway normalizeIpv4DefGateway(const DefGateway& aDefGateway)
@@ -385,14 +353,6 @@ namespace ta
                 return myRetVal;
             }
 
-            // Combines the current system routes with the supplied routes by replacing the routes for the given interface and keeping the routes for other interfaces
-            IfacesIPv4Routes combineCurrentIpv4Routes(const string& anIfaceName, const IPv4Routes& aRoutes)
-            {
-                IfacesIPv4Routes myCombinedRoutes = getIpv4CustomRoutes();
-                myCombinedRoutes[anIfaceName] = aRoutes;
-                return myCombinedRoutes;
-            }
-
             // @return old configuration
             template <class Routes>
             std::string saveIpv4CustomRoutes(const Routes& aRoutes, const string& aSaveScriptPath)
@@ -407,21 +367,26 @@ namespace ta
             }
 
             //@nothrow
-            void tryRestoreCustomIpv4Routes(const string& anOrigPersistentConfiguration, const IPv4Routes& anOrigRoutes, const string& aSaveScriptPath)
+            void tryRestoreCustomIpv4Routes(const IPv4Routes& aBadRoutes, const IPv4Routes& anOrigRoutes)
             {
-                try {
-                    ta::writeData(aSaveScriptPath, anOrigPersistentConfiguration);
-                } catch (std::exception& e) {
-                    WARNLOG2("Failed to restore the original IPv4 persistent custom routing configuration", e.what());
+                // remove bad routes, tolerating errors because the route might not exist
+                foreach (const IPv4Route& route, aBadRoutes)
+                {
+                    try {
+                        Process::shellExecSync(str(boost::format("sudo ip -4 route delete %s/%s") % route.network.addr % route.network.netmask));
+                    } catch (...)
+                    {}
                 }
 
+                //
+                // restore the original routes
+                //
                 foreach (const IPv4Route& route, anOrigRoutes)
                 {
                     try {
-                        Process::checkedShellExecSync(str(boost::format("sudo ip -4 route delete %s/%s") % route.network.addr % route.network.netmask));
-                    } catch (std::exception& e) {
-                        WARNLOG2("Failed to restore the original IPv4 custom routing configuration", e.what());
-                    }
+                        Process::shellExecSync(str(boost::format("sudo ip -4 route delete %s/%s") % route.network.addr % route.network.netmask));
+                    } catch (...)
+                    {}
                 }
                 foreach (const IPv4Route& route, anOrigRoutes)
                 {
@@ -632,6 +597,40 @@ namespace ta
             }
 
 #endif // __linux__
+
+            vector<boost::uint8_t> splitIpv4OnOctets(const string& anIp)
+            {
+                vector<unsigned char> myOctets;
+                foreach (const string& octet, Strings::split(anIp, '.'))
+                {
+                    const unsigned int myOctetInt = Strings::parse<int>(octet);
+                    if (myOctetInt > 255)
+                    {
+                        TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse IPv4 %s (octet %s is invalid)") % anIp % octet);
+                    }
+                    myOctets.push_back(static_cast<boost::uint8_t>(myOctetInt));
+                }
+                if (myOctets.size() != 4)
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse IPv4 %s (%d octets found)") % anIp % myOctets.size());
+                }
+                return myOctets;
+            }
+
+            string createIpv4FromOctets(const vector<boost::uint8_t>& anOctets)
+            {
+                string myIp;
+                if (anOctets.size() != 4)
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot create IPv4 from %d octets") % anOctets.size());
+                }
+                StringArray myStrOctets;
+                foreach (const boost::uint8_t octet, anOctets)
+                {
+                    myStrOctets.push_back(Strings::toString(octet));
+                }
+                return Strings::join(myStrOctets, '.');
+            }
         } // end of private API
 
 
@@ -1152,15 +1151,9 @@ namespace ta
 
         IPv4Routes getIpv4CustomRoutes(const std::string& anIfaceName)
         {
-            string myStdOut, myStdErr;
-            const string myCommand = "ip -4 route show";
-            const int myExecCode = Process::shellExecSync(myCommand, myStdOut, myStdErr);
-            if (myExecCode != 0)
-            {
-                TA_THROW_MSG(std::runtime_error, boost::format("Command %1% finished with error code %2%. Stderr: %3%") % myCommand % myExecCode % myStdErr);
-            }
+            const string myCmd = "ip -4 route show";
+            const string myStdOut = boost::trim_copy(Process::checkedShellExecSync(myCmd));
 
-            boost::trim(myStdOut);
             if (myStdOut.empty())
             {
                 return IPv4Routes();
@@ -1168,27 +1161,38 @@ namespace ta
 
             IPv4Routes myRoutes;
 
-            const boost::regex myRegEx(str(boost::format("^\\s*(?<network-ip>[\\d\\.]+)/(?<network-mask>\\d+)\\s+via\\s+(?<gateway-ip>[\\d\\.]+)\\s+dev\\s+(?<device>%s)") % ta::regexEscapeStr(anIfaceName)));
+            const boost::regex myRegEx(str(boost::format("^\\s*(?<network-ip>[\\d\\.]+)(/(?<network-mask>\\d+)|(?<no-network-mask>))\\s+via\\s+(?<gateway-ip>[\\d\\.]+)\\s+dev\\s+(?<device>%s)") % ta::regexEscapeStr(anIfaceName)));
+
             boost::match_results<string::const_iterator> myMatch;
-            string::const_iterator myBeg = myStdOut.begin();
-            string::const_iterator myEnd = myStdOut.end();
+            string::const_iterator myBeg = myStdOut.begin(), myEnd = myStdOut.end();
             while (regex_search(myBeg, myEnd, myMatch, myRegEx))
             {
                 const string myNetworkIp = myMatch["network-ip"];
-                const unsigned int myNetMaskCidr = Strings::parse<unsigned int>(myMatch["network-mask"]);
-                const string myGatewayIp = myMatch["gateway-ip"];
-                const string myNetMask = convIpv4CidrNetmaskToDotDecimal(myNetMaskCidr);
+                const string myGwIp = myMatch["gateway-ip"];
+
+                string myNetMask;
+                if (myMatch["network-mask"].matched)
+                {
+                    // we have route to network or to host
+                    const unsigned int myNetMaskCidr = Strings::parse<unsigned int>(myMatch["network-mask"]);
+                    myNetMask = convIpv4CidrNetmaskToDotDecimal(myNetMaskCidr);
+                }
+                else
+                {
+                    // we have route to host
+                    myNetMask = "255.255.255.255";
+                }
                 if (!isValidIpv4(myNetworkIp))
                 {
-                    TA_THROW_MSG(std::runtime_error, boost::format("Invalid network IP '%s' found in the output of %s command: %s") % myNetworkIp % myCommand % myStdOut);
+                    TA_THROW_MSG(std::runtime_error, boost::format("Invalid network IP '%s' found in the output of %s command: %s") % myNetworkIp % myCmd % myStdOut);
                 }
-                if (!isValidIpv4(myGatewayIp))
+                if (!isValidIpv4(myGwIp))
                 {
-                    TA_THROW_MSG(std::runtime_error, boost::format("Invalid gateway IP '%s' found in the output of %s command: %s") % myGatewayIp % myCommand % myStdOut);
+                    TA_THROW_MSG(std::runtime_error, boost::format("Invalid gateway IP '%s' found in the output of %s command: %s") % myGwIp % myCmd % myStdOut);
                 }
                 myBeg = myMatch[0].second;
 
-                const IPv4Route myRoute(IPv4(myNetworkIp, myNetMask), myGatewayIp);
+                const IPv4Route myRoute(IPv4(myNetworkIp, myNetMask), myGwIp);
                 myRoutes.push_back(myRoute);
             }
 
@@ -1210,37 +1214,88 @@ namespace ta
             return myRetVal;
         }
 
-        void applyIpv4CustomRoutes(const string& anIfaceName, const IPv4Routes& aRoutes, const string& aSaveScriptPath)
+        IPv4Routes normalizeCustomIpv4Routes(const IPv4Routes& aRoutes)
+        {
+            IPv4Routes myRoutes;
+
+            foreach (const IPv4Route& route, ta::removeDuplicates(aRoutes))
+            {
+                string myIp = boost::trim_copy(route.network.addr);
+                if (!isValidIpv4(myIp))
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 network '%s'") % myIp);
+                }
+
+                const string myNetmask = boost::trim_copy(route.network.netmask);
+                if (!isValidIpv4NetMask(myNetmask))
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 netmask '%s'") % myNetmask);
+                }
+
+                myIp = calcIpv4NetworkAddress(myIp, myNetmask);
+
+                const string myGw = boost::trim_copy(route.gateway);
+                if (!isValidIpv4(myGw))
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 gateway '%s'") % myGw);
+                }
+
+                myRoutes.push_back(IPv4Route(IPv4(myIp, myNetmask), myGw));
+            }
+            return ta::removeDuplicates(myRoutes);
+        }
+
+        void applyIpv4CustomRoutesForIface(const string& anIfaceName, const IPv4Routes& aRoutes, const string& aSaveScriptPath)
         {
             if (!ta::isKeyExist(anIfaceName, getMyIpv4faces()))
             {
                 TA_THROW_MSG(std::invalid_argument, "Unknown network interface " + anIfaceName + " supplied for applying custom IPv4 routes");
             }
-            const IPv4Routes myOrigRoutes = getIpv4CustomRoutes(anIfaceName);
-            const IPv4Routes myNewRoutes = normalizeCustomIpv4Routes(aRoutes);
-            DEBUGLOG("Applying IPv4 custom routes for " + anIfaceName + ": " + str(myNewRoutes));
+            const IfacesIPv4Routes myOrigRoutes = getIpv4CustomRoutes();
+            const IPv4Routes myOrigRoutesForIface = getIpv4CustomRoutes(anIfaceName);
+            const IPv4Routes myNewRoutesForIface = normalizeCustomIpv4Routes(aRoutes);
+            DEBUGLOG("Applying IPv4 custom routes for " + anIfaceName + ": " + str(myNewRoutesForIface));
 
-            // save to disk
-            const IfacesIPv4Routes myCombinedRoutes = combineCurrentIpv4Routes(anIfaceName, myNewRoutes);
-            const string myOrigPersistentConfiguration = saveIpv4CustomRoutes(myCombinedRoutes, aSaveScriptPath);
-
-            // effectuate the changes
             try
             {
-                foreach (const IPv4Route& route, myOrigRoutes)
+                //
+                // effectuate the changes
+                //
+                foreach (const IPv4Route& route, myOrigRoutesForIface)
                 {
                     Process::checkedShellExecSync(str(boost::format("sudo ip -4 route delete %s/%s") % route.network.addr % route.network.netmask));
                 }
-                foreach (const IPv4Route& route, myNewRoutes)
+                foreach (const IPv4Route& route, myNewRoutesForIface)
                 {
-                    Process::checkedShellExecSync(str(boost::format("sudo ip -4 route replace %s/%s via %s dev %s") % route.network.addr % route.network.netmask % route.gateway % anIfaceName));
+                    string myStdOut, myStdErr;
+                    const string myCmd = str(boost::format("sudo ip -4 route replace %s/%s via %s dev %s") % route.network.addr % route.network.netmask % route.gateway % anIfaceName);
+                    const int myRet = Process::shellExecSync(myCmd, myStdOut, myStdErr);
+                    if (myRet != 0)
+                    {
+                        const string myErrorStr = str(boost::format("Failed to apply custom routes. Command '%s' finished with code %d. Stdout: %s. Stderr: %s") % myCmd % myRet % myStdOut % myStdErr);
+                        if (myRet == 2 && myStdErr.find("Network is unreachable") != string::npos)
+                        {
+                            TA_THROW_MSG(NetworkUnreachableError, myErrorStr);
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(std::runtime_error, myErrorStr);
+                        }
+                    }
                 }
+
+                //
+                // save to disk
+                //
+                IfacesIPv4Routes myMergedRoutes = myOrigRoutes;
+                myMergedRoutes[anIfaceName] = myNewRoutesForIface;
+                saveIpv4CustomRoutes(myMergedRoutes, aSaveScriptPath);
             }
-            catch (...)
+            catch (const std::exception& e)
             {
-                WARNLOG("Failed to effectuate IPv4 custom routes, trying to restore the original values");
+                WARNLOG("Failed to apply IPv4 custom routes, trying to restore the original values");
                 // omit interface name letting the system to figure it out; this should minimize the chance of errors
-                tryRestoreCustomIpv4Routes(myOrigPersistentConfiguration, myOrigRoutes, aSaveScriptPath);
+                tryRestoreCustomIpv4Routes(myNewRoutesForIface, myOrigRoutesForIface);
                 throw;
             }
         }
@@ -1264,12 +1319,12 @@ namespace ta
                 IfacesIPv4Routes::const_iterator routesIt = aRoutes.find(myIfaceName);
                 if (routesIt != aRoutes.end())
                 {
-                    applyIpv4CustomRoutes(myIfaceName, routesIt->second, aSaveScriptPath);
+                    applyIpv4CustomRoutesForIface(myIfaceName, routesIt->second, aSaveScriptPath);
                 }
                 else
                 {
                     // remove custom routes for the remaining interfaces
-                    applyIpv4CustomRoutes(myIfaceName, IPv4Routes(), aSaveScriptPath);
+                    applyIpv4CustomRoutesForIface(myIfaceName, IPv4Routes(), aSaveScriptPath);
                 }
             }
         }
@@ -1327,27 +1382,18 @@ namespace ta
             const string myNetMask = boost::trim_copy(aNetMask);
 
             if (!isValidIpv4(myNetMask))
-                return false;
-
-            // Parse IP components
-            using namespace boost;
-            char_separator<char> mySeparator(".");
-            tokenizer< char_separator<char> > myTokens(myNetMask, mySeparator);
-            vector<unsigned char> myIpComponents;
-            foreach (const string& myIpComponent, myTokens)
             {
-                short c = Strings::parse<short>(myIpComponent);
-                if (c < 0 || c > 255)
-                    TA_THROW_MSG(std::runtime_error, boost::format("Invalid IPv4 netmask component: %d. Expected a number in the range [0-255]") % myIpComponent);
-                myIpComponents.push_back(static_cast<unsigned short>(c));
+                return false;
             }
+
+            const vector<boost::uint8_t> myOctets = splitIpv4OnOctets(myNetMask);
 
             // Construct network mask
             unsigned int myNetMaskInt = 0;
-            myNetMaskInt |= myIpComponents[0] << 24;
-            myNetMaskInt |= myIpComponents[1] << 16;
-            myNetMaskInt |= myIpComponents[2] << 8;
-            myNetMaskInt |= myIpComponents[3];
+            myNetMaskInt |= myOctets[0] << 24;
+            myNetMaskInt |= myOctets[1] << 16;
+            myNetMaskInt |= myOctets[2] << 8;
+            myNetMaskInt |= myOctets[3];
 
             // Determine if the network mask is a proper prefix of ones
             bool isValidPrefix = true;
@@ -1390,6 +1436,28 @@ namespace ta
                 TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 subnet prefix length %u (derived dot-decimal form %s is invalid)") % aPrefixLen % myNetMask);
             }
             return myNetMask;
+        }
+
+        string calcIpv4NetworkAddress(const string& anIp, const string& aNetMask)
+        {
+            if (!isValidIpv4(anIp))
+            {
+                TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 address %s") % anIp);
+            }
+            if (!isValidIpv4NetMask(aNetMask))
+            {
+                TA_THROW_MSG(std::invalid_argument, boost::format("Invalid IPv4 netmask %s") % aNetMask);
+            }
+
+            vector<boost::uint8_t> myIpOctets = splitIpv4OnOctets(anIp);
+            const vector<boost::uint8_t> myNetMaskOctets = splitIpv4OnOctets(aNetMask);
+
+            myIpOctets[0] &= myNetMaskOctets[0];
+            myIpOctets[1] &= myNetMaskOctets[1];
+            myIpOctets[2] &= myNetMaskOctets[2];
+            myIpOctets[3] &= myNetMaskOctets[3];
+
+            return createIpv4FromOctets(myIpOctets);
         }
 
         bool isValidIpv6(const string& anAddr)
