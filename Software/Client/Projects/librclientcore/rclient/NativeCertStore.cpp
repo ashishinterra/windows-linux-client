@@ -1237,7 +1237,8 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        return ta::Process::checkedShellExecSync("update-ca-certificates");
+                        ta::Process::checkedShellExecSync("update-ca-certificates");
+                        return;
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
                     }
@@ -1254,7 +1255,8 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        return ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
+                        ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
+                        return;
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(theStoreType));
                     }
