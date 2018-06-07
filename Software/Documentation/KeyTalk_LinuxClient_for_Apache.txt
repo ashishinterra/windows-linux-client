@@ -28,17 +28,28 @@ System Requirements
 Before installing the KeyTalk client with Apache certificate renewal script
 please make sure that your server meets the following requirements:
 
+- RHEL 6/7 x64 or CentOS 6/7 x64
 - Debian 8 x64, Debian 9 x64 or Ubuntu 16.04 LTS x64
 - Apache 2.2 - 2.4 installed with SSL module enabled
 
   Example configuring Apache:
 
-sudo apache2ctl -v
-if ! sudo a2query -m  ssl; then \
-    sudo a2enmod ssl; \
-    sudo a2ensite default-ssl; \
-    sudo service apache2 restart; \
-fi
+    For RHEL/CentOS:
+
+    sudo httpd -v
+    sudo rpm -qa | grep mod_ssl (Check whether ssl module is enabled or intalled)
+    sudo mod_ssl (if it does not exist install using this command)
+    sudo service httpd restart
+
+
+    For Debian/Ubuntu:
+
+    sudo apache2ctl -v
+    if ! sudo a2query -m  ssl; then \
+         sudo a2enmod ssl; \
+         sudo a2ensite default-ssl; \
+         sudo service apache2 restart; \
+    fi
 
 
 Compatible KeyTalk versions
@@ -72,9 +83,9 @@ otherwise the Apache certificate renewal script will not be installed.
 
 To install and customize the KeyTalk client, run the following commands (ignore sudo if you are root):
 
-    tar -xzf KeyTalkClient-5.X.Y.linux.tgz
+    tar -pzxvf keytalkclient-5.2.2.tar.gz
     cd keytalkclient-5.X.Y
-    sudo ./install.sh
+    sudo ./install-keytalk.sh
     sudo /usr/local/bin/keytalk/ktconfig --rccd-path <path-to-rccd>
 
 Notice: RCCD installation for Apache integration must be done as root because the Apache certificate renewal script invoked by cron

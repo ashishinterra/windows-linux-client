@@ -1,3 +1,6 @@
+#################################################
+# RHEL/CentOS 6 & 7 support added on 8 May 2018 #
+#################################################
 CLIENT_VERSION:=$(shell cut -d '=' -f 2 ../../../../version)
 CLIENT_VERSION:=$(CLIENT_VERSION)$(shell grep -m 1 '^Hardware' /proc/cpuinfo | cut -d ':' -f 2 | grep -q BCM2708 && echo '.RaspberryPi')
 DISTRO_NAME:=$(shell lsb_release --id --short)
@@ -8,6 +11,14 @@ ifeq ($(BUILD_PLATFORM),Debian-8-x86_64)
   OUT_FILE_PLATFORM:=debian8_ubuntu16.04-x64
 else ifeq ($(BUILD_PLATFORM),Debian-9-x86_64)
   OUT_FILE_PLATFORM:=debian9-x64
+else ifeq ($(BUILD_PLATFORM),CentOS-7-x86_64)
+  OUT_FILE_PLATFORM:=centos7-x64
+else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-7-x86_64)
+  OUT_FILE_PLATFORM:=RedHatEnterpriseServer7-x64
+else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-6-x86_64)
+  OUT_FILE_PLATFORM:=RedHatEnterpriseServer6-x64
+else ifeq ($(BUILD_PLATFORM),CentOS-6-x86_64)
+  OUT_FILE_PLATFORM:=centos6-x64
 else
   $(error $(BUILD_PLATFORM) platform is not supported)
 endif

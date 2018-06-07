@@ -1,7 +1,13 @@
+//Edit this file to add support for platforms other than Debian 8, Debian 9, RHEL/CentOS 6&7.
 #include "NativeCertStore.h"
 #include "Settings.h"
 #include "Common.h"
 #include "resept/util.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/utsname.h>
+#include <string.h>
 #ifdef _WIN32
 #include "ta/OsUserInfo.h"
 #include "ta/sysinfo.h"
@@ -1237,8 +1243,17 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        ta::Process::checkedShellExecSync("update-ca-certificates");
-                        return;
+
+		        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+			{
+			    ta::Process::checkedShellExecSync("update-ca-trust");
+			    return;
+			}
+		        else if(ta::isFileExist("/etc/debian_version"))
+			{
+                            ta::Process::checkedShellExecSync("update-ca-certificates");
+			    return;
+			}
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
                     }
@@ -1255,8 +1270,17 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
+
+			if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+			{
+                        ta::Process::checkedShellExecSync("update-ca-trust extract");
+			return;
+			}
+		        else if(ta::isFileExist("/etc/debian_version"))
+			{
                         ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
                         return;
+			}
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(theStoreType));
                     }
@@ -1603,4 +1627,3 @@ namespace rclient
 #endif // _WIN32
     }// NativeCertStore
 }// rclient
-

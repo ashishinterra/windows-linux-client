@@ -24,4 +24,4 @@ clean:
 	rm -f ${DEPENDENCIES} ${PACKAGE}
 
 install: requirements.txt
-	pip3 install --upgrade --requirement requirements.txt
+	pip3.5 install --upgrade --requirement requirements.txt

@@ -101,15 +101,15 @@ function install_keytalk()
 # Check if an executable can be found in the path
 function has_executable()
 {
-    if which "$1" > /dev/null 2>&1 && [ -x "$(which $1)" ]; then
+    if which "$1" > /dev/null && 2>&1 && [ -x "$(which $1)" ]; then
         return 0
     else
         return 1
     fi
 }
 
-
-# Supported Linux distros: Ubuntu 16.04 (LTS), Debian 8 and Debian 9
+# Edited on May 07, 2018
+# Supported Linux distros: Ubuntu 16.04 (LTS), Debian 8 and Debian 9, Rhel 6, CentOS 6, Rhel 7, CentOS 7
 function check_platform_compatibility()
 {
     local os=$(uname)
@@ -124,14 +124,22 @@ function check_platform_compatibility()
         return 1
     fi
 
-    if ! has_executable apt-get ; then
-        echo "ERROR: unsupported platform (apt-get missing)"
-        return 1
-    fi
+    local PKG_MANAGER=$( command -v yum || command -v apt-get ) || (echo "Neither yum nor apt-get found" && return 1)
 
     if ! has_executable lsb_release ; then
-        apt-get -qq -y update
-        apt-get -qq -y install lsb-release
+	if [ -f /etc/debian_version ]; then
+		apt-get -qq -y install lsb-release
+		apt-get -y install libnss3-tools
+	elif [ -f /etc/centos-release ]; then
+		yum -y install redhat-lsb-core
+		yum -y install nss-tools
+	elif [ -f /etc/redhat-release ]; then
+		yum -y install redhat-lsb-core
+		yum install nss-tools
+	else
+		echo "Debain/RedHat/CentOS required for installation"
+		exit 1
+	fi
     fi
 
     local distro_name=$(lsb_release --id --short)
@@ -140,7 +148,7 @@ function check_platform_compatibility()
     local build_distro_name=$(cat ./build-platform | cut -d '-' -f 1)
     local build_distro_version_major=$(cat ./build-platform | cut -d '-' -f 2)
     local build_arch=$(cat ./build-platform | cut -d '-' -f 3)
-
+    local distro_version_major=$(echo ${distro_version} | egrep -o [0-9]+ | sed -n '1p')
     if [ x"${arch}" != x"${build_arch}" ]; then
         echo "KeyTalk Linux client requires Linux with ${build_arch} architecture to install"
         return 1
@@ -148,31 +156,51 @@ function check_platform_compatibility()
 
     # KeyTalk built on Debian 8 can be installed on Debian 8 and on Ubuntu-16.04
     # KeyTalk built on Debian 9 can be installed on Debian 9 only
+    # Edited May 07, 2018
+    # KeyTalk built on RHEL/CentOS 6,RHEL/CentOS 7 can be installed on RHEL/CentOS 6, RHEL/CentOS 7 respectively
+    
     if [ x"${build_distro_name}" == x"Debian" ]; then
-        local distro_version_major=$(echo ${distro_version} | egrep -o [0-9]+ | sed -n '1p')
+        
         if [ ${build_distro_version_major} -eq 8 ] ; then
             # KeyTalk is built on Debian 8
             if [ x"${distro_name}" == x"Debian" -a ${distro_version_major} -eq 8 ]; then
                 return 0 # ok
-            fi
-            if [ x"${distro_name}" == x"Ubuntu" -a x"${distro_version}" == x"16.04" ]; then
+            elif [ x"${distro_name}" == x"Ubuntu" -a x"${distro_version}" == x"16.04" ]; then
                 return 0 # ok
-            fi
-            echo "Debian 8 or Ubuntu 16.04 (LTS) is required to install KeyTalk but ${distro_name} ${distro_version} found"
-            return 1
+            else
+            	echo "Debian 8 or Ubuntu 16.04 (LTS) is required to install KeyTalk but ${distro_name} ${distro_version} found"
+            	return 1
+	    fi
         elif [ ${build_distro_version_major} -eq 9 ] ; then
             # KeyTalk is built on Debian 9
             if [ x"${distro_name}" == x"Debian" -a ${distro_version_major} -eq 9 ]; then
                 return 0 # ok
-            fi
+            else
             echo "Debian 9 is required to install KeyTalk but ${distro_name} ${distro_version} found"
             return 1
+	    fi
         else
             echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
             return 1
-        fi
+    	fi
+    
+
+    elif [ x"${build_distro_name}" == x"CentOS" -a ${distro_version_major} -eq 7 ]; then
+                return 0 # ok
+        
+    elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${distro_version_major} -eq 7 ]; then
+                return 0 # ok
+
+    elif [ x"${build_distro_name}" == x"CentOS" -a ${distro_version_major} -eq 6 ]; then
+		update-ca-trust enable 
+                return 0 # ok
+        
+    elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${distro_version_major} -eq 6 ]; then
+		update-ca-trust enable
+                return 0 # ok
+
     else
-        echo "KeyTalk client is built on on unsupported Linux distribution ${build_distro_name}"
+        echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
         return 1
     fi
 }
@@ -180,26 +208,75 @@ function check_platform_compatibility()
 function install_apache_cert_renewal_prerequisities()
 {
     # Apache version should be 2.2 - 2.4
-    if ! has_executable apache2 ; then
-        echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache 2 is required by KeyTalk client certificate renewal."
-        return 0
+	
+	if [ -f /etc/debian_version ]; then
+	    if ! has_executable apache2 ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache 2 is required by KeyTalk client certificate renewal."
+		return 0
+	    fi
+
+	    local apache_version=( $(apache2 -v | grep "Server version" | egrep -o [0-9]+) )
+
+	    if [ ${apache_version[0]} -ne 2 ] ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
+		return 0
+	    fi
+	    if [ ${apache_version[1]} -ne 2 -a ${apache_version[1]} -ne 4 ] ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
+		return 0
+	    fi
+
+	elif [ -f /etc/centos-release ]; then
+	    if ! has_executable httpd ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache 2 is required by KeyTalk client certificate renewal."
+		return 0
+	    fi
+
+	    local apache_version=( $(httpd -v | grep "Server version" | egrep -o [0-9]+) )
+
+	    if [ ${apache_version[0]} -ne 2 ] ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
+		return 0
+	    fi
+	    if [ ${apache_version[1]} -ne 2 -a ${apache_version[1]} -ne 4 ] ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
+		return 0
+	    fi
+
+	elif [ -f /etc/redhat-release ]; then
+	    if ! has_executable httpd ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache 2 is required by KeyTalk client certificate renewal."
+		return 0
+	    fi
+
+	    local apache_version=( $(httpd -v | grep "Server version" | egrep -o [0-9]+) )
+
+	    if [ ${apache_version[0]} -ne 2 ] ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
+		return 0
+	    fi
+	    if [ ${apache_version[1]} -ne 2 -a ${apache_version[1]} -ne 4 ] ; then
+		echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
+		return 0
+	    fi
+	fi
+
+	
+    if [ -f /etc/debian_version ]; then
+	apt-get -qq -y install cron python-lxml python-openssl
+	IS_CERT_RENEWAL_PREREQUISITES_OK=true
+	return 0
+    elif [ -f /etc/centos-release ]; then
+	yum -y install cronie python-lxml pyOpenSSL
+	IS_CERT_RENEWAL_PREREQUISITES_OK=true
+	return 0		
+	
+    elif [ -f /etc/redhat-release ]; then
+	yum -y install cronie python-lxml pyOpenSSL
+	IS_CERT_RENEWAL_PREREQUISITES_OK=true
+	return 0		
     fi
 
-    local apache_version=( $(apache2 -v | grep "Server version" | egrep -o [0-9]+) )
-
-    if [ ${apache_version[0]} -ne 2 ] ; then
-        echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
-        return 0
-    fi
-    if [ ${apache_version[1]} -ne 2 -a ${apache_version[1]} -ne 4 ] ; then
-        echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache ${apache_version} is not supported by KeyTalk client certificate renewal. Apache 2.2-2.4 is required."
-        return 0
-    fi
-
-    apt-get -qq -y install cron python-lxml python-openssl
-    IS_CERT_RENEWAL_PREREQUISITES_OK=true
-
-    return 0
 }
 
 function get_platform_info()
@@ -215,10 +292,20 @@ function install_prerequisites()
     check_platform_compatibility
 
     v_print "Installing prerequisites for KeyTalk on $(get_platform_info)"
-
-    apt-get -qq -y update
-    apt-get -qq -y install ca-certificates hdparm psmisc
-    install_apache_cert_renewal_prerequisities
+	if [ -f /etc/debian_version ]; then
+		apt-get -qq update
+		apt-get -qq -y install ca-certificates hdparm psmisc
+		install_apache_cert_renewal_prerequisities
+	elif  [ -f /etc/centos-release ]; then
+		yum update
+		yum -y install ca-certificates hdparm psmisc
+		install_apache_cert_renewal_prerequisities
+	
+	elif  [ -f /etc/redhat-release ]; then
+		yum update
+		yum -y install ca-certificates hdparm psmisc
+		install_apache_cert_renewal_prerequisities
+	fi
 }
 
 
