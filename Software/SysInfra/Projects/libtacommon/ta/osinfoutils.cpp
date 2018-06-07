@@ -157,9 +157,9 @@ namespace ta
         //
         // Public API
         //
-        Version getVersion()
+        OsVersion getVersion()
         {
-            Version myRetVal;
+            OsVersion myRetVal;
 #ifdef _WIN32
             OSVERSIONINFOEX osinfoex = {0};
             osinfoex.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
@@ -171,24 +171,13 @@ namespace ta
 
             myRetVal.ver = str(boost::format("%u.%u.%u") % osinfoex.dwMajorVersion % osinfoex.dwMinorVersion % (osinfoex.dwBuildNumber & 0xFFFF));
             myRetVal.name = parseWin32VersionName(osinfoex);
-
 #elif defined(__linux__)
-            std::string myStdOut, myStdErr;
-            std::string myCommand = "uname -s";
-            int myExecCode = Process::shellExecSync(myCommand, myStdOut, myStdErr);
-            if (myExecCode != 0)
-                TA_THROW_MSG(std::runtime_error, boost::format("Command %s finished with error code %d") % myCommand % myExecCode);
-            myRetVal.name = boost::trim_copy(myStdOut);
+            myRetVal.name = boost::trim_copy(Process::checkedShellExecSync("uname -s"));
             if (isRaspberryPi())
             {
                 myRetVal.name += " (Raspberry Pi)";
             }
-
-            myCommand = "uname -r";
-            myExecCode = Process::shellExecSync(myCommand, myStdOut, myStdErr);
-            if (myExecCode != 0)
-                TA_THROW_MSG(std::runtime_error, boost::format("Command %s finished with error code %d") % myCommand % myExecCode);
-            myRetVal.ver = boost::trim_copy(myStdOut);
+            myRetVal.ver = boost::trim_copy(Process::checkedShellExecSync("uname -r"));
 #else
 #error "Unsupported platform"
 #endif

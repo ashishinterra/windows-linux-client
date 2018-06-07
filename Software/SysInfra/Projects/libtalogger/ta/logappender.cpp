@@ -155,7 +155,7 @@ namespace ta
         string myOsVer = "OS: <unknown>";
         try
         {
-            OsInfoUtils::Version myVer = OsInfoUtils::getVersion();
+            const OsInfoUtils::OsVersion myVer = OsInfoUtils::getVersion();
             myOsVer = str(boost::format("OS: %s %s") % myVer.name % myVer.ver);
         }
         catch (std::runtime_error&)

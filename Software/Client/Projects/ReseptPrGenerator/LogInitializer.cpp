@@ -52,7 +52,7 @@ void LogInitializer::logOsInfo()
     using namespace ta;
     try
     {
-        OsInfoUtils::Version myVersion = OsInfoUtils::getVersion();
+        const OsInfoUtils::OsVersion myVersion = OsInfoUtils::getVersion();
         DEBUGLOG(boost::format("\nOS info:\nName: %s\nVersion: %s") % myVersion.name % myVersion.ver);
 
         DEBUGLOG("\nEnvironment variables:");

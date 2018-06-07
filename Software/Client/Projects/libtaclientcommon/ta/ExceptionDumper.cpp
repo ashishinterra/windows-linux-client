@@ -303,7 +303,7 @@ namespace ta
 
             try
             {
-                OsInfoUtils::Version myVer = OsInfoUtils::getVersion();
+                const OsInfoUtils::OsVersion myVer = OsInfoUtils::getVersion();
                 hprintf(LogFile, _T("Operating system:  %s (%s).\r\n"), myVer.name.c_str(), myVer.ver.c_str());
             }
             catch(std::runtime_error&)
