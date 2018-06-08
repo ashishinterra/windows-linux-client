@@ -1250,9 +1250,8 @@ public:
                 // then
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                //TS_ASSERT(isValidCsr(myCsrPem)); TODO (tim) this test fails, probably because this type of CSR is wrong!
+                TS_ASSERT(!isValidCsr(myCsrPem));
                 TS_ASSERT_THROWS(parseSignedCSR(myCsrPem), std::exception);
-                TS_ASSERT_THROWS(convPEM_2X509_REQ(myCsrPem), std::exception);
             }
             {
                 TS_TRACE(str(boost::format("Create non-signed CSR with %d bit key") % keyBits).c_str());
@@ -1263,9 +1262,8 @@ public:
                 // then
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                //TS_ASSERT(isValidCsr(myCsrPem)); TODO (tim) this test fails, probably because this type of CSR is wrong!
+                TS_ASSERT(!isValidCsr(myCsrPem));
                 TS_ASSERT_THROWS(parseSignedCSR(myCsrPem), std::exception);
-                TS_ASSERT_THROWS(convPEM_2X509_REQ(myCsrPem), std::exception);
             }
         }
 

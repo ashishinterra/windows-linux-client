@@ -8,6 +8,7 @@ Supports RCDP 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: Support TPM 2.0 by Windows client (KEYTALK-429)
     - ADDED: Support for storing certificate data to AltSecurityIdentities
+    - ADDED: REST API to check self-service is enabled for the given account
     - FIXED: More robust custom routes configuration
     - FIXED: Logging stalls sometimes as a result of log rotation
 

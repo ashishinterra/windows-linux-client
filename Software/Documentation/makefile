@@ -24,7 +24,7 @@ DOCS_PACKAGE=../Server/Projects/Export/keytalk.svr.doc-$(VERSION).tar
 
 release debug:
 	@echo Generating server documentation...
-	@tar -cf $(DOCS_PACKAGE) KeyTalkServerAdminManualNotes.docx KeyTalkProtocols.pdf
+	@tar -cf $(DOCS_PACKAGE) KeyTalkServerAdminManualNotes.docx KeyTalkApi.pdf
 	@tar -uf $(DOCS_PACKAGE) -C ../Server/Projects/config/ create-shared-db-tables.sql create-mod-mysql-db-tables.sql
 
 clean:

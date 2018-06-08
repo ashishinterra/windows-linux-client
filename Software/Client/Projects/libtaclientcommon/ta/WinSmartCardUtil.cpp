@@ -5,6 +5,9 @@
 #include "ta/certutils.h"
 #include "ta/encodingutils.h"
 #include "ta/scopedresource.hpp"
+
+#include "openssl/x509.h"
+
 #include <windows.h>
 
 
@@ -159,6 +162,18 @@ namespace ta
             return "-----BEGIN CERTIFICATE REQUEST-----\n" + ta::EncodingUtils::toBase64(mySignedEncodedCertReq) + "\n-----END CERTIFICATE REQUEST-----\n";
         }
 
+        unsigned int doGetKeySize(const CERT_PUBLIC_KEY_INFO& myPubKeyInfo)
+        {
+            const unsigned char* myPubKeyPtr = myPubKeyInfo.PublicKey.pbData;
+            ScopedResource<RSA*>myRSA(d2i_RSAPublicKey(NULL, &myPubKeyPtr, myPubKeyInfo.PublicKey.cbData), RSA_free);
+            if (myRSA == NULL)
+            {
+                TA_THROW_MSG(std::runtime_error, "Call to d2i_RSAPublicKey failed attepmting to get Public Key size");
+            }
+
+            return ta::RsaUtils::getKeySizeBits(myRSA);
+        }
+
         string requestCsr(const resept::CsrRequirements& aCsrRequirements)
         {
             return requestCsr(
@@ -263,7 +278,7 @@ namespace ta
             auto_ptr<CERT_PUBLIC_KEY_INFO> myPublicKeyInfo = doCryptExportPublicKeyInfo(myCryptProv);
             myCertReqInfo.SubjectPublicKeyInfo = *myPublicKeyInfo.get();
 
-            const unsigned int myKeySizeBits = myPublicKeyInfo->PublicKey.cbData * 8 - myPublicKeyInfo->PublicKey.cUnusedBits;
+            const unsigned int myKeySizeBits = doGetKeySize(*myPublicKeyInfo);
             if (aKeySize != myKeySizeBits)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Invalid KeySize for public key. Expected keySize %d, got %d") % aKeySize % myKeySizeBits);

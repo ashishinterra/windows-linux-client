@@ -20,7 +20,11 @@
 #include <windows.h>
 #endif
 
-using namespace std;
+using std::string;
+using std::wstring;
+using std::vector;
+using std::set;
+using std::ostringstream;
 
 
 size_t strlcpy(char* dst, const char* src, size_t siz)
@@ -52,6 +56,67 @@ namespace ta
 {
     namespace Strings
     {
+        //
+        // Private APi
+        //
+        namespace
+        {
+            struct TemplatePart
+            {
+                TemplatePart(bool aQuoted, const string& aVal): quoted(aQuoted), val(aVal) {}
+                bool quoted; // whether the value is quoted as $${...} i.e. should not be substituted
+                string val;
+            };
+
+            void verifyMappingKeys(const StringDict& aMappings)
+            {
+                static const std::locale& loc = std::locale::classic();
+                foreach (const StringDict::value_type& mapping, aMappings)
+                {
+                    const string myKey = mapping.first;
+                    foreach (char ch, myKey)
+                    {
+                        if (!std::isalnum(ch, loc) && ch != '_' && ch != '-')
+                            TA_THROW_MSG(std::invalid_argument, boost::format("Invalid template key %s. Template keys can only contain alphanumeric characters, '_' or '-'") % myKey);
+                    }
+                }
+            }
+
+            string buildOrRegexStrFromKeys(const StringDict& aMappings)
+            {
+                string myRegexStr;
+                foreach (const StringDict::value_type& mapping, aMappings)
+                {
+                    if (!myRegexStr.empty())
+                        myRegexStr += "|";
+                    myRegexStr += regexEscapeStr(mapping.first);
+                }
+                return myRegexStr;
+            }
+
+
+            struct SubstPlaceholderCb
+            {
+                SubstPlaceholderCb(const StringDict& aMappings): mappings(aMappings) {}
+
+                string operator()(boost::match_results<string::const_iterator> aMatch)
+                {
+                    const string myPlaceholder = aMatch[0];
+                    foreach (const StringDict::value_type& mapping, mappings)
+                    {
+                        if (myPlaceholder == "$(" + mapping.first + ")")
+                            return mapping.second;
+                    }
+                    return myPlaceholder; // no-op
+                }
+                const StringDict mappings;
+            };
+
+        } // unnamed ns
+
+        //
+        // Public API
+        //
 
         string toString (int aNumber)
         {
@@ -170,7 +235,7 @@ namespace ta
             return split(anSrc, vector<char>(1, aSep), anAdjacentSepsMergeMode, anEmptyTokensPolicy);
         }
 
-        vector<string> split(const std::string& anSrc, const std::vector<char>& aSeps, AdjacentSepsMergeMode anAdjacentSepsMergeMode, EmptyTokensPolicy anEmptyTokenPolicy)
+        vector<string> split(const string& anSrc, const std::vector<char>& aSeps, AdjacentSepsMergeMode anAdjacentSepsMergeMode, EmptyTokensPolicy anEmptyTokenPolicy)
         {
             if (aSeps.empty())
             {
@@ -238,12 +303,12 @@ namespace ta
             return join(ta::set2Vec(aList), aSep, anEmptyStringsPolicy);
         }
 
-        std::string join(const std::vector<int>& aList, char aSep)
+        string join(const std::vector<int>& aList, char aSep)
         {
             return join(aList, string(1, aSep) );
         }
 
-        std::string join(const std::vector<int>& aList, const std::string& aSep)
+        string join(const std::vector<int>& aList, const string& aSep)
         {
             string myRetVal;
             foreach (int elem, aList)
@@ -256,12 +321,12 @@ namespace ta
             return myRetVal;
         }
 
-        std::string join(const std::vector<unsigned int>& aList, char aSep)
+        string join(const std::vector<unsigned int>& aList, char aSep)
         {
             return join(aList, string(1, aSep) );
         }
 
-        std::string join(const std::vector<unsigned int>& aList, const std::string& aSep)
+        string join(const std::vector<unsigned int>& aList, const string& aSep)
         {
             string myRetVal;
             foreach (unsigned int elem, aList)
@@ -274,64 +339,25 @@ namespace ta
             return myRetVal;
         }
 
-
-
-        namespace
+        string join(const std::vector<unsigned long>& aList, char aSep)
         {
-            struct TemplatePart
-            {
-                TemplatePart(bool aQuoted, const string& aVal): quoted(aQuoted), val(aVal) {}
-                bool quoted; // whether the value is quoted as $${...} i.e. should not be substituted
-                std::string val;
-            };
+            return join(aList, string(1, aSep) );
+        }
 
-            void verifyMappingKeys(const StringDict& aMappings)
+        string join(const std::vector<unsigned long>& aList, const string& aSep)
+        {
+            string myRetVal;
+            foreach (unsigned long elem, aList)
             {
-                static const std::locale& loc = std::locale::classic();
-                foreach (const StringDict::value_type& mapping, aMappings)
-                {
-                    const std::string myKey = mapping.first;
-                    foreach (char ch, myKey)
-                    {
-                        if (!std::isalnum(ch, loc) && ch != '_' && ch != '-')
-                            TA_THROW_MSG(std::invalid_argument, boost::format("Invalid template key %s. Template keys can only contain alphanumeric characters, '_' or '-'") % myKey);
-                    }
-                }
+                if (myRetVal.empty())
+                    myRetVal = toString(elem);
+                else
+                    myRetVal += aSep + toString(elem);
             }
+            return myRetVal;
+        }
 
-            std::string buildOrRegexStrFromKeys(const StringDict& aMappings)
-            {
-                std::string myRegexStr;
-                foreach (const StringDict::value_type& mapping, aMappings)
-                {
-                    if (!myRegexStr.empty())
-                        myRegexStr += "|";
-                    myRegexStr += regexEscapeStr(mapping.first);
-                }
-                return myRegexStr;
-            }
-
-
-            struct SubstPlaceholderCb
-            {
-                SubstPlaceholderCb(const StringDict& aMappings): mappings(aMappings) {}
-
-                std::string operator()(boost::match_results<std::string::const_iterator> aMatch)
-                {
-                    const string myPlaceholder = aMatch[0];
-                    foreach (const StringDict::value_type& mapping, mappings)
-                    {
-                        if (myPlaceholder == "$(" + mapping.first + ")")
-                            return mapping.second;
-                    }
-                    return myPlaceholder; // no-op
-                }
-                const StringDict mappings;
-            };
-
-        } // unnamed ns
-
-        std::string substTemplate(const std::string& aTempl, const StringDict& aMappings)
+        string substTemplate(const string& aTempl, const StringDict& aMappings)
         {
             if (aMappings.empty())
                 return aTempl;
@@ -339,16 +365,16 @@ namespace ta
 
             // Split template strings on $${mapping-name}
             std::vector<TemplatePart> mySplitTemplate;
-            const std::string myKeysOrRegexStr = buildOrRegexStrFromKeys(aMappings);
-            const std::string mySplitRegExStr = str(boost::format("(.*?)(\\$\\$\\((?:%s)\\))") % myKeysOrRegexStr);
+            const string myKeysOrRegexStr = buildOrRegexStrFromKeys(aMappings);
+            const string mySplitRegExStr = str(boost::format("(.*?)(\\$\\$\\((?:%s)\\))") % myKeysOrRegexStr);
             boost::regex mySplitRegEx(mySplitRegExStr);
             boost::match_results<string::const_iterator> myMatch;
-            std::string::const_iterator myBeg = aTempl.begin(), myEnd = aTempl.end();
+            string::const_iterator myBeg = aTempl.begin(), myEnd = aTempl.end();
             while (regex_search(myBeg, myEnd, myMatch, mySplitRegEx))
             {
                 assert(myMatch.size() == 3);
-                const std::string myNonQuoted = myMatch[1];
-                const std::string myQuoted = myMatch[2];
+                const string myNonQuoted = myMatch[1];
+                const string myQuoted = myMatch[2];
                 if (!myNonQuoted.empty())
                     mySplitTemplate.push_back(TemplatePart(false, myNonQuoted));
                 mySplitTemplate.push_back(TemplatePart(true, myQuoted));
@@ -356,12 +382,12 @@ namespace ta
             }
             if (myBeg != myEnd)
             {
-                const std::string myRemaining = aTempl.substr(std::distance(aTempl.begin(), myBeg));
+                const string myRemaining = aTempl.substr(std::distance(aTempl.begin(), myBeg));
                 mySplitTemplate.push_back(TemplatePart(false, myRemaining));
             }
 
             // Perform substitution for each split part and join the substituted parts back
-            std::string myRetVal;
+            string myRetVal;
             foreach (TemplatePart& part, mySplitTemplate)
             {
                 if (part.quoted)
@@ -374,7 +400,7 @@ namespace ta
                 {
                     // Just do normal substitution
                     SubstPlaceholderCb mySubstPlaceholderCb(aMappings);
-                    const std::string myRegExStr = str(boost::format("\\$\\((?:%s)\\)") % myKeysOrRegexStr);
+                    const string myRegExStr = str(boost::format("\\$\\((?:%s)\\)") % myKeysOrRegexStr);
                     const boost::regex myRegEx(myRegExStr);
                     myRetVal += regex_replace(part.val, myRegEx, mySubstPlaceholderCb, boost::format_all);
                 }
@@ -382,7 +408,7 @@ namespace ta
             return myRetVal;
         }
 
-        StringSet parseTemplate(const std::string& aTempl)
+        StringSet parseTemplate(const string& aTempl)
         {
             StringSet result;
 

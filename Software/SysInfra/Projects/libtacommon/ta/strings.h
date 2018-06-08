@@ -81,6 +81,8 @@ namespace ta
         std::string join(const std::vector<int>& aList, const std::string& aSep);
         std::string join(const std::vector<unsigned int>& aList, char aSep);
         std::string join(const std::vector<unsigned int>& aList, const std::string& aSep);
+        std::string join(const std::vector<unsigned long>& aList, char aSep);
+        std::string join(const std::vector<unsigned long>& aList, const std::string& aSep);
 
         /**
           Performs template substitution

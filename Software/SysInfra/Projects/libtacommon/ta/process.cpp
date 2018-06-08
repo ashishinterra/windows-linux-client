@@ -471,7 +471,9 @@ namespace ta
                 TimeUtils::sleep(500);
                 const vector<unsigned long> myStoppedChildPids = checkStoppedChildren();
                 if (!myStoppedChildPids.empty())
-                    TA_THROW_MSG(std::runtime_error, boost::format("%d child processes have been stopped. Exiting...") % myStoppedChildPids.size());
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("%d child processes with PIDs %s stopped. Exiting...") % myStoppedChildPids.size() % Strings::join(myStoppedChildPids, ','));
+                }
             }
         }
 #endif

@@ -54,20 +54,6 @@ namespace ta
                 return vec2Str(vec(aBio));
             }
 
-            unsigned int getKeySizeBits(const RSA* aKey)
-            {
-                if (!aKey)
-                {
-                    TA_THROW_MSG(RsaError, "Key is NULL");
-                }
-                const int myBits = 8 * RSA_size(aKey);
-                if (myBits <= 0)
-                {
-                    TA_THROW_MSG(RsaError, "Failed to retrieve key size");
-                }
-                return myBits;
-            }
-
             size_t calcEncryptionBlockSize(const unsigned int aKeyBits)
             {
                 const int myBlockSize = (aKeyBits/8) - (int)(Strings::toString(UINT_MAX).size() + 1) /*size prefix*/ - OaepPaddingSize;
@@ -487,6 +473,20 @@ namespace ta
 #else
             return BN_cmp(myPrivRsa->n, myPubRsa->n) == 0;
 #endif
+        }
+
+        unsigned int getKeySizeBits(const RSA* aKey)
+        {
+            if (!aKey)
+            {
+                TA_THROW_MSG(RsaError, "Key is NULL");
+            }
+            const int myBits = 8 * RSA_size(aKey);
+            if (myBits <= 0)
+            {
+                TA_THROW_MSG(RsaError, "Failed to retrieve key size");
+            }
+            return myBits;
         }
 
         unsigned int getKeySizeBits(const vector<unsigned char>& aModulus, const vector<unsigned char>& aPubExponent)

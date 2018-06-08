@@ -98,7 +98,19 @@ def fetch_url(url):
         return None
 
 
-class KeyTalkProtocol(object):
+def is_true(dict, key):
+    return (key in dict) and (dict[key].lower() == 'true')
+
+
+def is_false(dict, key):
+    return (key in dict) and (dict[key].lower() == 'false')
+
+
+class BadRequestError(Exception):
+    pass
+
+
+class CertRetrievalApi(object):
 
     def __init__(self):
         self.version = conf.RCDP_VERSION_2_2
@@ -146,10 +158,6 @@ class KeyTalkProtocol(object):
 
         cookie = response.getheader('set-cookie', None)
         return (payload, cookie)
-
-    @staticmethod
-    def _is_true(dict, key):
-        return (key in dict) and (dict[key].lower() == 'true')
 
     @staticmethod
     def _calc_hwsig(formula):
@@ -284,25 +292,25 @@ class KeyTalkProtocol(object):
         if conf.CRED_PIN in required_cred_types:
             creds[conf.CRED_PIN] = pincode
         if conf.CRED_HWSIG in required_cred_types:
-            creds[conf.CRED_HWSIG] = KeyTalkProtocol._calc_hwsig(
+            creds[conf.CRED_HWSIG] = CertRetrievalApi._calc_hwsig(
                 auth_requirements[conf.RCDPV2_RESPONSE_PARAM_NAME_HWSIG_FORMULA])
 
         service_uris = auth_requirements.get(conf.RCDPV2_RESPONSE_PARAM_NAME_SERVICE_URIS, None)
 
-        if KeyTalkProtocol._is_true(auth_requirements,
-                                    conf.RCDPV2_RESPONSE_PARAM_NAME_RESOLVE_SERVICE_URIS):
+        if is_true(auth_requirements,
+                   conf.RCDPV2_RESPONSE_PARAM_NAME_RESOLVE_SERVICE_URIS):
             ips = []
             for service_uri in service_uris:
                 ips.append({conf.RCDPV2_REQUEST_PARAM_NAME_URI: service_uri,
-                            conf.RCDPV2_REQUEST_PARAM_NAME_IPS: KeyTalkProtocol._resolve_host(service_uri)})
+                            conf.RCDPV2_REQUEST_PARAM_NAME_IPS: CertRetrievalApi._resolve_host(service_uri)})
             creds[conf.RCDPV2_REQUEST_PARAM_NAME_RESOLVED] = json.dumps(ips)
 
-        if KeyTalkProtocol._is_true(auth_requirements,
-                                    conf.RCDPV2_RESPONSE_PARAM_NAME_CALC_SERVICE_URIS_DIGEST):
+        if is_true(auth_requirements,
+                   conf.RCDPV2_RESPONSE_PARAM_NAME_CALC_SERVICE_URIS_DIGEST):
             digests = []
             for service_uri in service_uris:
                 digests.append({conf.RCDPV2_REQUEST_PARAM_NAME_URI: service_uri,
-                                conf.RCDPV2_REQUEST_PARAM_NAME_DIGEST: KeyTalkProtocol._calc_digest(service_uri)})
+                                conf.RCDPV2_REQUEST_PARAM_NAME_DIGEST: CertRetrievalApi._calc_digest(service_uri)})
             creds[conf.RCDPV2_REQUEST_PARAM_NAME_DIGESTS] = json.dumps(digests)
 
         return creds
@@ -318,7 +326,7 @@ class KeyTalkProtocol(object):
         keypair.generate_key(OpenSSL.crypto.TYPE_RSA, key_size)
         log("Creating CSR with subject {} and signed by {}".format(subject, signing_algo))
         req = OpenSSL.crypto.X509Req()
-        KeyTalkProtocol._set_subject_on_req(req, subject)
+        CertRetrievalApi._set_subject_on_req(req, subject)
         req.set_pubkey(keypair)
         req.sign(keypair, signing_algo)
         pkcs10_req = OpenSSL.crypto.dump_certificate_request(OpenSSL.crypto.FILETYPE_PEM, req)
@@ -426,7 +434,7 @@ class KeyTalkProtocol(object):
         self._request(conf.RCDPV2_REQUEST_EOC)
 
     def hello(self):
-        log("Connecting to KeyTalk server at " + KEYTALK_SERVER + "...")
+        log("Connecting RCDP to KeyTalk server at " + KEYTALK_SERVER + "...")
 
         ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         # without explicitly supplying EC curve SSL connection will fail on python-3.5.3
@@ -437,15 +445,16 @@ class KeyTalkProtocol(object):
             ssl_ctx.verify_mode = ssl.CERT_NONE
         else:
             ssl_ctx.verify_mode = ssl.CERT_REQUIRED
-            ssl_ctx.load_verify_locations(cadata=KeyTalkProtocol._load_verification_ca_chain())
+            ssl_ctx.load_verify_locations(cadata=CertRetrievalApi._load_verification_ca_chain())
 
-        conn = http.client.HTTPSConnection(KEYTALK_SERVER, context=ssl_ctx)
+        conn = http.client.HTTPSConnection(
+            KEYTALK_SERVER, conf.RCDPV2_LISTEN_PORT, context=ssl_ctx)
 
         self.conn = conn
         request_params = {
             conf.RCDPV2_REQUEST_PARAM_NAME_CALLER_APP_DESCRIPTION: 'Test KeyTalk Python client'}
         self._request(conf.RCDPV2_REQUEST_HELLO, request_params, send_cookie=False)
-        response_payload, cookie = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, cookie = CertRetrievalApi._parse_rcdp_response(
             conn, conf.RCDPV2_REQUEST_HELLO, conf.RCDPV2_RESPONSE_HELLO)
         if response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_VERSION] != self.version:
             raise Exception(
@@ -456,14 +465,14 @@ class KeyTalkProtocol(object):
         request_params = {conf.RCDPV2_REQUEST_PARAM_NAME_CALLER_UTC:
                           datetime.datetime.utcnow().isoformat() + 'Z'}
         self._request(conf.RCDPV2_REQUEST_HANDSHAKE, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_HANDSHAKE, conf.RCDPV2_RESPONSE_HANDSHAKE)
         return response_payload
 
     def get_auth_requirements(self, service):
         request_params = {conf.RCDPV2_REQUEST_PARAM_NAME_SERVICE: service}
         self._request(conf.RCDPV2_REQUEST_AUTH_REQUIREMENTS, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_AUTH_REQUIREMENTS, conf.RCDPV2_RESPONSE_AUTH_REQUIREMENTS)
         return response_payload
 
@@ -475,7 +484,7 @@ class KeyTalkProtocol(object):
         if service is not None:
             request_params = {
                 conf.RCDPV2_REQUEST_PARAM_NAME_SERVICE: service,
-                conf.RCDPV2_REQUEST_PARAM_NAME_CALLER_HW_DESCRIPTION: KeyTalkProtocol._get_system_hwdescription(),
+                conf.RCDPV2_REQUEST_PARAM_NAME_CALLER_HW_DESCRIPTION: CertRetrievalApi._get_system_hwdescription(),
             }
             request_params.update(creds)
         else:
@@ -486,7 +495,7 @@ class KeyTalkProtocol(object):
         debug("Sending authentication request: " + pprint.pformat(request_params))
 
         self._request(conf.RCDPV2_REQUEST_AUTHENTICATION, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_AUTHENTICATION, conf.RCDPV2_RESPONSE_AUTH_RESULT)
         auth_status = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_AUTH_STATUS]
         if auth_status == conf.AUTH_OK:
@@ -520,7 +529,7 @@ class KeyTalkProtocol(object):
         }
         debug("Changing user password")
         self._request(conf.RCDPV2_REQUEST_CHANGE_PASSWORD, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CHANGE_PASSWORD, conf.RCDPV2_RESPONSE_AUTH_RESULT)
         auth_status = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_AUTH_STATUS]
         if auth_status == conf.AUTH_OK:
@@ -535,7 +544,7 @@ class KeyTalkProtocol(object):
             request_params[
                 conf.RCDPV2_REQUEST_PARAM_NAME_LAST_MESSAGES_FROM_UTC] = LAST_MESSAGES_FROM_UTC
         self._request(conf.RCDPV2_REQUEST_LAST_MESSAGES, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_LAST_MESSAGES, conf.RCDPV2_RESPONSE_LAST_MESSAGES)
         messages = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_LAST_MESSAGES]
         if len(messages) > 0:
@@ -544,7 +553,7 @@ class KeyTalkProtocol(object):
 
     def get_csr_requirements(self):
         self._request(conf.RCDPV2_REQUEST_CSR_REQUIREMENTS)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CSR_REQUIREMENTS, conf.RCDPV2_RESPONSE_CSR_REQUIREMENTS)
         return response_payload
 
@@ -556,7 +565,7 @@ class KeyTalkProtocol(object):
         }
 
         self._request(conf.RCDPV2_REQUEST_CERT, request_params)
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CERT, conf.RCDPV2_RESPONSE_CERT)
 
         if out_of_band:
@@ -573,7 +582,7 @@ class KeyTalkProtocol(object):
         cert_passphrase = self._get_cert_passphrase()
         log("Successfully received {} certificate {} chain".format(
             format, "with" if include_chain else "without"))
-        cert_path, cert_pass_path = KeyTalkProtocol._save_cert(cert, cert_passphrase, format)
+        cert_path, cert_pass_path = CertRetrievalApi._save_cert(cert, cert_passphrase, format)
         return cert_path, cert_pass_path
 
     def sign_csr(self, csr, include_chain, out_of_band=False):
@@ -584,7 +593,7 @@ class KeyTalkProtocol(object):
         }
 
         self._request(conf.RCDPV2_REQUEST_CERT, request_params, method='POST')
-        response_payload, _ = KeyTalkProtocol._parse_rcdp_response(
+        response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CERT, conf.RCDPV2_RESPONSE_CERT)
 
         if out_of_band:
@@ -598,7 +607,7 @@ class KeyTalkProtocol(object):
 
         log("Successfully generated PEM certificate {} chain from client CSR".format(
             "with" if include_chain else "without"))
-        cert_path = KeyTalkProtocol._save_pem_cert_only(cert)
+        cert_path = CertRetrievalApi._save_pem_cert_only(cert)
         return cert_path
 
     def reset_user_password(self, password):
@@ -624,6 +633,99 @@ class CaApi(object):
         return fetch_url(url)
 
 
+class PublicApi(object):
+
+    def __init__(self):
+        self.conn = None
+
+    def _request(self, action, params={}, method='GET'):
+        log("Connecting public API to KeyTalk server at " + KEYTALK_SERVER + "...")
+
+        ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        # without explicitly supplying EC curve SSL connection will fail on python-3.5.3
+        # with SSL Handshake error
+        ssl_ctx.set_ecdh_curve('secp384r1')
+
+        if BYPASS_HTTPS_VALIDATION:
+            ssl_ctx.verify_mode = ssl.CERT_NONE
+        else:
+            ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+            ssl_ctx.load_verify_locations(cadata=CertRetrievalApi._load_verification_ca_chain())
+
+        self.conn = http.client.HTTPSConnection(
+            KEYTALK_SERVER, conf.PUBLIC_API_LISTEN_PORT, context=ssl_ctx)
+
+        if VERBOSE:
+            self.conn.set_debuglevel(1)
+
+        url = "/{}/{}/{}".format(conf.PUBLIC_API_REQUEST_SCRIPT_NAME,
+                                 conf.PUBLIC_API_VERSION_1_0,
+                                 action)
+        headers = {}
+        body = None
+
+        if method == 'GET':
+            # HTTP GET params are sent in URL
+            if params:
+                url += '?' + urllib.parse.urlencode(params)
+        elif method == 'POST':
+            # HTTP POST params are sent in body
+            body = urllib.parse.urlencode(params)
+            headers["Content-type"] = "application/x-www-form-urlencoded"
+        else:
+            raise Exception('Unsupported HTTP request method {}'.format(method))
+
+        self.conn.request(method, url, body, headers)
+
+    @staticmethod
+    def _parse_response(conn, request_name, expected_status):
+        '''
+        raise BadRequestError for request errors
+        '''
+        response = conn.getresponse()
+        response_payload = response.read().decode()
+        if response.status not in (200, 400):
+            raise Exception(
+                'Unexpected response HTTP status {} received on {} request.'.format(
+                    response.status, request_name))
+
+        payload = json.loads(response_payload)
+        debug("{} -> {} {}.\n{}".format(request_name, response.status,
+                                        response.reason, pprint.pformat(payload)))
+
+        status = payload[conf.PUBLIC_API_RESPONSE_PARAM_NAME_STATUS]
+        if response.status == 400:
+            if status != conf.PUBLIC_API_RESPONSE_ERROR:
+                raise Exception(
+                    "Unexpected status {} received in HTTP 400 response received on {} request".format(
+                        status, request_name))
+            error_msg = payload[conf.PUBLIC_API_RESPONSE_PARAM_NAME_ERROR]
+            raise BadRequestError(error_msg)
+
+        if status != expected_status:
+            raise Exception(
+                'Expected {} response on {} request but received {} instead'.format(
+                    expected_status, request_name, status))
+
+        return payload
+
+    def is_self_service_available(self, cert):
+        self._request(conf.PUBLIC_API_REQUEST_SELF_SERVICE_AVAILABILITY,
+                      {conf.PUBLIC_API_REQUEST_PARAM_NAME_CERT: cert},
+                      method='POST')
+        response_payload = PublicApi._parse_response(
+            self.conn,
+            conf.PUBLIC_API_REQUEST_SELF_SERVICE_AVAILABILITY,
+            conf.PUBLIC_API_RESPONSE_SELF_SERVICE_AVAILABILITY)
+        if is_true(response_payload, conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE):
+            return True
+        elif is_false(response_payload, conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE):
+            return False
+        else:
+            raise Exception("Failed to parse boolean from {} key of the response {}".format(
+                conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE, response_payload))
+
+
 #
 # Test cases
 #
@@ -633,21 +735,21 @@ def request_cert_with_password_authentication(cert_format, cert_with_chain):
     username = 'DemoUser'
     password = 'secret'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert not KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert not CertRetrievalApi.is_cr_authentication(
         auth_requirements), "Non-CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, password)
-    proto.authenticate(creds, service)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, password)
+    api.authenticate(creds, service)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_cert_from_csr_with_password_authentication(cert_with_chain):
@@ -655,23 +757,23 @@ def request_cert_from_csr_with_password_authentication(cert_with_chain):
     username = 'DemoUser'
     password = 'secret'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert not KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert not CertRetrievalApi.is_cr_authentication(
         auth_requirements), "Non-CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, password)
-    proto.authenticate(creds, service)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, password)
+    api.authenticate(creds, service)
     # get service
-    proto.get_last_messages()
-    csr_requirements = proto.get_csr_requirements()
-    csr = KeyTalkProtocol.gen_csr(csr_requirements)
-    proto.sign_csr(csr, cert_with_chain)
+    api.get_last_messages()
+    csr_requirements = api.get_csr_requirements()
+    csr = CertRetrievalApi.gen_csr(csr_requirements)
+    api.sign_csr(csr, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_out_of_band_cert_with_password_authentication(cert_format, cert_with_chain):
@@ -679,21 +781,21 @@ def request_out_of_band_cert_with_password_authentication(cert_format, cert_with
     username = 'DemoUser'
     password = 'secret'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert not KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert not CertRetrievalApi.is_cr_authentication(
         auth_requirements), "Non-CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, password)
-    proto.authenticate(creds, service)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, password)
+    api.authenticate(creds, service)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain, out_of_band=True)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain, out_of_band=True)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_cert_with_password_and_pincode_authentication(cert_format, cert_with_chain):
@@ -702,127 +804,124 @@ def request_cert_with_password_and_pincode_authentication(cert_format, cert_with
     password = 'secret'
     pincode = '1234'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert not KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert not CertRetrievalApi.is_cr_authentication(
         auth_requirements), "Non-CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(
+    creds = CertRetrievalApi.request_auth_credentials(
         auth_requirements, username, password, pincode)
-    proto.authenticate(creds, service)
+    api.authenticate(creds, service)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_cert_with_challenge_response_authentication(cert_format, cert_with_chain):
     service = "CUST_CR_INTERNAL_TESTUI"
     username = 'DemoUser'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert CertRetrievalApi.is_cr_authentication(
         auth_requirements), "CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username)
-    challenges, response_names = proto.authenticate(creds, service)
-    creds = KeyTalkProtocol.calc_responses(username, challenges, response_names)
-    proto.authenticate(creds)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username)
+    challenges, response_names = api.authenticate(creds, service)
+    creds = CertRetrievalApi.calc_responses(username, challenges, response_names)
+    api.authenticate(creds)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_cert_with_radius_securid_authentication(cert_format, cert_with_chain):
-    proto = KeyTalkProtocol()
     service = "CUST_PASSWD_RADIUS"
     username = 'SecuridNewUserPinUser'
     initial_tokencode = '666666'
     new_pin = '234567'
     new_tokencode = '777777'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert not KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert not CertRetrievalApi.is_cr_authentication(
         auth_requirements), "Non-CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(
+    creds = CertRetrievalApi.request_auth_credentials(
         auth_requirements, username, initial_tokencode)
-    proto.authenticate(creds, service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, new_pin)
-    proto.authenticate(creds, service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, new_pin)
-    proto.authenticate(creds, service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, new_tokencode)
-    proto.authenticate(creds, service)
+    api.authenticate(creds, service)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, new_pin)
+    api.authenticate(creds, service)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, new_pin)
+    api.authenticate(creds, service)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, new_tokencode)
+    api.authenticate(creds, service)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_cert_with_radius_eap_aka_authentication(cert_format, cert_with_chain):
-    proto = KeyTalkProtocol()
     service = "CUST_EAP_CR_RADIUS"
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert CertRetrievalApi.is_cr_authentication(
         auth_requirements), "CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, UMTS_USERNAME)
-    challenges, response_names = proto.authenticate(creds, service)
-    creds = KeyTalkProtocol.calc_responses(UMTS_USERNAME, challenges, response_names)
-    proto.authenticate(creds)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, UMTS_USERNAME)
+    challenges, response_names = api.authenticate(creds, service)
+    creds = CertRetrievalApi.calc_responses(UMTS_USERNAME, challenges, response_names)
+    api.authenticate(creds)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def request_cert_with_radius_eap_sim_authentication(cert_format, cert_with_chain):
-    proto = KeyTalkProtocol()
     service = "CUST_EAP_CR_RADIUS"
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert CertRetrievalApi.is_cr_authentication(
         auth_requirements), "CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, GSM_USERNAME)
-    challenges, response_names = proto.authenticate(creds, service)
-    creds = KeyTalkProtocol.calc_responses(GSM_USERNAME, challenges, response_names)
-    challenges, response_names = proto.authenticate(creds)
-    creds = KeyTalkProtocol.calc_responses(GSM_USERNAME, challenges, response_names)
-    challenges, response_names = proto.authenticate(creds)
-    creds = KeyTalkProtocol.calc_responses(GSM_USERNAME, challenges, response_names)
-    proto.authenticate(creds)
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, GSM_USERNAME)
+    challenges, response_names = api.authenticate(creds, service)
+    creds = CertRetrievalApi.calc_responses(GSM_USERNAME, challenges, response_names)
+    challenges, response_names = api.authenticate(creds)
+    creds = CertRetrievalApi.calc_responses(GSM_USERNAME, challenges, response_names)
+    challenges, response_names = api.authenticate(creds)
+    creds = CertRetrievalApi.calc_responses(GSM_USERNAME, challenges, response_names)
+    api.authenticate(creds)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def change_password_and_request_cert(cert_format, cert_with_chain):
@@ -831,30 +930,30 @@ def change_password_and_request_cert(cert_format, cert_with_chain):
     old_password = 'Sioux2010'
     new_password = 'Sioux2011'
 
-    proto = KeyTalkProtocol()
+    api = CertRetrievalApi()
     # handshake
-    proto.hello()
-    proto.handshake()
+    api.hello()
+    api.handshake()
     # authenticate
-    auth_requirements = proto.get_auth_requirements(service)
-    assert not KeyTalkProtocol.is_cr_authentication(
+    auth_requirements = api.get_auth_requirements(service)
+    assert not CertRetrievalApi.is_cr_authentication(
         auth_requirements), "Non-CR authentication is expected for service {}".format(service)
-    creds = KeyTalkProtocol.request_auth_credentials(auth_requirements, username, old_password)
-    password_validity_sec = proto.authenticate(creds, service)
-    assert KeyTalkProtocol.is_password_expiring(
+    creds = CertRetrievalApi.request_auth_credentials(auth_requirements, username, old_password)
+    password_validity_sec = api.authenticate(creds, service)
+    assert CertRetrievalApi.is_password_expiring(
         password_validity_sec), "Password for user {} and service {} is not yet expiring (still valid for {} seconds)".format(username, service, password_validity_sec)
-    proto.change_password(old_password, new_password)
+    api.change_password(old_password, new_password)
     creds[conf.CRED_PASSWD] = new_password
-    proto.authenticate(creds, service)
+    api.authenticate(creds, service)
     # get service
-    proto.get_last_messages()
-    proto.get_cert(cert_format, cert_with_chain)
+    api.get_last_messages()
+    api.get_cert(cert_format, cert_with_chain)
     # reset password back
-    proto.change_password(new_password, old_password)
+    api.change_password(new_password, old_password)
     creds[conf.CRED_PASSWD] = old_password
-    proto.authenticate(creds, service)
+    api.authenticate(creds, service)
     # close connection
-    proto.eoc()
+    api.eoc()
 
 
 def fetch_ca_certs():
@@ -877,6 +976,28 @@ def fetch_ca_certs():
     assert not api.fetch_ca(conf.CA_API_ROOT_CA), "Root CA is not expected to be present"
 
 
+def check_self_service_availability():
+
+    api = PublicApi()
+
+    # given, get the cert for which self-service should be available
+    request_cert_with_password_authentication(conf.CERT_FORMAT_PEM, False)
+    cert = open('cert.pem').read()
+    # when-then
+    assert api.is_self_service_available(cert)
+
+    # given, cert that doesn't correspond to DevID user hence no self-service
+    cert = open(SERVER_VERIFICATION_CA_CHAIN[0]).read()
+    # when-then
+    assert not api.is_self_service_available(cert)
+
+    try:
+        api.is_self_service_available("invalid-cert")
+        assert False, "Invalid certificate is not reported as bad request"
+    except BadRequestError:
+        pass
+
+
 #
 # Entry point
 #
@@ -894,3 +1015,4 @@ if __name__ == "__main__":
             change_password_and_request_cert(cert_format, cert_with_chain)
 
     fetch_ca_certs()
+    check_self_service_availability()

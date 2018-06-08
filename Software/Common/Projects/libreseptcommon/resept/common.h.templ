@@ -766,4 +766,94 @@ namespace resept
     const std::string CertDownloadUrlRequestScriptName  = ${CERT_DOWNLOAD_REQUEST_SCRIPT_NAME};
     const std::string CertDownloadUrlHostPlaceholder = ${CERT_DOWNLOAD_URL_HOST_PLACEHOLDER};
 
+
+    namespace publicapi
+    {
+        const std::string V_1_0 = ${PUBLIC_API_VERSION_1_0};
+
+        const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_PUBLIC_API_VERSIONS};
+
+        inline std::vector<ta::version::Version> getServerSupportedApiVersions()
+        {
+            const ta::StringArray versions(ServerSupportedApiVersions,
+                                           ServerSupportedApiVersions + sizeof(ServerSupportedApiVersions)/sizeof(ServerSupportedApiVersions[0]));
+            return ta::version::parse(versions);
+        }
+
+        const std::string RequestScriptName  = ${PUBLIC_API_REQUEST_SCRIPT_NAME};
+
+        //
+        // Requests
+        //
+        enum Request
+        {
+            FirstRequest,
+            reqSelfServiceAvailability = FirstRequest,
+            LastRequest = reqSelfServiceAvailability
+        };
+
+        const std::string requestParamNameCert = ${PUBLIC_API_REQUEST_PARAM_NAME_CERT};
+
+        const std::string RequestStrings[] = ${PUBLIC_API_REQUEST_STRINGS};
+        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == LastRequest-FirstRequest+1);
+        inline bool isValidRequest(int aVal)
+        {
+            return (aVal >= FirstRequest && aVal <= LastRequest);
+        }
+        inline std::string str(Request aRequest)
+        {
+            return RequestStrings[aRequest-FirstRequest];
+        }
+        inline Request parseRequestType(const std::string& aRequestStr)
+        {
+            for (int i = FirstRequest; i <= LastRequest; ++i)
+            {
+                Request myRequest = static_cast<Request>(i);
+                if (str(myRequest) == aRequestStr)
+                {
+                    return myRequest;
+                }
+            }
+            TA_THROW_MSG(std::invalid_argument, "Cannot parse public API request type from string " + aRequestStr);
+        }
+
+
+        //
+        // Responses
+        //
+        enum Response
+        {
+            FirstResponse,
+            respError = FirstResponse,
+            respSelfServiceAvailability,
+            LastResponse = respSelfServiceAvailability
+        };
+        const std::string responseParamNameError = ${PUBLIC_API_RESPONSE_PARAM_NAME_ERROR};
+        const std::string responseParamNameStatus = ${PUBLIC_API_RESPONSE_PARAM_NAME_STATUS};
+        const std::string responseParamNameAvailable = ${PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE};
+
+        const std::string ResponseStrings[] = ${PUBLIC_API_RESPONSE_STRINGS};
+        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == LastResponse-FirstResponse+1);
+        inline bool isValidResponse(int aVal)
+        {
+            return (aVal >= FirstResponse && aVal <= LastResponse);
+        }
+        inline std::string str(Response aResponse)
+        {
+            return ResponseStrings[aResponse-FirstResponse];
+        }
+        inline Response parseResponse(const std::string& aResponseStr)
+        {
+            for (int i = FirstResponse; i <= LastResponse; ++i)
+            {
+                const Response myResponse = static_cast<Response>(i);
+                if (str(myResponse) == aResponseStr)
+                {
+                    return myResponse;
+                }
+            }
+            TA_THROW_MSG(std::invalid_argument, "Cannot parse public API response type from string " + aResponseStr);
+        }
+    }
+
 } // resept

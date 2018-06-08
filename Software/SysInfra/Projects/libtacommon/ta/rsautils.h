@@ -7,6 +7,9 @@
 #include <stdexcept>
 #include "boost/serialization/access.hpp"
 
+struct rsa_st;
+typedef struct rsa_st RSA;
+
 namespace ta
 {
     struct RsaError : std::logic_error
@@ -157,6 +160,7 @@ namespace ta
         /*
             @return key size in bits
         */
+        unsigned int getKeySizeBits(const RSA* aKey);
         unsigned int getKeySizeBits(const std::vector<unsigned char>& aModulus, const std::vector<unsigned char>& aPubExponent);
         unsigned int getPublicKeySizeBits(const PublicKey& aPublicKey);
         unsigned int getPrivateKeySizeBits(const PrivateKey& aPrivateKey);
