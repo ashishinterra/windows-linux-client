@@ -109,7 +109,9 @@ Install devtoolset for **CentOS 6**
 
 
 To enable gcc/g++ version 4.8.x and to update CA Trust in **CentOS/RHEL 6**
+
 **(Note: gcc/g++ version should always be 4.8.x before installing from keytalk source code)**
+
     # scl enable devtoolset-2 bash
     # update-ca-trust enable
 
