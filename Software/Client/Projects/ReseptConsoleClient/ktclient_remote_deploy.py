@@ -17,7 +17,7 @@ import re
 
 
 INSTALLER_DIR_PREFIX = 'keytalkclient-'
-
+os_version = run_cmd('lsb_release --id --short')
 
 def run_cmd(cmd, logger=None):
     """
@@ -182,7 +182,7 @@ def deploy_site_config(ssh_host, config_path, installer_path, rccd_path):
                 ssh_host=quote(ssh_host),
                 temp_dir=quote(remote_temp_dir)))
 
-	if(run_cmd('lsb_release --id --short') == "Debian" or run_cmd('lsb_release --id --short') == "Ubuntu"):
+	if(os_version == "Debian" or os_version == "Ubuntu"):
 		run_remote_cmd(
 		    ssh_host, """set -e;
 		                 set -x;
@@ -206,7 +206,7 @@ def deploy_site_config(ssh_host, config_path, installer_path, rccd_path):
 		            os.path.basename(rccd_path)), config_filename=quote(
 		                os.path.basename(config_path))), only_stdout=True)
 
-	if(run_cmd('lsb_release --id --short') == "RedHatEnterpriseServer" or run_cmd('lsb_release --id --short') == "CentOS"):
+	if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
 		run_remote_cmd(
 		    ssh_host, """set -e;
 		                 set -x;

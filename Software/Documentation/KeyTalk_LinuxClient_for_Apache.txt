@@ -30,6 +30,7 @@ please make sure that your server meets the following requirements:
 
 - RHEL 6/7 x64 or CentOS 6/7 x64
 - Debian 8 x64, Debian 9 x64 or Ubuntu 16.04 LTS x64
+- Python 2.7.x
 - Apache 2.2 - 2.4 installed with SSL module enabled
 
   Example configuring Apache:
@@ -138,6 +139,13 @@ Example fully customized notifications:
     "EmailServer" : "smtp.example.com"
     "EmailSubject" : "Apache certificate update"
 
+
+Note: For RHEL/CentOS
+      In /etc/httpd/conf.d/ssl.conf file, at the end of the file, remove spaces from the second last line and change to :
+
+CustomLog logs/ssl_request_log "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+
+
 Do a test run by calling:
 
     sudo /usr/local/bin/keytalk/renew_apache_ssl_cert
@@ -240,4 +248,3 @@ Please create a problem report with
    sudo /usr/local/bin/keytalk/ktprgen
 
 and send it to support@keytalk.com
-

@@ -1,6 +1,3 @@
-#################################################
-# RHEL/CentOS 6 & 7 support added on 8 May 2018 #
-#################################################
 CLIENT_VERSION:=$(shell cut -d '=' -f 2 ../../../../version)
 CLIENT_VERSION:=$(CLIENT_VERSION)$(shell grep -m 1 '^Hardware' /proc/cpuinfo | cut -d ':' -f 2 | grep -q BCM2708 && echo '.RaspberryPi')
 DISTRO_NAME:=$(shell lsb_release --id --short)

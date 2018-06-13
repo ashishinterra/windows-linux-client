@@ -56,40 +56,44 @@ Install Development Tools:
 
 Enable optional and extras repo through subscription manager **RHEL 7**:
 
-    # subscription-manager repos --enable rhel-7-server-optional-rpms 
+    # subscription-manager repos --enable rhel-7-server-optional-rpms
     # subscription-manager repos --enable rhel-7-server-extras-rpms
 
 
 Enable optional and extras repo through subscription manager for **RHEL 6** :
 
-    # subscription-manager repos --enable rhel-6-server-optional-rpms 
+    # subscription-manager repos --enable rhel-6-server-optional-rpms
     # subscription-manager repos --enable rhel-6-server-extras-rpms
 
 
 Install epel and ius packages **RHEL/CentOS 7**:
 
-    # sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-    # sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+    # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    # yum -y install https://centos7.iuscommunity.org/ius-release.rpm
 
 
 Install epel and ius packages **RHEL/CentOS 6**:
 
-    # sudo rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-    # sudo yum -y install https://centos6.iuscommunity.org/ius-release.rpm
+    # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+    # yum -y install https://centos6.iuscommunity.org/ius-release.rpm
 
 
 Start Installing other required packages:
 
     # yum -y update
-    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux pylint hdparm zip clang mod_ssl
+    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget
     # pip install lxml pyopenssl
 
+Install Package wkhtmltopdf and pylint for **RHEL/CentOS 7**
 
-Install Package wkhtmltopdf
+    # yum -y install wkhtmltopdf pylint
+
+Install Package wkhtmltopdf and pylint for **RHEL/CentOS 6**
 
     # wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
     # tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
     # mv wkhtmltox/bin/wkhtmlto* /usr/bin
+    # python -m pip install pylint
 
 
 Install devtoolset for **RHEL 6**
@@ -99,21 +103,14 @@ Install devtoolset for **RHEL 6**
 
 Install devtoolset for **CentOS 6**
 
-    # wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo 
-    # yum -y install devtoolset-2-gcc devtoolset-2-binutils 
-    # yum -y install devtoolset-2-gcc-c++ devtoolset-2-gcc-gfortran 
+    # wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo
+    # yum -y install devtoolset-2-gcc devtoolset-2-binutils
+    # yum -y install devtoolset-2-gcc-c++ devtoolset-2-gcc-gfortran
 
 
-#### (Note: Use these step before making the keytalk client from source in CentOS 6/RHEL 6)
-
+To enable gcc/g++ version 4.8.x and to update CA Trust in **CentOS/RHEL 6**
+**(Note: gcc/g++ version should always be 4.8.x before installing from keytalk source code)**
     # scl enable devtoolset-2 bash
-    # cd keytalk/Software/Import-rhel6_centos6
-    # wget ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz
-    # tar -xvf libtool-2.4.2.tar.gz
-    # cd libtool-2.4.2
-    # ./configure --prefix=/usr/
-    # make install
-    # cd ~
     # update-ca-trust enable
 
 

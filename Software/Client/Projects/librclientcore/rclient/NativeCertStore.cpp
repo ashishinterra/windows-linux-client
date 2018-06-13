@@ -1,4 +1,3 @@
-//Edit this file to add support for platforms other than Debian 8, Debian 9, RHEL/CentOS 6&7.
 #include "NativeCertStore.h"
 #include "Settings.h"
 #include "Common.h"
@@ -203,7 +202,7 @@ namespace rclient
                         return boost::none;
                     }
                     std::auto_ptr<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
-                    if (!::CertGetNameString(aCertContextPtr,	CERT_NAME_SIMPLE_DISPLAY_TYPE, 	CERT_NAME_ISSUER_FLAG,  0, myAttrVal.get(), myAttrValLen))
+                    if (!::CertGetNameString(aCertContextPtr,  CERT_NAME_SIMPLE_DISPLAY_TYPE,   CERT_NAME_ISSUER_FLAG,  0, myAttrVal.get(), myAttrValLen))
                     {
                         return boost::none;
                     }
@@ -553,7 +552,7 @@ namespace rclient
                     DWORD cchFile = ::GetFileSize(hFile, NULL);
                     BSTR bstrCert = ::SysAllocStringByteLen(NULL, cchFile);
                     DWORD cbRead = 0;
-                    if (!::ReadFile(hFile, (char*)bstrCert, cchFile, &cbRead,	 NULL))
+                    if (!::ReadFile(hFile, (char*)bstrCert, cchFile, &cbRead,   NULL))
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot read file '%s'") % aDerCertPath);
                     }
@@ -1153,7 +1152,14 @@ namespace rclient
                         return str(boost::format("%s/keystore") % Settings::getUserConfigDir());
                     case storeIntermediate:
                     case storeRoot:
-                        return "/usr/local/share/ca-certificates";
+                        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+                        {
+                            return "/etc/pki/ca-trust/source/anchors/";
+                        }
+                        else if(ta::isFileExist("/etc/debian_version"))
+                        {
+                            return "/usr/local/share/ca-certificates";
+                        }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
                     }
@@ -1168,7 +1174,7 @@ namespace rclient
                         return str(boost::format("%s/%s%s.pem") % getStoreDir(aStoreType) % myCertFilePrefix % ta::genUuid());
                     case storeIntermediate:
                     case storeRoot:
-                        // .crt extension is required to be understood by 'update-ca-certificates' utility
+                        // .crt extension is required to be understood by 'update-ca-certificates' utility for debian and 'update-ca-trust' utility for RHEL/CentOS
                         return str(boost::format("%s/%s%s.crt") % getStoreDir(aStoreType) % myCertFilePrefix % ta::genUuid());
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
@@ -1243,17 +1249,16 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-
-		        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
-			{
-			    ta::Process::checkedShellExecSync("update-ca-trust");
-			    return;
-			}
-		        else if(ta::isFileExist("/etc/debian_version"))
-			{
+                        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-trust");
+                            return;
+                        }
+                        else if(ta::isFileExist("/etc/debian_version"))
+                        {
                             ta::Process::checkedShellExecSync("update-ca-certificates");
-			    return;
-			}
+                            return;
+                        }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
                     }
@@ -1270,17 +1275,16 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-
-			if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
-			{
-                        ta::Process::checkedShellExecSync("update-ca-trust extract");
-			return;
-			}
-		        else if(ta::isFileExist("/etc/debian_version"))
-			{
-                        ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
-                        return;
-			}
+                        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-trust extract");
+                            return;
+                        }
+                        else if(ta::isFileExist("/etc/debian_version"))
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
+                            return;
+                        }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(theStoreType));
                     }

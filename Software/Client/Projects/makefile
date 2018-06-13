@@ -1,7 +1,3 @@
-#################################################
-# RHEL/CentOS 6 & 7 support added on 8 May 2018 #
-#################################################
-
 PRJS=ReseptConsoleClient ReseptConfigManager ReseptConfigTool ReseptPrGenerator ReseptHwsigDump ReseptPythonClient ReseptInstaller/ConfigUpdater ReseptInstaller/linux/bin ReseptInstaller/linux/apache_remote_deployment
 MAKE_FLAGS=-s
 
@@ -25,8 +21,8 @@ check_devenv:
 			echo "Curl developent package should NOT be installed to avoid possible build conflicts with local curl libs" 1>&2; \
 			exit 1; \
 		fi; \
-	fi; 
-	
+	fi;
+
 
 release debug: check_devenv
 	@set -e;			\

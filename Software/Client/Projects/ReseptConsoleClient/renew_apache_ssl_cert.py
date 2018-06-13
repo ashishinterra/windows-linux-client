@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#Edit this file to add support for platforms other than Debian 8, Debian 9, RHEL/CentOS 6&7.
 import sys
 import json
 import os
@@ -136,7 +135,7 @@ def get_cert(site):
 def reload_apache():
     if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
 	    try:
-		util.run_cmd('service httpd status', Logger)
+		    util.run_cmd('service httpd status', Logger)
 	    except util.CmdFailedException as ex:
 		if ex.retval == 3:
 		    return  # Apache inactive, nothing to be done
@@ -146,7 +145,7 @@ def reload_apache():
 
     if(os_version == "Debian" or os_version == "Ubuntu"):
 	    try:
-		util.run_cmd('service apache2 status', Logger)
+		    util.run_cmd('service apache2 status', Logger)
 	    except util.CmdFailedException as ex:
 		if ex.retval == 3:
 		    return  # Apache inactive, nothing to be done

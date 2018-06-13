@@ -438,15 +438,15 @@ namespace PrGenerator
             // Apache log
             try
             {
-		const string mySrcPathHttpd = "/var/log/httpd/error_log";
-		const string mySrcPathApache = "/var/log/apache2/error.log";
+                const string mySrcPathHttpd = "/var/log/httpd/error_log";
+                const string mySrcPathApache = "/var/log/apache2/error.log";
                 if (ta::isFileExist(mySrcPathHttpd))
                 {
                     const string myDestPath = aDir + ta::getDirSep() + "apache_error_log";
                     copyFile(mySrcPathHttpd, myDestPath);
                     myRetVal.push_back(myDestPath);
                 }
-		else if (ta::isFileExist(mySrcPathApache))
+                else if (ta::isFileExist(mySrcPathApache))
                 {
                     const string myDestPath = aDir + ta::getDirSep() + "apache_error.log";
                     copyFile(mySrcPathApache, myDestPath);

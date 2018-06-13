@@ -68,8 +68,13 @@ function remove_keytalk_common_settings()
 
     rm -f /etc/cron.d/keytalk
 
-    rm -f /usr/local/share/ca-certificates/keytalk_*.crt
-    update-ca-certificates --fresh > /dev/null 2>&1
+    if [ -f /etc/debian_version ]; then
+      rm -f /usr/local/share/ca-certificates/keytalk_*.crt
+      update-ca-certificates --fresh > /dev/null 2>&1
+    elif [ -f /etc/redhat-release ]; then
+      rm -f /etc/pki/ca-trust/source/anchors/keytalk_*.crt
+      update-ca-trust extract > /dev/null 2>&1
+    fi
 }
 
 function uninstall()
