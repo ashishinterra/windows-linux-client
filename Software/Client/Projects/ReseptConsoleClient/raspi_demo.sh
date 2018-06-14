@@ -4,18 +4,16 @@
 # The script periodically takes a camera shot, gets a client cert with KeyTalk client and uses this cert to upload the image to the FTPS server
 #######################################################################################################################################################
 
-# rccd is taken from http://keytalk.com/demo.rccd, add m2m service manually
-
 set -o errexit;
 set -o nounset;
 
 KEYTALK_PROVIDER=KeyTalk_Demo
-KEYTALK_SERVICE=m2m
-KEYTALK_USER=Raspberry1
-KEYTALK_PASSWD='change1!'
+KEYTALK_SERVICE=KeyTalk_Service
+KEYTALK_USER=KeyTalk_User
+KEYTALK_PASSWD='change!'
 
-FTP_SERVER_ADDRESS="ftp://m2m.keytalk.com:21/pics/"
-FTP_SERVER_CREDS="ftpuser:gehE1m4ktDEMO"
+FTP_SERVER_ADDRESS="ftp://yourhostname.com:21/pics/"
+FTP_SERVER_CREDS="ftpuser:changeme"
 
 echo "[$(date)] Starting KeyTalk DEMO..."
 
