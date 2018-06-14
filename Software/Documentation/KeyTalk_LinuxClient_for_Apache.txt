@@ -86,7 +86,7 @@ To install and customize the KeyTalk client, run the following commands (ignore 
 
     tar -pzxvf keytalkclient-5.2.2.tar.gz
     cd keytalkclient-5.X.Y
-    sudo ./install-keytalk.sh
+    sudo ./install.sh
     sudo /usr/local/bin/keytalk/ktconfig --rccd-path <path-to-rccd>
 
 Notice: RCCD installation for Apache integration must be done as root because the Apache certificate renewal script invoked by cron
@@ -141,12 +141,11 @@ Example fully customized notifications:
 
 
 Note: For RHEL/CentOS
-      In /etc/httpd/conf.d/ssl.conf file, at the end of the file, remove spaces from the second last line and change to :
-
-CustomLog logs/ssl_request_log "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+      Edit the /etc/httpd/conf.d/ssl.conf file, at the end above </VirtualHost> to remove spaces between the last 2 lines for CustomLog and convert it into a single line command.
 
 
-Do a test run by calling:
+
+Do a test run by calling (Make sure your default Python version is 2.7.x) :
 
     sudo /usr/local/bin/keytalk/renew_apache_ssl_cert
 
