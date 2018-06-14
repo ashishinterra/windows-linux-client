@@ -62,12 +62,7 @@ namespace rclient
 
                 foreach (const string& credTypeStr, aCredTypes)
                 {
-                    resept::CredentialType credType;
-                    if (!parseCredentialType(credTypeStr, credType))
-                    {
-                        TA_THROW_MSG(std::invalid_argument, "Cannot parse credential type from " + credTypeStr);
-                    }
-                    myRetVal.push_back(credType);
+                    myRetVal.push_back(resept::parseCredentialType(credTypeStr));
                 }
 
                 return myRetVal;

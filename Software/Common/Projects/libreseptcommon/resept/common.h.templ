@@ -147,18 +147,17 @@ namespace resept
     {
         return CredentialTypeStrings[aCredentialType-FirstCredentialType];
     }
-    inline bool parseCredentialType(const std::string& aCredentialTypeStr, CredentialType& aCredentialType)
+    inline CredentialType parseCredentialType(const std::string& aCredentialTypeStr)
     {
         for (int iCred = FirstCredentialType; iCred <= LastCredentialType; ++iCred)
         {
             CredentialType myCredType = static_cast<CredentialType>(iCred);
             if (str(myCredType) == aCredentialTypeStr)
             {
-                aCredentialType = myCredType;
-                return true;
+                return myCredType;
             }
         }
-        return false;
+        TA_THROW_MSG(std::invalid_argument, "Cannot parse credential type from " + aCredentialTypeStr);
     }
     typedef std::vector<CredentialType> CredentialTypes;
 
@@ -307,6 +306,36 @@ namespace resept
         ta::SignUtils::Digest signing_algo;
         ta::CertUtils::Subject subject;
     };
+
+    struct AddressBook
+    {
+        AddressBook() {}
+        AddressBook(const std::string& anLdapSvrUrl, const std::string& aSearchBase, const std::string& aVerificationCasPem = "")
+        : ldap_svr_url(anLdapSvrUrl)
+        , search_base(aSearchBase)
+        , verification_cas_pem(aVerificationCasPem)
+        {}
+        inline bool operator==(const AddressBook& other) const
+        {
+            return (ldap_svr_url == other.ldap_svr_url &&
+                    search_base == other.search_base &&
+                    verification_cas_pem == other.verification_cas_pem
+                    );
+        }
+
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive& ar, const unsigned int UNUSED(version))
+        {
+            ar & ldap_svr_url;
+            ar & search_base;
+            ar & verification_cas_pem;
+        }
+
+       std::string ldap_svr_url;
+       std::string search_base;
+       std::string verification_cas_pem;
+    };
+    typedef std::vector<AddressBook> AddressBooks;
 
     namespace rcdp
     {
@@ -789,10 +818,12 @@ namespace resept
         {
             FirstRequest,
             reqSelfServiceAvailability = FirstRequest,
-            LastRequest = reqSelfServiceAvailability
+            reqAddressBookList,
+            LastRequest = reqAddressBookList
         };
 
         const std::string requestParamNameCert = ${PUBLIC_API_REQUEST_PARAM_NAME_CERT};
+        const std::string requestParamNameService = ${PUBLIC_API_REQUEST_PARAM_NAME_SERVICE};
 
         const std::string RequestStrings[] = ${PUBLIC_API_REQUEST_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == LastRequest-FirstRequest+1);
@@ -826,11 +857,16 @@ namespace resept
             FirstResponse,
             respError = FirstResponse,
             respSelfServiceAvailability,
-            LastResponse = respSelfServiceAvailability
+            respAddressBookList,
+            LastResponse = respAddressBookList
         };
         const std::string responseParamNameError = ${PUBLIC_API_RESPONSE_PARAM_NAME_ERROR};
         const std::string responseParamNameStatus = ${PUBLIC_API_RESPONSE_PARAM_NAME_STATUS};
         const std::string responseParamNameAvailable = ${PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE};
+        const std::string responseParamNameAddressBooks = ${PUBLIC_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
+        const std::string responseParamNameLdapSvrUrl = ${PUBLIC_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
+        const std::string  responseParamNameSearchBase = ${PUBLIC_API_RESPONSE_PARAM_NAME_SEARCH_BASE};
+        const std::string responseParamNameVerificationCa = ${PUBLIC_API_RESPONSE_PARAM_NAME_VERIFICATION_CA};
 
         const std::string ResponseStrings[] = ${PUBLIC_API_RESPONSE_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == LastResponse-FirstResponse+1);
@@ -854,6 +890,7 @@ namespace resept
             }
             TA_THROW_MSG(std::invalid_argument, "Cannot parse public API response type from string " + aResponseStr);
         }
-    }
+
+    } // publicapi
 
 } // resept

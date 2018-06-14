@@ -10,8 +10,6 @@
 ######################################################################################
 # RCDPv2 flow.
 # Goes over HTTPS.
-# HTTP GET requests.
-# HTTP JSON responses.
 #
 # client ---------> hello -----------------> server
 # client <--------- hello <----------------- server
@@ -546,7 +544,7 @@ class CertRetrievalApi(object):
         self._request(conf.RCDPV2_REQUEST_LAST_MESSAGES, request_params)
         response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_LAST_MESSAGES, conf.RCDPV2_RESPONSE_LAST_MESSAGES)
-        messages = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_LAST_MESSAGES]
+        messages = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_LAST_MESSAGES] or []
         if len(messages) > 0:
             log("Received {} user messages:\n{}".format(len(messages), pprint.pformat(messages)))
         return response_payload
@@ -724,6 +722,17 @@ class PublicApi(object):
         else:
             raise Exception("Failed to parse boolean from {} key of the response {}".format(
                 conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE, response_payload))
+
+    def retrieve_address_books(self, service):
+        self._request(conf.PUBLIC_API_REQUEST_ADDRESS_BOOK_LIST,
+                      {conf.PUBLIC_API_REQUEST_PARAM_NAME_SERVICE: service},
+                      method='GET')
+        response_payload = PublicApi._parse_response(
+            self.conn,
+            conf.PUBLIC_API_REQUEST_ADDRESS_BOOK_LIST,
+            conf.PUBLIC_API_RESPONSE_ADDRESS_BOOK_LIST)
+        books = response_payload[conf.PUBLIC_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS] or []
+        return books
 
 
 #
@@ -998,6 +1007,28 @@ def check_self_service_availability():
         pass
 
 
+def retrieve_address_books():
+
+    api = PublicApi()
+
+    assert api.retrieve_address_books(service="CUST_ANO_INTERNAL") == []
+    assert api.retrieve_address_books(
+        service="CUST_PASSWD_AD") == [
+        {
+            'ldap_svr_url': 'ldaps://WIN2012-RESEPT-AD.Resept.2012.local',
+            'search_base': 'dc=Resept,dc=2012,dc=local'},
+        {
+            'ldap_svr_url': 'ldap://addressbook.example.com',
+            'search_base': 'people,dc=example,dc=com'},
+    ]
+
+    try:
+        api.retrieve_address_books(service="NON_EXISTING_SERVICE")
+        assert False, "Non-existing service is not reported as bad request"
+    except BadRequestError:
+        pass
+
+
 #
 # Entry point
 #
@@ -1016,3 +1047,4 @@ if __name__ == "__main__":
 
     fetch_ca_certs()
     check_self_service_availability()
+    retrieve_address_books()

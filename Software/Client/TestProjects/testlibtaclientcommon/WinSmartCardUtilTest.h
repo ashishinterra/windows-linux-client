@@ -41,7 +41,6 @@ public:
 		{
 			TS_SKIP("This will only be performed on Windows 10");
 		}
-		TS_SKIP("This test is for Windows only");
 	}
 
 	void test_request_csr()
@@ -58,7 +57,6 @@ public:
 		{
 			TS_SKIP("This will only be performed on Windows 10");
 		}
-		TS_SKIP("This test is for Windows only");
 	}
 
 	void test_request_csr_with_incorrect_key_size()
@@ -71,7 +69,6 @@ public:
 		{
 			TS_SKIP("This will only be performed on Windows 10");
 		}
-		TS_SKIP("This test is for Windows only");
 	}
 #endif
 };
