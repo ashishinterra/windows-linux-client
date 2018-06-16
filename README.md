@@ -6,22 +6,30 @@
 Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 
   - KeyTalk Windows client support Windows 7, Windows 8 and Windows 10.
-  - KeyTalk Linux client supports Debian 8 x64, Debian 9 x64 and Ubuntu 16.04 x64.
+  - KeyTalk Linux client supports Rhel 6/7 x64, CentOS 6/7 x64, Debian 8 x64, Debian 9 x64 and Ubuntu 16.04 x64.
 
 ## Building KeyTalk Linux Client
 
 
-We will create two development environments:
+We will create seperate development environments:
+
   - Debian 8-based for building KeyTalk clients for Debian 8 and Ubuntu 16.04
   - Debian 9-based for building KeyTalk clients for Debian 9
+  - CentOS 7-based for building KeyTalk clients for CentOS 7
+  - RedHat 7-based for building KeyTalk clients for RHEL 7
+  - CentOS 6-based for building KeyTalk clients for CentOS 6
+  - RedHat 6-based for building KeyTalk clients for RHEL 6
 
-The reason for creating two separate development environments is incompatibility of OpenSSL libraries on Debian 8 and Debian 9 (app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
+The reason for creating separate development environments is incompatibility of libraries on different operating systems (for example: app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
 
 
 ### Setup base system
-Install Debian 8 x64 to build for Debian 8/Ubuntu 16.04 or Debian 9 x64 to build for Debian 9.
+Install Debian 8 x64 to build for Debian 8/Ubuntu 16.04 or Debian 9 x64 to build for Debian 9 or RHEL 6/7 x64 to build on RHEL 6&7 or CentOS 6/7 x64 to build on CentOS 6/7.
 - 10 GB disk space
 - 512 MB RAM
+
+
+### _Building Debian 8/9 & Ubuntu 16.04 Client_
 
 Become root
 
@@ -38,7 +46,7 @@ Set hostname
 Install packages
 
     # apt-get update
-    # apt -y install gdb vim git ntp ntpdate curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang
+    # apt -y install gdb vim git ntp ntpdate curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang lsb-release
     # a2enmod ssl
     # pip install lxml pyopenssl
     # curl https://bootstrap.pypa.io/get-pip.py | python3
@@ -49,6 +57,120 @@ Debain 9 only. Install ccache to speedup C/C++ builds (it seems ccache can't cac
     # echo 'export PATH=/usr/lib/ccache:$PATH' >> ~/.bashrc
     # export PATH=/usr/lib/ccache:$PATH
     # which clang++
+
+
+### _Building RHEL 7/CentOS 7 Client_
+
+Become root
+
+    $ sudo -i
+
+
+Set hostname
+
+    # echo ktclient-dev > /etc/hostname
+    # hostname -F /etc/hostname
+    # grep -q ktclient-dev /etc/hosts || echo "127.0.1.1    ktclient-dev" >> /etc/hosts
+
+
+Update the system:
+
+    # yum -y update
+
+
+Install Development Tools:
+
+    # yum -y groupinstall "Development Tools"
+
+
+**RHEL 7** only: enable optional and extras repo through subscription manager :
+
+    # subscription-manager repos --enable rhel-7-server-optional-rpms
+    # subscription-manager repos --enable rhel-7-server-extras-rpms
+
+
+Install epel and ius packages:
+
+    # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    # yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+
+
+Install packages:
+
+    # yum -y update
+    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget wkhtmltopdf pylint
+    # pip install lxml pyopenssl
+
+
+
+### _Building RHEL 6 /CentOS 6 Client_
+
+Become root
+
+    $ sudo -i
+
+
+Set hostname
+
+    # echo ktclient-dev > /etc/hostname
+    # hostname -F /etc/hostname
+    # grep -q ktclient-dev /etc/hosts || echo "127.0.1.1    ktclient-dev" >> /etc/hosts
+
+
+
+Update the system:
+
+    # yum -y update
+
+
+Install Development Tools:
+
+    # yum -y groupinstall "Development Tools"
+
+
+**RHEL 6** only: enable optional and extras repo through subscription manager for  :
+
+    # subscription-manager repos --enable rhel-6-server-optional-rpms
+    # subscription-manager repos --enable rhel-6-server-extras-rpms
+
+
+
+Install epel and ius packages:
+
+    # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
+    # yum -y install https://centos6.iuscommunity.org/ius-release.rpm
+
+
+Install packages:
+
+    # yum -y update
+    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget
+    # pip install lxml pyopenssl
+
+    # wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+    # tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+    # mv wkhtmltox/bin/wkhtmlto* /usr/bin
+    # pip install pylint
+
+
+**RHEL 6** only: install devtoolset
+
+    # yum -y install devtoolset-2
+
+**CentsOS 6** only: install devtoolset
+
+    # wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo
+    # yum -y install devtoolset-2-gcc devtoolset-2-binutils
+    # yum -y install devtoolset-2-gcc-c++ devtoolset-2-gcc-gfortran
+
+
+Enable gcc/g++ version 4.8.x and to update CA Trust
+
+**(Note: gcc/g++ version should always be 4.8.x before installing from keytalk source code)**
+
+    # scl enable devtoolset-2 bash
+    # update-ca-trust enable
+
 
 
 ### Install KeyTalk

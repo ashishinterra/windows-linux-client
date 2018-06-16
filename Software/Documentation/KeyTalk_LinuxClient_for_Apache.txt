@@ -28,17 +28,29 @@ System Requirements
 Before installing the KeyTalk client with Apache certificate renewal script
 please make sure that your server meets the following requirements:
 
+- RHEL 6/7 x64 or CentOS 6/7 x64
 - Debian 8 x64, Debian 9 x64 or Ubuntu 16.04 LTS x64
+- Python 2.7.x
 - Apache 2.2 - 2.4 installed with SSL module enabled
 
   Example configuring Apache:
 
-sudo apache2ctl -v
-if ! sudo a2query -m  ssl; then \
-    sudo a2enmod ssl; \
-    sudo a2ensite default-ssl; \
-    sudo service apache2 restart; \
-fi
+    For RHEL/CentOS:
+
+    sudo httpd -v
+    sudo rpm -qa | grep mod_ssl (Check whether ssl module is enabled or intalled)
+    sudo mod_ssl (if it does not exist install using this command)
+    sudo service httpd restart
+
+
+    For Debian/Ubuntu:
+
+    sudo apache2ctl -v
+    if ! sudo a2query -m  ssl; then \
+         sudo a2enmod ssl; \
+         sudo a2ensite default-ssl; \
+         sudo service apache2 restart; \
+    fi
 
 
 Compatible KeyTalk versions
@@ -127,7 +139,13 @@ Example fully customized notifications:
     "EmailServer" : "smtp.example.com"
     "EmailSubject" : "Apache certificate update"
 
-Do a test run by calling:
+
+Note: For RHEL/CentOS
+      Edit the /etc/httpd/conf.d/ssl.conf file, at the end above </VirtualHost> to remove spaces between the last 2 lines for CustomLog and convert it into a single line command.
+
+
+
+Do a test run by calling (Make sure your default Python version is 2.7.x) :
 
     sudo /usr/local/bin/keytalk/renew_apache_ssl_cert
 
@@ -229,4 +247,3 @@ Please create a problem report with
    sudo /usr/local/bin/keytalk/ktprgen
 
 and send it to support@keytalk.com
-

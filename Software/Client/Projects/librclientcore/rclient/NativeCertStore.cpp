@@ -16,6 +16,7 @@
 #include "ta/logger.h"
 #include "ta/scopedresource.hpp"
 #include "ta/utils.h"
+#include "ta/osinfoutils.h"
 #include "ta/common.h"
 
 #include "boost/algorithm/string.hpp"
@@ -197,7 +198,7 @@ namespace rclient
                         return boost::none;
                     }
                     std::auto_ptr<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
-                    if (!::CertGetNameString(aCertContextPtr,	CERT_NAME_SIMPLE_DISPLAY_TYPE, 	CERT_NAME_ISSUER_FLAG,  0, myAttrVal.get(), myAttrValLen))
+                    if (!::CertGetNameString(aCertContextPtr,  CERT_NAME_SIMPLE_DISPLAY_TYPE,   CERT_NAME_ISSUER_FLAG,  0, myAttrVal.get(), myAttrValLen))
                     {
                         return boost::none;
                     }
@@ -547,7 +548,7 @@ namespace rclient
                     DWORD cchFile = ::GetFileSize(hFile, NULL);
                     BSTR bstrCert = ::SysAllocStringByteLen(NULL, cchFile);
                     DWORD cbRead = 0;
-                    if (!::ReadFile(hFile, (char*)bstrCert, cchFile, &cbRead,	 NULL))
+                    if (!::ReadFile(hFile, (char*)bstrCert, cchFile, &cbRead,   NULL))
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot read file '%s'") % aDerCertPath);
                     }
@@ -1147,7 +1148,18 @@ namespace rclient
                         return str(boost::format("%s/keystore") % Settings::getUserConfigDir());
                     case storeIntermediate:
                     case storeRoot:
-                        return "/usr/local/share/ca-certificates";
+                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
+                        {
+                            return "/etc/pki/ca-trust/source/anchors/";
+                        }
+                        else if (ta::OsInfoUtils::isLinuxDebian())
+                        {
+                            return "/usr/local/share/ca-certificates";
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
+                        }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
                     }
@@ -1162,7 +1174,7 @@ namespace rclient
                         return str(boost::format("%s/%s%s.pem") % getStoreDir(aStoreType) % myCertFilePrefix % ta::genUuid());
                     case storeIntermediate:
                     case storeRoot:
-                        // .crt extension is required to be understood by 'update-ca-certificates' utility
+                        // .crt extension is required to be understood by 'update-ca-certificates' utility for debian and 'update-ca-trust' utility for RHEL/CentOS
                         return str(boost::format("%s/%s%s.crt") % getStoreDir(aStoreType) % myCertFilePrefix % ta::genUuid());
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
@@ -1237,8 +1249,20 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        ta::Process::checkedShellExecSync("update-ca-certificates");
-                        return;
+                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-trust");
+                            return;
+                        }
+                        else if(ta::OsInfoUtils::isLinuxDebian())
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-certificates");
+                            return;
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
+                        }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
                     }
@@ -1255,8 +1279,20 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
-                        return;
+                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-trust extract");
+                            return;
+                        }
+                        else if (ta::OsInfoUtils::isLinuxDebian())
+                        {
+                            ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
+                            return;
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
+                        }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(theStoreType));
                     }

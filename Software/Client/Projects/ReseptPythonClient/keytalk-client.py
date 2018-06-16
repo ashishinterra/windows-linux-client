@@ -159,12 +159,12 @@ class CertRetrievalApi(object):
 
     @staticmethod
     def _calc_hwsig(formula):
-        #@todo implement for real for the given formula
+        # @todo implement for real for the given formula
         return "HWSIG-123456"
 
     @staticmethod
     def _get_system_hwdescription():
-        #@todo implement for real
+        # @todo implement for real
         return "Windows 7, BIOS s/n 1234567890"
 
     @staticmethod

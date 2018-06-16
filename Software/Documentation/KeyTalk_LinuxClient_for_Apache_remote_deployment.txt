@@ -24,7 +24,9 @@ Prepare web servers
 First of all, make sure that all the servers you want to deploy to have the
 following software installed:
 
+- RHEL 6/7 x64 or CentOS 6/7 x64
 - Debian 8 x64, Debian 9 x64 or Ubuntu 16.04 LTS x64
+- Python 2.7.x
 - Apache 2.2 - 2.4 with SSL module enabled
 
 This deployment script requires password-less SSH access to the machines

@@ -17,6 +17,7 @@ import re
 
 
 INSTALLER_DIR_PREFIX = 'keytalkclient-'
+os_version = run_cmd('lsb_release --id --short')
 
 
 def run_cmd(cmd, logger=None):
@@ -182,28 +183,54 @@ def deploy_site_config(ssh_host, config_path, installer_path, rccd_path):
                 ssh_host=quote(ssh_host),
                 temp_dir=quote(remote_temp_dir)))
 
-        run_remote_cmd(
-            ssh_host, """set -e;
-                         set -x;
-                         echo "Checking if apache2 is installed"
-                         which apache2
-                         (
-                             cd {temp_dir} &&
-                             tar xfz {installer_filename} &&
-                             (
-                               cd keytalkclient-* &&
-                                ./install.sh
-                             ) &&
-                             /usr/local/bin/keytalk/ktconfig --rccd-path {rccd_filename} &&
-                             cp {config_filename} /etc/keytalk/apache.ini &&
-                             /usr/local/bin/keytalk/renew_apache_ssl_cert --force &&
-                             echo "*  *  *  *  *   root    /usr/local/bin/keytalk/renew_apache_ssl_cert > $HOME/tmp/cron.ktapachecertrenewal.log 2>&1" > /etc/cron.d/keytalk
-                         ) &&
-                         rm -rf {temp_dir}""".format(
-                temp_dir=quote(remote_temp_dir), installer_filename=quote(
-                    os.path.basename(installer_path)), rccd_filename=quote(
-                    os.path.basename(rccd_path)), config_filename=quote(
-                        os.path.basename(config_path))), only_stdout=True)
+        if(os_version == "Debian" or os_version == "Ubuntu"):
+            run_remote_cmd(
+                ssh_host, """set -e;
+		                 set -x;
+		                 echo "Checking if apache2 is installed"
+		                 which apache2
+		                 (
+		                     cd {temp_dir} &&
+		                     tar xfz {installer_filename} &&
+		                     (
+		                       cd keytalkclient-* &&
+		                        ./install.sh
+		                     ) &&
+		                     /usr/local/bin/keytalk/ktconfig --rccd-path {rccd_filename} &&
+		                     cp {config_filename} /etc/keytalk/apache.ini &&
+		                     /usr/local/bin/keytalk/renew_apache_ssl_cert --force &&
+		                     echo "*  *  *  *  *   root    /usr/local/bin/keytalk/renew_apache_ssl_cert > $HOME/tmp/cron.ktapachecertrenewal.log 2>&1" > /etc/cron.d/keytalk
+		                 ) &&
+		                 rm -rf {temp_dir}""".format(
+                    temp_dir=quote(remote_temp_dir), installer_filename=quote(
+                        os.path.basename(installer_path)), rccd_filename=quote(
+                        os.path.basename(rccd_path)), config_filename=quote(
+                            os.path.basename(config_path))), only_stdout=True)
+
+        if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
+            run_remote_cmd(
+                ssh_host, """set -e;
+		                 set -x;
+		                 echo "Checking if httpd is installed"
+		                 which httpd
+		                 (
+		                     cd {temp_dir} &&
+		                     tar xfz {installer_filename} &&
+		                     (
+		                       cd keytalkclient-* &&
+		                        ./install.sh
+		                     ) &&
+		                     /usr/local/bin/keytalk/ktconfig --rccd-path {rccd_filename} &&
+		                     cp {config_filename} /etc/keytalk/apache.ini &&
+		                     /usr/local/bin/keytalk/renew_apache_ssl_cert --force &&
+		                     echo "*  *  *  *  *   root    /usr/local/bin/keytalk/renew_apache_ssl_cert > $HOME/tmp/cron.ktapachecertrenewal.log 2>&1" > /etc/cron.d/keytalk
+		                 ) &&
+		                 rm -rf {temp_dir}""".format(
+                    temp_dir=quote(remote_temp_dir), installer_filename=quote(
+                        os.path.basename(installer_path)), rccd_filename=quote(
+                        os.path.basename(rccd_path)), config_filename=quote(
+                            os.path.basename(config_path))), only_stdout=True)
+
     except CmdFailedException as ex:
         return ex.format_indented_message('Could not deploy to {}:'.format(ssh_host))
     return None

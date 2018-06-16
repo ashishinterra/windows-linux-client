@@ -360,6 +360,43 @@ namespace PrGenerator
             }
 
             // Apache configuration
+            if (ta::isDirExist("/etc/httpd"))
+            {
+                // copy /etc/httpd/conf/httpd.conf
+                try
+                {
+                    const string myApacheConfigFile = "/etc/httpd/conf/httpd.conf";
+                    const string myDestPath = aDir + ta::getDirSep() + "apache_ports.conf";
+                    copyFile(myApacheConfigFile, myDestPath);
+                    myRetVal.push_back(myDestPath);
+                }
+                catch (std::exception& e)
+                {
+                    WARNLOG(boost::format("Failed to copy %s apache configuration file to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
+                }
+
+                // copy all configs referred from /etc/httpd/conf.d/
+                fs::path sitesEnabledDir("/etc/httpd/conf.d");
+                fs::directory_iterator it(sitesEnabledDir), eod;
+                foreach(fs::path const &p, std::make_pair(it, eod))
+                {
+                    try
+                    {
+                        if (fs::is_symlink(p))
+                        {
+                            const fs::path mySymLinkPath = sitesEnabledDir / fs::read_symlink(p);
+                            const string myDestPath = aDir + ta::getDirSep() + "apache_sites_enabled_"  + mySymLinkPath.filename().string();
+                            copyFile(mySymLinkPath.string(), myDestPath);
+                            myRetVal.push_back(myDestPath);
+                        }
+                    }
+                    catch (std::exception& e)
+                    {
+                        WARNLOG(boost::format("Failed to copy %s apache configuration site-enabled file to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
+                    }
+                }
+            }
+
             if (ta::isDirExist("/etc/apache2"))
             {
                 // copy /etc/apache2/ports.conf
@@ -397,14 +434,22 @@ namespace PrGenerator
                 }
             }
 
+
             // Apache log
             try
             {
-                const string mySrcPath = "/var/log/apache2/error.log";
-                if (ta::isFileExist(mySrcPath))
+                const string mySrcPathHttpd = "/var/log/httpd/error_log";
+                const string mySrcPathApache = "/var/log/apache2/error.log";
+                if (ta::isFileExist(mySrcPathHttpd))
+                {
+                    const string myDestPath = aDir + ta::getDirSep() + "apache_error_log";
+                    copyFile(mySrcPathHttpd, myDestPath);
+                    myRetVal.push_back(myDestPath);
+                }
+                else if (ta::isFileExist(mySrcPathApache))
                 {
                     const string myDestPath = aDir + ta::getDirSep() + "apache_error.log";
-                    copyFile(mySrcPath, myDestPath);
+                    copyFile(mySrcPathApache, myDestPath);
                     myRetVal.push_back(myDestPath);
                 }
             }

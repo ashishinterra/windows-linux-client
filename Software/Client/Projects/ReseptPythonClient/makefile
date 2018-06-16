@@ -24,4 +24,8 @@ clean:
 	rm -f ${DEPENDENCIES} ${PACKAGE}
 
 install: requirements.txt
+ifneq (,$(wildcard /etc/debian_version))
 	pip3 install --upgrade --requirement requirements.txt
+else ifneq (,$(wildcard /etc/redhat-release))
+	pip3.5 install --upgrade --requirement requirements.txt
+endif

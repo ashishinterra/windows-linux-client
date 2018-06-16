@@ -100,7 +100,9 @@ namespace ta
         std::string toJson(const ta::StringArray& anArray);
         std::string toJson(const ta::StringDict& aStringDict);
         std::string toJson(const ta::StringDictArray& aStringDictArray);
+        //@known issues: empty array is serialized as empty string ""
         std::string toJson(const boost::property_tree::ptree& aTree);
+
         std::vector<std::string> jsonToStringArray(const std::string& aJson);
         ta::StringDict jsonToStringDict(const std::string& aJson);
         ta::StringDictArray jsonToStringDictArray(const std::string& aJson);
