@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import re
 import glob
 from lxml import etree
 import util
 
 os_version = util.run_cmd('lsb_release --id --short')
+
 
 def parse_apache_configs(configuration_files):
     """
@@ -249,18 +251,18 @@ def get_apache_ssl_cert_path(vhost, server_name):
     if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
         if server_name:
             return '/etc/pki/tls/certs/keytalk-apache-{}-{}-ssl.pem'.format(
-            parse_connection_address_from_vhost(vhost)[1], server_name)
+                parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
             return '/etc/pki/tls/certs/keytalk-apache-{}-ssl.pem'.format(
-            parse_connection_address_from_vhost(vhost)[1])
+                parse_connection_address_from_vhost(vhost)[1])
 
     if(os_version == "Debian" or os_version == "Ubuntu"):
         if server_name:
             return '/etc/ssl/certs/keytalk-apache-{}-{}-ssl.pem'.format(
-            parse_connection_address_from_vhost(vhost)[1], server_name)
+                parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
             return '/etc/ssl/certs/keytalk-apache-{}-ssl.pem'.format(
-            parse_connection_address_from_vhost(vhost)[1])
+                parse_connection_address_from_vhost(vhost)[1])
 
 
 def is_apache_running():
@@ -283,19 +285,18 @@ def get_apache_ssl_key_path(vhost, server_name):
     if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
         if server_name:
             return '/etc/pki/tls/private/keytalk-apache-{}-{}-ssl.key'.format(
-            parse_connection_address_from_vhost(vhost)[1], server_name)
+                parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
             return '/etc/pki/tls/private/keytalk-apache-{}-ssl.key'.format(
-            parse_connection_address_from_vhost(vhost)[1])
+                parse_connection_address_from_vhost(vhost)[1])
 
     if(os_version == "Debian" or os_version == "Ubuntu"):
         if server_name:
             return '/etc/ssl/private/keytalk-apache-{}-{}-ssl.key'.format(
-            parse_connection_address_from_vhost(vhost)[1], server_name)
+                parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
             return '/etc/ssl/private/keytalk-apache-{}-ssl.key'.format(
-            parse_connection_address_from_vhost(vhost)[1])
-
+                parse_connection_address_from_vhost(vhost)[1])
 
 
 def is_apache_port(port_string):

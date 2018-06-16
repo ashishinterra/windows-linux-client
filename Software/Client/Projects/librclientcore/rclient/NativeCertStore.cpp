@@ -2,11 +2,6 @@
 #include "Settings.h"
 #include "Common.h"
 #include "resept/util.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/utsname.h>
-#include <string.h>
 #ifdef _WIN32
 #include "ta/OsUserInfo.h"
 #include "ta/sysinfo.h"
@@ -21,6 +16,7 @@
 #include "ta/logger.h"
 #include "ta/scopedresource.hpp"
 #include "ta/utils.h"
+#include "ta/osinfoutils.h"
 #include "ta/common.h"
 
 #include "boost/algorithm/string.hpp"
@@ -1152,13 +1148,17 @@ namespace rclient
                         return str(boost::format("%s/keystore") % Settings::getUserConfigDir());
                     case storeIntermediate:
                     case storeRoot:
-                        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
                         {
                             return "/etc/pki/ca-trust/source/anchors/";
                         }
-                        else if(ta::isFileExist("/etc/debian_version"))
+                        else if (ta::OsInfoUtils::isLinuxDebian())
                         {
                             return "/usr/local/share/ca-certificates";
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
                         }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
@@ -1249,15 +1249,19 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
                         {
                             ta::Process::checkedShellExecSync("update-ca-trust");
                             return;
                         }
-                        else if(ta::isFileExist("/etc/debian_version"))
+                        else if(ta::OsInfoUtils::isLinuxDebian())
                         {
                             ta::Process::checkedShellExecSync("update-ca-certificates");
                             return;
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
                         }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
@@ -1275,15 +1279,19 @@ namespace rclient
                         return; // nothing to do
                     case storeIntermediate:
                     case storeRoot:
-                        if(ta::isFileExist("/etc/redhat-release") || ta::isFileExist("/etc/centos-release"))
+                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
                         {
                             ta::Process::checkedShellExecSync("update-ca-trust extract");
                             return;
                         }
-                        else if(ta::isFileExist("/etc/debian_version"))
+                        else if (ta::OsInfoUtils::isLinuxDebian())
                         {
                             ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
                             return;
+                        }
+                        else
+                        {
+                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
                         }
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(theStoreType));
@@ -1631,3 +1639,4 @@ namespace rclient
 #endif // _WIN32
     }// NativeCertStore
 }// rclient
+

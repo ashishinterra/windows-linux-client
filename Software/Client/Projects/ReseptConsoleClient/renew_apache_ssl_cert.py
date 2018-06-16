@@ -134,24 +134,24 @@ def get_cert(site):
 
 def reload_apache():
     if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-	    try:
-		    util.run_cmd('service httpd status', Logger)
-	    except util.CmdFailedException as ex:
-		if ex.retval == 3:
-		    return  # Apache inactive, nothing to be done
-		else:
-		    raise
-	    util.run_cmd('service httpd reload', Logger)
+        try:
+            util.run_cmd('service httpd status', Logger)
+        except util.CmdFailedException as ex:
+            if ex.retval == 3:
+                return  # Apache inactive, nothing to be done
+            else:
+                raise
+        util.run_cmd('service httpd reload', Logger)
 
     if(os_version == "Debian" or os_version == "Ubuntu"):
-	    try:
-		    util.run_cmd('service apache2 status', Logger)
-	    except util.CmdFailedException as ex:
-		if ex.retval == 3:
-		    return  # Apache inactive, nothing to be done
-		else:
-		    raise
-	    util.run_cmd('service apache2 reload', Logger)
+        try:
+            util.run_cmd('service apache2 status', Logger)
+        except util.CmdFailedException as ex:
+            if ex.retval == 3:
+                return  # Apache inactive, nothing to be done
+            else:
+                raise
+        util.run_cmd('service apache2 reload', Logger)
 
 
 def install_apache_ssl_cert(pem_cert_key_path, site, restart_apache=False):
@@ -272,12 +272,12 @@ def validate_site_configuration(site, valid_vhosts):
     if site['VHost'] is not None:
         vhost = apache_util.parse_connection_address_from_vhost(site['VHost'])
         if vhost not in valid_vhosts:
-	    if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-		    validation_errors.append(
-		        'Apache VHost "{}:{}" not found. Please check with "httpd -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
-	    if(os_version == "Debian" or os_version == "Ubuntu"):
-		    validation_errors.append(
-                'Apache VHost "{}:{}" not found. Please check with "apache2ctl -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
+            if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
+                validation_errors.append(
+                    'Apache VHost "{}:{}" not found. Please check with "httpd -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
+            if(os_version == "Debian" or os_version == "Ubuntu"):
+                validation_errors.append(
+                    'Apache VHost "{}:{}" not found. Please check with "apache2ctl -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
 
     keytalk_provider = site['KeyTalkProvider']
     keytalk_service = site['KeyTalkService']

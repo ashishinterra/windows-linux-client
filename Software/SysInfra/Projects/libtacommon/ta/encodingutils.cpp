@@ -329,7 +329,7 @@ namespace ta
         }
         string toJson(const ta::StringDictArray& aStringDictArray)
         {
-            //@not see toJson(const ta::StringArray&) for the explanation of the trick below
+            //@note see toJson(const ta::StringArray&) for the explanation of the trick below
 
             if (aStringDictArray.empty())
             {

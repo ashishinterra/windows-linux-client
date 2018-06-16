@@ -126,11 +126,12 @@ function check_platform_compatibility()
 
     if ! has_executable lsb_release ; then
         if [ -f /etc/debian_version ]; then
-            apt-get -qq -y install lsb-release
+	    apt-get -qq -y update
+            apt-get -y install lsb-release
             apt-get -y install libnss3-tools
         elif [ -f /etc/redhat-release ]; then
             yum -y install redhat-lsb-core
-            yum install nss-tools
+            yum -y install nss-tools
         else
             echo "Debain/RedHat/CentOS required for installation"
             exit 1
@@ -265,11 +266,11 @@ function install_prerequisites()
 
     v_print "Installing prerequisites for KeyTalk on $(get_platform_info)"
     if [ -f /etc/debian_version ]; then
-        apt-get -qq update
-        apt-get -qq -y install ca-certificates hdparm psmisc
+        apt-get -qq -y update
+        apt-get -y install ca-certificates hdparm psmisc
         install_apache_cert_renewal_prerequisities
     elif  [ -f /etc/redhat-release ]; then
-        yum update
+        yum -y update
         yum -y install ca-certificates hdparm psmisc
         install_apache_cert_renewal_prerequisities
     fi

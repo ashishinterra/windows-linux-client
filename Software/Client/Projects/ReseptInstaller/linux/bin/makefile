@@ -11,9 +11,9 @@ else ifeq ($(BUILD_PLATFORM),Debian-9-x86_64)
 else ifeq ($(BUILD_PLATFORM),CentOS-7-x86_64)
   OUT_FILE_PLATFORM:=centos7-x64
 else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-7-x86_64)
-  OUT_FILE_PLATFORM:=RedHatEnterpriseServer7-x64
+  OUT_FILE_PLATFORM:=rhel7-x64
 else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-6-x86_64)
-  OUT_FILE_PLATFORM:=RedHatEnterpriseServer6-x64
+  OUT_FILE_PLATFORM:=rhel6-x64
 else ifeq ($(BUILD_PLATFORM),CentOS-6-x86_64)
   OUT_FILE_PLATFORM:=centos6-x64
 else

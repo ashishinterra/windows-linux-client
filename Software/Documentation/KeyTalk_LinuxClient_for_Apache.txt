@@ -84,7 +84,7 @@ otherwise the Apache certificate renewal script will not be installed.
 
 To install and customize the KeyTalk client, run the following commands (ignore sudo if you are root):
 
-    tar -pzxvf keytalkclient-5.2.2.tar.gz
+    tar -xzf KeyTalkClient-5.X.Y.linux.tgz
     cd keytalkclient-5.X.Y
     sudo ./install.sh
     sudo /usr/local/bin/keytalk/ktconfig --rccd-path <path-to-rccd>
