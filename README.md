@@ -29,7 +29,7 @@ Install Debian 8 x64 to build for Debian 8/Ubuntu 16.04 or Debian 9 x64 to build
 - 512 MB RAM
 
 
-### _Building Debian 8/9 & Ubuntu 16.04 Client_
+### _Setting up development environment for Debian 8/9 & Ubuntu 16.04 Client_
 
 Become root
 
@@ -59,7 +59,7 @@ Debain 9 only. Install ccache to speedup C/C++ builds (it seems ccache can't cac
     # which clang++
 
 
-### _Building RHEL 7/CentOS 7 Client_
+### _Setting up development environment for RHEL 7/CentOS 7 Client_
 
 Become root
 
@@ -103,7 +103,7 @@ Install packages:
 
 
 
-### _Building RHEL 6 /CentOS 6 Client_
+### _Setting up development environment for RHEL 6 /CentOS 6 Client_
 
 Become root
 
@@ -173,7 +173,7 @@ Enable gcc/g++ version 4.8.x and to update CA Trust
 
 
 
-### Install KeyTalk
+### Build and install KeyTalk client
 
 Clone
 
