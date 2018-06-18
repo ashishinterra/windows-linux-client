@@ -22,7 +22,7 @@ namespace ta
 
 
 #ifdef __linux__
-        // The educated guess whether we run Raspberry Pi
+        // No more than an educated guess
         bool isRaspberryPi();
 
         bool isLinuxDebian(); // Debian or Ubuntu

@@ -7,6 +7,8 @@
 #include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
 
+using std::string;
+
 #ifdef _WIN32
 #include <windows.h>
 
@@ -44,7 +46,6 @@ namespace
     const string W10 = "Windows 10";
     const string W2016SVRTECHPREVIEW = "Windows Server 2016 Technical Preview";
 }
-
 #elif defined(__linux__)
 # include "process.h"
 # include<sys/utsname.h>
@@ -52,7 +53,6 @@ namespace
 # error "Unsupported platform"
 #endif
 
-using std::string;
 
 namespace ta
 {
