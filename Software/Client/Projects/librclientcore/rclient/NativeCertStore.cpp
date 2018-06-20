@@ -25,6 +25,7 @@
 #include <vector>
 #include <algorithm>
 #ifdef _WIN32
+#include "openssl/x509.h"
 #include <windows.h>
 #include <wincrypt.h>
 #include <Certsrv.h>
@@ -97,6 +98,7 @@ namespace rclient
 
             //
             // Abstract  : return whether the certificate is valid
+            // Checks for certificate expiration and revocation
             //
             // Exceptions: throw NativeCertStoreError on error
             //
@@ -126,6 +128,15 @@ namespace rclient
                     TA_THROW_MSG(NativeCertStoreError, e.what());
                 }
                 bool myIsValid = (myRemain >= myCertDuration * myCertValidPercent / 100);
+
+                const unsigned char* myCertPtr = aCertContextPtr->pbCertEncoded;
+                ScopedResource<X509*>myX509(d2i_X509(NULL, &myCertPtr, aCertContextPtr->cbCertEncoded), X509_free);
+                if (myX509 == NULL)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Call to d2i_X509 failed attepmting to get cert");
+                }
+                myIsValid = myIsValid && !ta::CertUtils::isCertFileRevoked(myX509);
+
                 DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid?"":"in"));
                 return myIsValid;
             }
@@ -815,7 +826,7 @@ namespace rclient
 
 #else // non Windows
 
-            bool isCertValid(const ta::CertUtils::CertInfo& aCertInfo)
+            bool isCertValid(const std::string& aCertPath, const ta::CertUtils::CertInfo& aCertInfo)
             {
                 const time_t myNow = time(NULL);
 
@@ -835,7 +846,10 @@ namespace rclient
                     TA_THROW_MSG(NativeCertStoreError, e.what());
                 }
                 const int myMinRemain = (int)(myCertDuration * myCertValidPercent / 100);
-                const bool myIsValid = (myRemain >= myMinRemain);
+
+                bool myIsValid = (myRemain >= myMinRemain);
+                myIsValid = myIsValid && !ta::CertUtils::isCertFileRevoked(aCertPath);
+
                 DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid?"":"in"));
                 return myIsValid;
             }
@@ -896,7 +910,7 @@ namespace rclient
                             const ta::CertUtils::CertInfo myCertInfo = ta::CertUtils::getCertInfoFile(p.string());
                             if (ta::isElemExist(myCertInfo.sha1Fingerprint, aCertSha1Fingerprints))
                             {
-                                if (isCertValid(myCertInfo))
+                                if (isCertValid(p.string(), myCertInfo))
                                 {
                                     ++myNumOfValidCerts;
                                 }
@@ -981,7 +995,7 @@ namespace rclient
                             const ta::CertUtils::CertInfo myCertInfo = ta::CertUtils::getCertInfoFile(p.string());
                             if (ta::isElemExist(myCertInfo.sha1Fingerprint, aCertSha1Fingerprints))
                             {
-                                if (aCertRemovelOpt == certsRemoveAll || (aCertRemovelOpt == certsRemoveInvalid && !isCertValid(myCertInfo)))
+                                if (aCertRemovelOpt == certsRemoveAll || (aCertRemovelOpt == certsRemoveInvalid && !isCertValid(p.string(), myCertInfo)))
                                 {
                                     fs::remove(p);
                                     effectuateRemovedCertsInStore();

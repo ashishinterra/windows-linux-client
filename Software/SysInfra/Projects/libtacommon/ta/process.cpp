@@ -290,7 +290,6 @@ namespace ta
             return myShortName;
         }
 
-#if defined(_WIN32) || defined(__linux__)
         string getSelfFullName()
         {
 #ifdef _WIN32
@@ -319,7 +318,6 @@ namespace ta
             const string mySelfDir = mySelfFullName.substr(0, mySelfFullName.find_last_of(ta::getDirSep()));
             return mySelfDir;
         }
-#endif
 
         vector<unsigned long> getAllPids()
         {

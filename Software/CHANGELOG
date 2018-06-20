@@ -10,6 +10,8 @@ Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: Support for storing certificate data to AltSecurityIdentities
     - ADDED: REST API to check self-service is enabled for the given account (KEYTALK-461)
     - ADDED: REST API to retrieve address books (KEYTALK-462)
+    - ADDED: End-user mass-certificate pre-enrollment via DevID import (KEYTALK-464)
+    - ADDED: Windows client background certificate validity check (KEYTALK-463)
     - FIXED: More robust custom routes configuration (KEYTALK-458)
     - FIXED: Logging stalls sometimes as a result of log rotation (KEYTALK-459)
 

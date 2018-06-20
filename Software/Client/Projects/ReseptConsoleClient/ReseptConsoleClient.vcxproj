@@ -69,6 +69,8 @@ IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy UpdateIISCertificate.ps1 ..\Export
 IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy RunSilent.vbs ..\Export
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy RunSilentAsync.vbs ..\Export
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

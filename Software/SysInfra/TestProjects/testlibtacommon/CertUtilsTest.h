@@ -38,7 +38,7 @@ public:
         TS_ASSERT_EQUALS(myCertInfoPemFile.signatureAlgorithm.name, "sha1WithRSAEncryption");
         TS_ASSERT_EQUALS(myCertInfoPemFile.pubKeyType, ta::CertUtils::keyRsa);
         TS_ASSERT_EQUALS(myCertInfoPemFile.pubKeyBits, 1024U);
-        TS_ASSERT(myCertInfoPemFile.crlDistributinPoints.empty());
+        TS_ASSERT(myCertInfoPemFile.crlDistributionPoints.empty());
         TS_ASSERT(myCertInfoPemFile.ocspUrls.empty());
         TS_ASSERT(!myCertInfoPemFile.basicConstraints.isCA);
         time_t myUtcNotBefore = myCertInfoPemFile.utcNotBefore;
@@ -93,7 +93,7 @@ public:
         TS_ASSERT_EQUALS(myCertInfo.signatureAlgorithm.name, "sha1WithRSAEncryption");
         TS_ASSERT_EQUALS(myCertInfo.pubKeyType, ta::CertUtils::keyRsa);
         TS_ASSERT_EQUALS(myCertInfo.pubKeyBits, 4096U);
-        TS_ASSERT(myCertInfo.crlDistributinPoints.empty());
+        TS_ASSERT(myCertInfo.crlDistributionPoints.empty());
         TS_ASSERT(myCertInfo.ocspUrls.empty());
         TS_ASSERT(myCertInfo.basicConstraints.isCA);
         TS_ASSERT_EQUALS(myCertInfo.basicConstraints.pathLen, ta::CertUtils::PathLenConstraintNone);
@@ -132,7 +132,7 @@ public:
         TS_ASSERT_EQUALS(myCertInfo.signatureAlgorithm.name, "sha1WithRSAEncryption");
         TS_ASSERT_EQUALS(myCertInfo.pubKeyType, ta::CertUtils::keyRsa);
         TS_ASSERT_EQUALS(myCertInfo.pubKeyBits, 4096U);
-        TS_ASSERT(myCertInfo.crlDistributinPoints.empty());
+        TS_ASSERT(myCertInfo.crlDistributionPoints.empty());
         TS_ASSERT(myCertInfo.ocspUrls.empty());
         TS_ASSERT(myCertInfo.basicConstraints.isCA);
         TS_ASSERT_EQUALS(myCertInfo.basicConstraints.pathLen, ta::CertUtils::PathLenConstraintNone);
@@ -187,7 +187,7 @@ public:
         TS_ASSERT_EQUALS(myCertInfoPemFile.pubKeyType, ta::CertUtils::keyRsa);
         TS_ASSERT_EQUALS(myCertInfoPemFile.pubKeyBits, 2048U);
         TS_ASSERT(!myCertInfoPemFile.basicConstraints.isCA);
-        TS_ASSERT_EQUALS(myCertInfoPemFile.crlDistributinPoints, list_of("http://crl.globalsign.com/gs/gsorganizationvalsha2g2.crl"));
+        TS_ASSERT_EQUALS(myCertInfoPemFile.crlDistributionPoints, list_of("http://crl.globalsign.com/gs/gsorganizationvalsha2g2.crl"));
         TS_ASSERT_EQUALS(myCertInfoPemFile.ocspUrls, list_of("http://ocsp2.globalsign.com/gsorganizationvalsha2g2"));
         time_t myUtcNotBefore = myCertInfoPemFile.utcNotBefore;
         tm myUtcNotBeforeTm = *gmtime(&myUtcNotBefore);
@@ -208,7 +208,7 @@ public:
         TS_ASSERT_EQUALS(myUtcNotAfterTm.tm_min, 30);
         TS_ASSERT_EQUALS(myUtcNotAfterTm.tm_sec, 03);
 
-        TS_ASSERT_EQUALS(ta::CertUtils::getCertInfoFile("CA/revokedcert.pem").crlDistributinPoints,
+        TS_ASSERT_EQUALS(ta::CertUtils::getCertInfoFile("CA/revokedcert.pem").crlDistributionPoints,
                             list_of("http://crl3.digicert.com/ssca-sha2-g5.crl")("http://crl4.digicert.com/ssca-sha2-g5.crl"));
     }
 

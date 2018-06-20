@@ -1,6 +1,7 @@
 #include "rclient/Settings.h"
 #ifdef _WIN32
 #include "rclient/TaskSettings.h"
+#include "rclient/NativeCertStore.h"
 #endif
 #include "rclient/CommonUtils.h"
 #include "rclient/Common.h"
@@ -112,6 +113,7 @@ void printUsage(const string& aProgramName)
     cout << aProgramName << " task list" << endl;
     cout << aProgramName << " task getparam <taskname> <parametername>" << endl;
     cout << aProgramName << " task validate <taskname>" << endl;
+    cout << aProgramName << " task validatecert" << endl;
 #endif
     cout << aProgramName << " provider list" << endl;
     cout << aProgramName << " provider getparam <providername> <parametername>" << endl;
@@ -166,6 +168,34 @@ int main(int argc, char *argv[])
                 printValue(task);
                 printLn();
             }
+        }
+        else if (myNumArgs == 2 && equal(argvec[1], "task") && equal(argvec[2], "validatecert"))
+        {
+            // Valid cert found default true, because we don't want KeyTalk to open if it is not customized yet.
+            bool validCertFound = true;
+            if (rclient::Settings::isCustomized())
+            {
+                validCertFound = rclient::NativeCertStore::validateReseptUserCert() > 0;
+            }
+            else
+            {
+                DEBUGLOG("Validate Certificate ignored because KeyTalk is not set-up");
+                return exitSuccess;
+            }
+            if (validCertFound)
+            {
+                DEBUGLOG("Validate Certificate ignored because valid certificates are found");
+                return exitSuccess;
+            }
+            if (ta::Process::isRunning("ReseptDesktopClient.exe"))
+            {
+                DEBUGLOG("Validate Certificate ignored because KeyTalk Desktop Client is already running");
+                return exitSuccess;
+            }
+            const string desktopClientPath = str(boost::format("\"%s%s%s.exe\"") % rclient::Settings::getReseptInstallDir() % ta::getDirSep() % rclient::ReseptDesktopClient);
+            DEBUGLOG("Validate Certificate, renewal required, running: " + desktopClientPath);
+            ta::Process::shellExecSync(desktopClientPath);
+            return exitSuccess;
         }
         else if (myNumArgs == 4 && equal(argvec[1], "task") && equal(argvec[2], "getparam"))
         {

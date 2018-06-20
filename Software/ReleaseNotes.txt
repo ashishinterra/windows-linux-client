@@ -9,7 +9,9 @@ Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: Support TPM 2.0 by Windows client
     - ADDED: Support for storing certificate data to AltSecurityIdentities
     - ADDED: REST API to check self-service is enabled for the given account
-     - ADDED: REST API to retrieve address books
+    - ADDED: REST API to retrieve address books
+    - ADDED: End-user mass-certificate pre-enrollment via DevID import
+    - ADDED: Windows client background certificate validity check
     - FIXED: More robust custom routes configuration
     - FIXED: Logging stalls sometimes as a result of log rotation
 

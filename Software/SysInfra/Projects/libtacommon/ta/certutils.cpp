@@ -766,7 +766,7 @@ namespace ta
                                 if (gen->type == GEN_URI)
                                 {
                                     const string myCrlUrl = asn1ToStr(gen->d.uniformResourceIdentifier);
-                                    myCertInfo.crlDistributinPoints.push_back(myCrlUrl);
+                                    myCertInfo.crlDistributionPoints.push_back(myCrlUrl);
                                 }
                             }
                         }
@@ -2612,32 +2612,8 @@ namespace ta
             return myRetVal;
         }
 
-        bool isCertFileRevoked(const string& aCertPath, string* aWarnings)
+        bool isCertFileRevokedForCrl(X509* aCert, const vector <vector<unsigned char> >& aCRLs)
         {
-            vector <vector<unsigned char> > myCRLs;
-            foreach (const string& crlUrl, getCertInfoFile(aCertPath, isPemCertFile(aCertPath) ? PEM : DER).crlDistributinPoints)
-            {
-                try {
-                    const vector<unsigned char> myCRL = ta::fetchHttpUrl(crlUrl);
-                    myCRLs.push_back(myCRL);
-                } catch (std::exception& e) {
-                    if (aWarnings) {
-                        *aWarnings += str(boost::format(" Failed to retrieve CRL for URL %s. %s.") % crlUrl % e.what());
-                    }
-                }
-            }
-            return isCertFileRevokedForCrl(aCertPath, myCRLs);
-        }
-
-        bool isCertFileRevokedForCrl(const string& aCertPath, const vector <vector<unsigned char> >& aCRLs)
-        {
-            OpenSSLCertificateWrapper myCert;
-            if (isPemCertFile(aCertPath)) {
-                myCert.loadFromFile(aCertPath);
-            } else {
-                myCert.loadFromBuf(convDer2Pem(ta::readData(aCertPath)));
-            }
-
             foreach (const vector<unsigned char>& crl, aCRLs)
             {
                 if (crl.empty())
@@ -2661,13 +2637,57 @@ namespace ta
                 }
 
                 X509_REVOKED *revoked = NULL;
-                if (X509_CRL_get0_by_cert(myCRL, &revoked, myCert))
+                if (X509_CRL_get0_by_cert(myCRL, &revoked, aCert))
                 {
                     // this also includes 'removeFromCRL (8)' status which means the cert is temporary suspended, though we treat it as the cert is revoked
                     return true;
                 }
             }
             return false;
+        }
+
+        bool isCertFileRevokedForCrl(const std::string& aCertPath, const std::vector<std::vector<unsigned char> >& aCRLs)
+        {
+            OpenSSLCertificateWrapper myCert;
+            if (isPemCertFile(aCertPath)) {
+                myCert.loadFromFile(aCertPath);
+            } else {
+                myCert.loadFromBuf(convDer2Pem(ta::readData(aCertPath)));
+            }
+            return isCertFileRevokedForCrl(myCert, aCRLs);
+        }
+
+        bool isCertFileRevokedImpl(X509* aCert, const ta::StringArray& aCrlDistributionPoints, string* aWarnings)
+        {
+            vector <vector<unsigned char> > myCRLs;
+            foreach (const string& crlUrl, aCrlDistributionPoints)
+            {
+                try {
+                    const vector<unsigned char> myCRL = ta::fetchHttpUrl(crlUrl);
+                    myCRLs.push_back(myCRL);
+                } catch (std::exception& e) {
+                    if (aWarnings) {
+                        *aWarnings += str(boost::format(" Failed to retrieve CRL for URL %s. %s.") % crlUrl % e.what());
+                    }
+                }
+            }
+            return isCertFileRevokedForCrl(aCert, myCRLs);
+        }
+
+        bool isCertFileRevoked(X509* aCert, string* aWarnings)
+        {
+            return isCertFileRevokedImpl(aCert, getCertInfo(aCert).crlDistributionPoints, aWarnings);
+        }
+
+        bool isCertFileRevoked(const string& aCertPath, string* aWarnings)
+        {
+            OpenSSLCertificateWrapper myCert;
+            if (isPemCertFile(aCertPath)) {
+                myCert.loadFromFile(aCertPath);
+            } else {
+                myCert.loadFromBuf(convDer2Pem(ta::readData(aCertPath)));
+            }
+            return isCertFileRevokedImpl(myCert, getCertInfoFile(aCertPath, isPemCertFile(aCertPath) ? PEM : DER).crlDistributionPoints, aWarnings);
         }
 
         bool isSmimeCert(const string& aCertificate)

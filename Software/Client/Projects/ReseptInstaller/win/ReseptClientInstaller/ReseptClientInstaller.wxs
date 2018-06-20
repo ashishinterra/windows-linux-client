@@ -30,6 +30,10 @@
     <Property Id="INSTALLSTATE_LOCAL" Value="3" />
     <Property Id="INSTALLSTATE_SOURCE" Value="4" />
 
+    <Property Id="POWERSHELLEXE">
+      <RegistrySearch Id="POWERSHELLEXE" Type="raw" Root="HKLM" Key="SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" Name="Path" />
+    </Property>
+
     <!-- Upgrades
       @note we schedule RemoveExistingProducts after InstallInitialize because it gives transactional behavior (i.e. if upgrade fails, msi will roll back the removal of the installed product) -->
 
@@ -162,6 +166,9 @@
       <Component Id="SilentRunnerComp" Guid="F5D8B609-B610-4C08-B45D-BE51CB12F5DD" DiskId="1">
         <File Id="SILENTRUNNER"  Source="$(var.ReseptSourceDir)\RunSilent.vbs" Vital="yes"/>
       </Component>
+      <Component Id="SilentRunnerAsyncComp" Guid="A14E53C3-F6A0-48AA-854B-C268A2CB85FE" DiskId="1">
+        <File Id="SILENTRUNNERASYNC"  Source="$(var.ReseptSourceDir)\RunSilentAsync.vbs" Vital="yes"/>
+      </Component>
     </DirectoryRef>
 
     <DirectoryRef Id="RESEPTCOMMONAPPDATADIR">
@@ -216,6 +223,9 @@
       <Component Id="PowershellUtilsScriptComp" Guid="4DA807EC-88F0-4669-9058-DAB03647F99D" DiskId="1">
         <File Id="POWERSHELLUTILSSCRIPT"  Source="$(var.ReseptSourceDir)\KeyTalkUtils.psm1" Vital="yes"/>
       </Component>
+      <Component Id="ScheduledValidateCertificateScriptComp" Guid="11758C2B-DFCE-4372-A97B-2DF618A8A841" DiskId="1">
+        <File Id="ScheduleValidateCertificateScript" Source="$(var.ReseptSourceDir)\ScheduleValidateCertificate.ps1" Vital="yes"/>
+      </Component>
     </DirectoryRef>
 
 
@@ -238,6 +248,11 @@
         <ComponentRef Id="ReseptConsoleClientComp" />
         <ComponentRef Id="SilentRunnerComp" />
       </Feature>
+      <Feature Id="ValidateCertificateFeature" Title="$(var.ProductName) Scheduled Certificate Validition" Description="$(var.ProductName) Certificates checked for validity on a regular interval" Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
+        <ComponentRef Id="ScheduledValidateCertificateScriptComp" />
+        <ComponentRef Id="ReseptConfigToolComp" />
+        <ComponentRef Id="SilentRunnerAsyncComp" />
+      </Feature>
       <Feature Id="IeFeature" Title="$(var.ProductName) IE add-on" Description="$(var.ProductName) Microsoft Internet Explorer add-on." Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
         <Condition Level="0">NOT IEINSTALLED AND NOT REMOVE</Condition>
         <ComponentRef Id="IeBhoComp" />
@@ -258,6 +273,8 @@
      -->
     <Property Id="RCCDPATH" Secure="yes"/>
 
+    <SetProperty Id="ScheduleValidateCertificateScript" Before="ScheduleValidateCertificateScript" Sequence="execute" Value="&quot;[POWERSHELLEXE]&quot; -NonInteractive -ExecutionPolicy Bypass -Command &quot;&amp; '[#ScheduleValidateCertificateScript]' ; exit $$($Error.Count)&quot;" />
+
     <!-- @note immediate CA impersonates the invoking user (i.e. is executed in the user context) ignoring 'Impersonate' flag -->
     <CustomAction Id="UpdateReseptConfig"    Execute="commit"    Return="check"       Impersonate="no"  FileKey="CONFIGUPDATER"      ExeCommand='--set-install-dir "[RESEPTINSTALLDIR]"' />
     <CustomAction Id="RestoreData"           Execute="commit"    Return="check"       Impersonate="no"  FileKey="CONFIGUPDATER"      ExeCommand='--restore-data' />
@@ -273,7 +290,9 @@
     <!-- The &#39; characters are single quotes which are passed into the RunSilent.vbs script. These single quotes are then translated into double quotes by the script. -->
     <CustomAction Id="ScheduleScriptsRunner" Execute="deferred"  Return="check" Impersonate="yes"  Directory="TARGETDIR"        ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /create /f /sc minute /mo 1 /tn "KeyTalkScheduledScripts" /tr "wscript &#39;[RESEPTINSTALLDIR]RunSilent.vbs&#39; powershell -ExecutionPolicy Bypass -File &#39;[RESEPTINSTALLDIR]Scripts\RunScheduledScripts.ps1&#39;"' />
     <CustomAction Id="UnScheduleScriptsRunner" Execute="deferred"  Return="ignore" Impersonate="yes"  Directory="TARGETDIR"        ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalkScheduledScripts" /f' />
-
+    <CustomAction Id="ScheduleValidateCertificateScript" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="commit" Return="check" Impersonate="yes" />
+    <!-- Keep the task name in sync with ScheduleValidateCertificate.ps1 $task_name. Removal is based on task name. -->
+    <CustomAction Id="UnScheduleValidateCertificate" Execute="deferred" Return="ignore" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalk Certificate Validation Check" /f' />
 
     <InstallExecuteSequence>
       <!-- Actions performed during installation -->
@@ -282,7 +301,8 @@
       <Custom Action="RestartIeUserExe"   After="WriteRegistryValues">NOT Installed</Custom>
       <Custom Action="RemindToCloseIE"    After="RestartIeUserExe">NOT Installed AND NOT RCCDPATH</Custom>
       <Custom Action="LaunchConfigManNoUi" Before="InstallFinalize">NOT Installed AND RCCDPATH</Custom>
-
+      <!-- Scheduling Validate Certificate check is only supported on Windows 10 (and Windows Server 2016), ergo: VersionNT >= 603 -->
+      <Custom Action="ScheduleValidateCertificateScript" After="UpdateReseptConfig">NOT Installed AND <![CDATA[&ValidateCertificateFeature=INSTALLSTATE_LOCAL]]> AND VersionNT >= 603</Custom>
 
       <!-- Actions performed during uninstallation -->
       <!-- @note &CoreFeature=INSTALLSTATE_ABSENT means that KT has been selected for uninstalling (we assume that uninstalling of CoreFeature means uninstalling the entire KT Client).
@@ -290,6 +310,7 @@
       <!-- @note UPGRADINGPRODUCTCODE is set when we are being upgraded and therefore are about to be uninstalled.
            In this case we keep configuration and backup provider data to a temporary location (we cannot just keep provider data because it lives in KT installation dir which may change by a new installation). -->
       <Custom Action="UnScheduleScriptsRunner"   After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="UnScheduleValidateCertificate" After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE AND VersionNT >= 603</Custom>
       <Custom Action="UninstallUserData"   After="UnScheduleScriptsRunner">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="UninstallCommonData" After="UninstallUserData">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="BackupData" After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND UPGRADINGPRODUCTCODE</Custom>

@@ -53,7 +53,6 @@ namespace ta
         enum RemoveExt { extRemoveYes,  extRemoveNo};
         std::string getSelfShortName(RemoveExt aRemoveExt = extRemoveYes);
 
-#if defined(_WIN32) || defined(__linux__)
         /**
           Retrieve full name description of process
 
@@ -68,7 +67,6 @@ namespace ta
           @throw ProcessGetNameError
          */
         std::string getSelfDirName();
-#endif
 
         /**
           Check if process is running by process name

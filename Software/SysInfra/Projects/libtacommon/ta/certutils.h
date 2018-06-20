@@ -134,7 +134,7 @@ namespace ta
             KeyType pubKeyType;          ///< Type of the public key
             boost::uint32_t pubKeyBits;     ///< Size of public key in bits
             BasicConstraints basicConstraints; /// < X509 Basic Constraints
-            ta::StringArray crlDistributinPoints; ///< CRL distribution points
+            ta::StringArray crlDistributionPoints; ///< CRL distribution points
             ta::StringArray ocspUrls;            ///< OCSP URLs
             StringDict optionalExtensions; ///< Optional extensions. Currently supported extensions:
             ///   - "DNS:" and "IP:" parts of Subject Alternative Name
@@ -504,6 +504,10 @@ namespace ta
         //  ["DNS:example.com", "IP: 192.168.33.1"] => ["example.com", "192.168.33.1"]
         ta::StringArray extractSAN_Values(const ta::StringArray& aSAN);
 
+
+        // Check whether the given certificate is revoked by checking CRL included in the certificate if any
+        // @param [in] PEM-encoded certificate
+        bool isCertFileRevoked(X509* aCert, std::string* aWarnings = NULL);
         // Check whether the given certificate is revoked by checking CRL included in the certificate if any
         // @param [in] aCertPath path to the PEM- or DER-encoded certificate
         bool isCertFileRevoked(const std::string& aCertPath, std::string* aWarnings = NULL);
