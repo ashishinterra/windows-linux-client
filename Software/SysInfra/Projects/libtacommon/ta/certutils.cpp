@@ -375,7 +375,7 @@ namespace ta
                     vector<unsigned char> myValue = str2Vec<unsigned char>(aValue); // to get rid of constness
                     if (1 != X509_NAME_add_entry_by_NID(aSubject, aNid, MBSTRING_UTF8, ta::getSafeBuf(myValue), (int)myValue.size(), -1, 0))
                     {
-                        TA_THROW_MSG(std::runtime_error, boost::format("Could not add subject entry with NID %d and value '%s'") % aNid % aValue);
+                        TA_THROW_MSG(std::runtime_error, boost::format("Could not add subject entry with NID %d and value '%s'. %s") % aNid % aValue % ERR_error_string(ERR_get_error(), NULL));
                     }
                 }
             }
@@ -383,10 +383,11 @@ namespace ta
             void addExtToCsr(X509_REQ* aReq, const int aNid, const string& aValue)
             {
                 vector<char> myValue = ta::str2Vec<char>(aValue);// conversion to please openssl demanding non-const char*
+                myValue.push_back('\0');
                 X509_EXTENSION *ext = X509V3_EXT_conf_nid(NULL, NULL, aNid, ta::getSafeBuf(myValue));
                 if (!ext)
                 {
-                    TA_THROW_MSG(std::invalid_argument, boost::format("Could not create extension with NID %d and value %s") % aNid % aValue);
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Could not create extension with NID %d and value '%s'. %s") % aNid % aValue % ERR_error_string(ERR_get_error(), NULL));
                 }
 
                 STACK_OF(X509_EXTENSION) *exts = sk_X509_EXTENSION_new_null();
