@@ -52,7 +52,11 @@ namespace ta
             enum IpType { IPV4, IPV6 };
 
 #ifdef __linux__
+            // Debian/Ubuntu
             const string NetIfacesConfigFilePath = "/etc/network/interfaces";
+            // RHL/CentOS
+            string NetIfaceConfigPath(const string& anIfaceName) { return "/etc/sysconfig/network-scripts/ifcfg-" + anIfaceName; }
+
             const string LoopbackIfaceName       = "lo";
             const ta::StringArray HttpProxyEnvVariableNames = boost::assign::list_of("http_proxy")
                     ("HTTP_PROXY")
@@ -859,16 +863,7 @@ namespace ta
         DefGateway getDefIpv4Gateway()
         {
             // get the default route
-            string myStdOut, myStdErr;
-            const string myCommand = "ip -4 route show default" ;
-            const int myExecCode = Process::shellExecSync(myCommand, myStdOut, myStdErr);
-            if (myExecCode != 0)
-            {
-                TA_THROW_MSG(std::runtime_error, boost::format("Command %1% finished with error code %2%. Stderr: %3%") % myCommand % myExecCode % myStdErr);
-            }
-
-            // parse the output
-            boost::trim(myStdOut);
+            const string myStdOut = boost::trim_copy(Process::checkedShellExecSync("ip -4 route show default"));
             if (myStdOut.empty())
             {
                 return DefGateway();
@@ -1099,26 +1094,59 @@ namespace ta
                 return boost::make_tuple(IfaceConfigType::Auto, IfaceConfigType::Auto);
             }
 
-            const string myNetIfacesConfig = ta::readData(NetIfacesConfigFilePath);
-            const boost::regex myRegEx("^iface\\s+" + ta::regexEscapeStr(anIfaceName) + "\\s+inet\\s+(?<iface_type>dhcp|static)$");
-            boost::cmatch match;
-            if (!regex_search(myNetIfacesConfig.c_str(), match, myRegEx))
+            if (ta::isFileExist(NetIfacesConfigFilePath))
             {
-                TA_THROW_MSG(std::runtime_error, boost::format("Cannot retrieve IPv4 configuration type for network interface '%s'") % anIfaceName);
+                // Debian, Ubuntu
+                const string myNetIfacesConfig = ta::readData(NetIfacesConfigFilePath);
+                const boost::regex myRegEx("^iface\\s+" + ta::regexEscapeStr(anIfaceName) + "\\s+inet\\s+(?<iface_type>dhcp|static)$");
+                boost::cmatch match;
+                if (!regex_search(myNetIfacesConfig.c_str(), match, myRegEx))
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Cannot retrieve IPv4 configuration type for network interface '%s' from %s") % anIfaceName % NetIfacesConfigFilePath);
+                }
+                const string myIfaceType = match["iface_type"];
+                if (myIfaceType == "dhcp")
+                {
+                    return boost::make_tuple(IfaceConfigType::Auto, IfaceConfigType::Manual);
+                }
+                else if (myIfaceType == "static")
+                {
+                    return boost::make_tuple(IfaceConfigType::Manual, IfaceConfigType::Manual);
+                }
+                else
+                {
+                    // this should not happen
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to parse IPv4 configuration type from '%s' for network interface '%s'") % myIfaceType % anIfaceName);
+                }
             }
-            const string myIfaceType = match["iface_type"];
-            if (myIfaceType == "dhcp")
+            else if (ta::isFileExist(NetIfaceConfigPath(anIfaceName)))
             {
-                return boost::make_tuple(IfaceConfigType::Auto, IfaceConfigType::Manual);
-            }
-            else if (myIfaceType == "static")
-            {
-                return boost::make_tuple(IfaceConfigType::Manual, IfaceConfigType::Manual);
+                // RHL/CentOS
+                const string myNetIfacesConfig = ta::readData(NetIfaceConfigPath(anIfaceName));
+                const boost::regex myRegEx("^BOOTPROTO=[\\\"]?(?<iface_type>dhcp|static)[\\\"]?$");
+                boost::cmatch match;
+                if (!regex_search(myNetIfacesConfig.c_str(), match, myRegEx))
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Cannot retrieve IPv4 configuration type for network interface '%s' from %s") % anIfaceName % NetIfaceConfigPath(anIfaceName));
+                }
+                const string myIfaceType = match["iface_type"];
+                if (myIfaceType == "dhcp")
+                {
+                    return boost::make_tuple(IfaceConfigType::Auto, IfaceConfigType::Manual);
+                }
+                else if (myIfaceType == "static")
+                {
+                    return boost::make_tuple(IfaceConfigType::Manual, IfaceConfigType::Manual);
+                }
+                else
+                {
+                    // this should not happen
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to parse IPv4 configuration type from '%s' for network interface '%s'") % myIfaceType % anIfaceName);
+                }
             }
             else
             {
-                // this should not happen
-                TA_THROW_MSG(std::runtime_error, boost::format("Failed to parse IPv4 configuration type from '%s' for network interface '%s'") % myIfaceType % anIfaceName);
+                TA_THROW_MSG(std::runtime_error, boost::format("Neither %s nor %s exist to query network interface information") % NetIfacesConfigFilePath % NetIfaceConfigPath(anIfaceName));
             }
         }
 

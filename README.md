@@ -98,7 +98,7 @@ Install epel and ius packages:
 Install packages:
 
     # yum -y update
-    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget wkhtmltopdf pylint
+    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget wkhtmltopdf pylint bind-utils nc
     # pip install lxml pyopenssl
 
 
@@ -144,7 +144,7 @@ Install epel and ius packages:
 Install packages:
 
     # yum -y update
-    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget
+    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget bind-utils nc
     # pip install lxml pyopenssl
 
     # wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz

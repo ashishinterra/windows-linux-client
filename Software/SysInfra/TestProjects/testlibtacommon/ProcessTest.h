@@ -484,8 +484,7 @@ public:
    void testLinuxServiceManagement()
    {
 #if defined(__linux__)
-        // given
-        TS_ASSERT(Process::isServiceRunning("cron"));
+        // when-then
         TS_ASSERT(Process::isServiceRunning("rsyslog"));
 
 #ifdef RESEPT_SERVER
