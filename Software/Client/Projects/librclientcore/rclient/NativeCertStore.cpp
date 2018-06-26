@@ -557,14 +557,14 @@ namespace rclient
                     ta::ScopedResource<HANDLE> myScopedFileHandler(hFile, ::CloseHandle);// for automatic RAII
 
                     DWORD cchFile = ::GetFileSize(hFile, NULL);
-                    BSTR bstrCert = ::SysAllocStringByteLen(NULL, cchFile);
+                    ta::ScopedResource<BSTR> bstrCert(::SysAllocStringByteLen(NULL, cchFile), ::SysFreeString);
                     DWORD cbRead = 0;
-                    if (!::ReadFile(hFile, (char*)bstrCert, cchFile, &cbRead,   NULL))
+                    if (!::ReadFile(hFile, (char*)(BSTR)bstrCert, cchFile, &cbRead,   NULL))
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot read file '%s'") % aDerCertPath);
                     }
 
-                    PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext( X509_ASN_ENCODING, (const unsigned char*)bstrCert, cchFile);
+                    PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext( X509_ASN_ENCODING, (const unsigned char*)(const BSTR)bstrCert, cchFile);
                     if (!pDesiredCert)
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot create certificate context for file '%s'") % aDerCertPath);

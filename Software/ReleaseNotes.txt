@@ -12,6 +12,7 @@ Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: REST API to retrieve address books
     - ADDED: End-user mass-certificate pre-enrollment via DevID import
     - ADDED: Windows client background certificate validity check
+    - ADDED: Revocation support on the server
     - FIXED: More robust custom routes configuration
     - FIXED: Logging stalls sometimes as a result of log rotation
 

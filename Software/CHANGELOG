@@ -12,11 +12,12 @@ Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: REST API to retrieve address books (KEYTALK-462)
     - ADDED: End-user mass-certificate pre-enrollment via DevID import (KEYTALK-464)
     - ADDED: Windows client background certificate validity check (KEYTALK-463)
+    - ADDED: Revocation support on the server (KEYTALK-465)
     - FIXED: More robust custom routes configuration (KEYTALK-458)
     - FIXED: Logging stalls sometimes as a result of log rotation (KEYTALK-459)
 
       CHANGED shared Db schema:
-      - version 3.0-> 3.2
+      - version 3.0-> 3.1
 
 server-5.3.1, 29 May 2018
 ----------------------------
