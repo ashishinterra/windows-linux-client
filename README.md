@@ -42,7 +42,6 @@ Set hostname
     # hostname -F /etc/hostname
     # grep -q ktclient-dev /etc/hosts || echo "127.0.1.1    ktclient-dev" >> /etc/hosts
 
-
 Install packages
 
     # apt-get update
@@ -116,10 +115,6 @@ Set hostname
     # hostname -F /etc/hostname
     # grep -q ktclient-dev /etc/hosts || echo "127.0.1.1    ktclient-dev" >> /etc/hosts
 
-For testing: make sure the KeyTalk test server demo.keytalkdemo.com is resolvable e.g. (change IP to your network):
-
-  # if grep -q "demo\.keytalkdemo\.com" /etc/hosts ; then sed -i -r 's/^.*\s*demo\.keytalkdemo\.com/192.168.1.123 demo.keytalkdemo.com/' /etc/hosts;  else echo "192.168.1.123 demo.keytalkdemo.com" >> /etc/hosts ; fi
-
 
 Update the system:
 
@@ -188,13 +183,18 @@ Install
     # cd /keytalk/Software/Client/Projects/
     # make clean && make && make install
 
- Test
+
+
+ Quick Test
 
     # /usr/local/bin/keytalk/ktconfig --rccd-path /keytalk/Software/Client/TestProjects/Common/RCCDs/v2/githubtest.rccd
     # /usr/local/bin/keytalk/ktclient --provider KeyTalk_GitHub_TEST --service test --user test --password test
 
 The certificate will be placed under `~/.keytalk/keystore/`
 
+For more extensive testing make sure the KeyTalk test server demo.keytalkdemo.com is resolvable e.g. (change IP to your network):
+
+     # if grep -q "demo\.keytalkdemo\.com" /etc/hosts ; then sed -i -r 's/^.*\s*demo\.keytalkdemo\.com/192.168.1.123 demo.keytalkdemo.com/' /etc/hosts;  else echo "192.168.1.123 demo.keytalkdemo.com" >> /etc/hosts ; fi
 
 ## Building KeyTalk Windows client
 
