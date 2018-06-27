@@ -116,6 +116,9 @@ Set hostname
     # hostname -F /etc/hostname
     # grep -q ktclient-dev /etc/hosts || echo "127.0.1.1    ktclient-dev" >> /etc/hosts
 
+For testing: make sure the KeyTalk test server demo.keytalkdemo.com is resolvable e.g. (change IP to your network):
+
+  # if grep -q "demo\.keytalkdemo\.com" /etc/hosts ; then sed -i -r 's/^.*\s*demo\.keytalkdemo\.com/192.168.1.123 demo.keytalkdemo.com/' /etc/hosts;  else echo "192.168.1.123 demo.keytalkdemo.com" >> /etc/hosts ; fi
 
 
 Update the system:
