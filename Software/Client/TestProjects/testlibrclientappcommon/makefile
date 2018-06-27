@@ -67,10 +67,20 @@ post_build:
 	mkdir -p /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient/resept.ini /etc/keytalk/
-	cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /usr/local/share/ca-certificates/test-commcacert-pcacert.crt
-	update-ca-certificates
+	if [ -f /etc/debian_version ]; then \
+		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /usr/local/share/ca-certificates/test-commcacert-pcacert.crt; \
+		update-ca-certificates; \
+	elif [ -f /etc/redhat-release ]; then \
+		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /etc/pki/ca-trust/source/anchors/test-commcacert-pcacert.crt; \
+		update-ca-trust; \
+	fi
 
 post_clean:
 	rm -f $(OUT_DIR)/ReseptClientAppTest.conf $(OUT_DIR)/log.conf $(OUT_DIR)/hwutils
-	rm -f /usr/local/share/ca-certificates/test-commcacert-pcacert.crt
-	update-ca-certificates --fresh > /dev/null 2>&1
+	if [ -f /etc/debian_version ]; then \
+		rm -f /usr/local/share/ca-certificates/test-commcacert-pcacert.crt; \
+		update-ca-certificates --fresh; \
+	elif [ -f /etc/redhat-release ]; then \
+		rm -f /etc/pki/ca-trust/source/anchors/test-commcacert-pcacert.crt; \
+		update-ca-trust extract; \
+	fi

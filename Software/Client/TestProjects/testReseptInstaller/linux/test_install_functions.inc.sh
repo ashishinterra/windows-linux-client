@@ -85,8 +85,11 @@ function cleanup_keytalk_installation()
   rm -rf ${INSTALLATION_DIRS_REQUIRED}
   rm -f /etc/cron.d/keytalk
   rm -f /usr/local/share/ca-certificates/keytalk_*.crt
-  # ignore if update-ca-certificates is not installed
-  update-ca-certificates --fresh || true
+  if [ -f /etc/debian_version ]; then
+    update-ca-certificates --fresh || true
+  elif [ -f /etc/redhat-release ]; then
+    update-ca-trust extract || true
+  fi
 }
 
 # usage parse_rccd_props $rccd_file provider rccd_type content_version
