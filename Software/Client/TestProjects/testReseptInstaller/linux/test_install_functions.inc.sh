@@ -48,6 +48,20 @@ comm_ca_[0-9a-f]*\.pem \
 primary_ca_[0-9a-f]*\.pem"
 
 
+function trusted_ca_store_path()
+{
+    if [ -f /etc/debian_version ]; then
+        echo "/usr/local/share/ca-certificates"
+        return 0
+    elif [ -f /etc/redhat-release ]; then
+        echo "/etc/pki/ca-trust/source/anchors"
+        return 0
+    else
+        echo "ERROR: cannot retrieve trusted ca store path" >&2
+        return 1
+    fi
+}
+
 # usage client_platform_file_suffix="$(get_client_platform_file_suffix)"
 function get_client_platform_file_suffix()
 {
@@ -61,6 +75,9 @@ function get_client_platform_file_suffix()
     elif [ "${test_platform}" == "Debian-9-x86_64" ]; then
       echo "debian9-x64"
       return 0
+    elif [ "${test_platform}" == "CentOS-7-x86_64" ]; then
+        echo "centos7-x64"
+        return 0
     else
       echo "ERROR: ${test_platform} platform is not supported" >&2
       return 1
@@ -84,7 +101,7 @@ function cleanup_keytalk_installation()
   rm -rf ~/.keytalk/
   rm -rf ${INSTALLATION_DIRS_REQUIRED}
   rm -f /etc/cron.d/keytalk
-  rm -f /usr/local/share/ca-certificates/keytalk_*.crt
+  rm -f $(trusted_ca_store_path)/keytalk_*.crt
   if [ -f /etc/debian_version ]; then
     update-ca-certificates --fresh || true
   elif [ -f /etc/redhat-release ]; then
@@ -155,19 +172,20 @@ function verify_customization()
 
     # Verify installed CAs (3 at least but there might also be extra CAs from 3rd party signer such as GlobalSign)
     local num
-    num=$(ls /usr/local/share/ca-certificates/keytalk_*.crt | wc -l)
+    local ca_store=$(trusted_ca_store_path)
+    num=$(ls $ca_store/keytalk_*.crt | wc -l)
     if (( num < 3 )) ; then
         echo "ERROR: Installation failed. Invalid number of intermediate CAs installed. Actual: ${num}, expected at least 3" >&2
         return 1
     fi
 
-    if ! find_cert_with_cn "/usr/local/share/ca-certificates/keytalk_*.crt" "KeyTalk Demo Signing CA" ; then
+    if ! find_cert_with_cn "$ca_store/keytalk_*.crt" "KeyTalk Demo Signing CA" ; then
         return 1
     fi
-    if ! find_cert_with_cn "/usr/local/share/ca-certificates/keytalk_*.crt" "KeyTalk Demo CCA" ; then
+    if ! find_cert_with_cn "$ca_store/keytalk_*.crt" "KeyTalk Demo CCA" ; then
         return 1
     fi
-    if ! find_cert_with_cn "/usr/local/share/ca-certificates/keytalk_*.crt" "KeyTalk Demo PCA" ; then
+    if ! find_cert_with_cn "$ca_store/keytalk_*.crt" "KeyTalk Demo PCA" ; then
         return 1
     fi
 
