@@ -120,7 +120,7 @@ namespace rclient
             }
             return true;
         }
-        anErrorMsg = str(format("IIS %d or higher required.") % myRequiredVersion);
+        anErrorMsg = str(format("No installation of IIS found. Installation of IIS %d or higher required.") % myRequiredVersion);
         return false;
     }
 

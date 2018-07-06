@@ -38,36 +38,6 @@ namespace ta
         {
 #ifdef _WIN32
 
-            class ScopedComInitializer
-            {
-            public:
-                ScopedComInitializer()
-                    : isComInitialized(false)
-                {
-                    HRESULT hres = ::CoInitialize(NULL);
-                    if (SUCCEEDED(hres))
-                    {
-                        isComInitialized = true;
-                    }
-                    else
-                    {
-                        if (hres != RPC_E_CHANGED_MODE)
-                        {
-                            TA_THROW_MSG(std::runtime_error, boost::format("Failed to initialize COM library. HRESULT 0x%x") % hres);
-                        }
-                    }
-                }
-                ~ScopedComInitializer()
-                {
-                    if (isComInitialized)
-                    {
-                        ::CoUninitialize();
-                    }
-                }
-            private:
-                bool isComInitialized;
-            };
-
             string getBIOSSerialNumberFromWmicApi()
             {
                 FUNCLOG;
@@ -272,6 +242,11 @@ namespace ta
             return myOsProductOwner;
         }
 
+        bool isIisSniSupported()
+        {
+            return (ta::version::parse(ta::OsInfoUtils::getVersion().ver) >= ta::version::Version(6, 2));
+        }
+
         string getBIOSSerialNumber()
         {
             // First try retrieving serial from WMIC API. This is way faster than retrieving it from WMIC shell.
@@ -291,6 +266,30 @@ namespace ta
                     WARNLOG(boost::format("Failed to retrieve BIOS serial from WMIC Shell. %s.") % e.what());
                     throw;
                 }
+            }
+        }
+
+        ScopedComInitializer::ScopedComInitializer()
+            : isComInitialized(false)
+        {
+            HRESULT hres = ::CoInitialize(NULL);
+            if (SUCCEEDED(hres))
+            {
+                isComInitialized = true;
+            }
+            else
+            {
+                if (hres != RPC_E_CHANGED_MODE)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to initialize COM library. HRESULT 0x%x") % hres);
+                }
+            }
+        }
+        ScopedComInitializer::~ScopedComInitializer()
+        {
+            if (isComInitialized)
+            {
+                ::CoUninitialize();
             }
         }
 #endif // _WIN32

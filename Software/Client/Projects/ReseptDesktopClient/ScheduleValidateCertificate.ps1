@@ -1,6 +1,10 @@
 #Powershell style.
 #Only compatible from Windows 8 and up
 
+if ([Environment]::OSVersion.Version -lt (new-object 'Version' 10,0)) {
+    Exit
+}
+
 ipmo ScheduledTasks
 
 Function GetStringFromIniFile( [parameter(mandatory = $true)][string]$iniFile, [parameter(mandatory = $true)][string]$key) {

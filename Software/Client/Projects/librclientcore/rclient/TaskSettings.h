@@ -97,6 +97,7 @@ namespace rclient
             const std::string SendEmailOnSuccess          = "SendEmailOnSuccess";
             const std::string SendEmailIfApplyNotRequired = "SendEmailIfApplyNotRequired";
             const std::string HttpsBindingIp              = "HttpsBindingIp";
+            const std::string HttpsBindingDomain          = "HttpsBindingDomain";
             const std::string HttpsBindingPort            = "HttpsBindingPort";
             const std::string KeyTalkProvider             = "KeyTalkProvider";
             const std::string KeyTalkService              = "KeyTalkService";
@@ -137,6 +138,10 @@ namespace rclient
             std::string getHttpsBindingIp(const std::string& aTaskName);
             bool isValidHttpsBindingIp(const std::string& aValue, std::string& anErrorMsg);
             void setHttpsBindingIp(const std::string& aTaskName, const std::string& aValue);
+
+            std::string getHttpsBindingDomain(const std::string& aTaskName);
+            bool isValidHttpsBindingDomain(const std::string& aValue, std::string& anErrorMsg);
+            void setHttpsBindingDomain(const std::string& aTaskName, const std::string& aValue);
 
             unsigned int getHttpsBindingPort(const std::string& aTaskName);
             void setHttpsBindingPort(const std::string& aTaskName, const unsigned int& aValue);

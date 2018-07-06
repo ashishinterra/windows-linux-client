@@ -1,8 +1,8 @@
 ' The script installs, upgrades and customizes KeyTalk Client msi in GUI-less mode
-' To display usage, please run:
+' To display usage, execute from the command line running as admin:
 ' cscript /nologo MsiSilentInstall.vbs --help
+'
 ' return 0 on success, <>0 on error
-' Note: you should be admin to execute this script
 
 '#####################################################
 ' Imports
@@ -46,7 +46,7 @@ If hasOption(OptionHelp) Then
 End If
 
 If hasOption(OptionUninstall) And getPositionalArgumentCount() = 1 Then
-    myMsiPath = fso.GetAbsolutePathName(WScript.Arguments.Item(0))
+    myMsiPath = fso.GetAbsolutePathName(WScript.Arguments.Item(1))
     If Not(uninstallKeyTalk(myMsiPath)) Then
         WScript.Quit RetError
     End If
@@ -65,7 +65,7 @@ Function printUsage()
     WScript.StdErr.WriteLine "Usage:"
     WScript.StdErr.WriteLine "cscript /nologo " & WScript.ScriptName & " " & OptionHelp
     WScript.StdErr.WriteLine "cscript /nologo " & WScript.ScriptName & " <path\to\msi> [ <path\to\rccd> ] [ " & OptionWithIis & " [" & OptionTaskAfterLogin & "] " & " [" & OptionTaskSystemStartup & "] "& " [ " & OptionTasksIni & " <path\to\tasks.ini> ] ]"
-    WScript.StdErr.WriteLine "cscript /nologo " & WScript.ScriptName & " " & OptionUninstall
+    WScript.StdErr.WriteLine "cscript /nologo " & WScript.ScriptName & " " & OptionUninstall & " <path\to\msi>"
     WScript.StdErr.WriteLine
     WScript.StdErr.WriteLine " " & OptionWithIis & " : Install the IIS certificate renewal functionality"
     WScript.StdErr.WriteLine " " & OptionTasksIni & " <path\to\tasks.ini> : After installation, install a task configuration (only with an RCCD file and " & OptionWithIis & ")"
@@ -142,13 +142,6 @@ Function installKeyTalk()
     RCCDCustomization = getArrayLength(myPosArgs) >= 2
     MsiPath = fso.GetAbsolutePathName(myPosArgs(0))
 
-    ' Print feature list
-    printIf True                      , "Selected the following features:"
-    printIf True                      , "* Windows Client"
-    printIf RCCDCustomization         , "* Client customization with " & quote(RccdPath)
-    printIf hasOption(OptionWithIis)  , "* IIS certificate renewal"
-    printIf hasOption(OptionTasksIni) , "* Install tasks configuration from " & quote(fso.GetAbsolutePathName(getOptionValue(OptionTasksIni)))
-
     ' Build up command line to pass to msiexec
     CmdLine = "msiexec /i " & quote(MsiPath) & " /qn"
 
@@ -157,7 +150,14 @@ Function installKeyTalk()
         CmdLine = CmdLine & " RCCDPATH=" & quote(RccdPath)
     End If
 
-    myFeatureSet = "CoreFeature,IeFeature"
+    ' Print feature list
+    printIf True                      , "Selected the following features:"
+    printIf True                      , "* Windows Client"
+    printIf RCCDCustomization         , "* Client customization with " & quote(RccdPath)
+    printIf hasOption(OptionWithIis)  , "* IIS certificate renewal"
+    printIf hasOption(OptionTasksIni) , "* Install tasks configuration from " & quote(fso.GetAbsolutePathName(getOptionValue(OptionTasksIni)))
+
+    myFeatureSet = "CoreFeature,IeFeature,ValidateCertificateFeature"
     If hasOption(OptionWithIis) Then
         myFeatureSet = myFeatureSet & ",IISCertificateUpdateScript"
     End If
@@ -291,10 +291,9 @@ End Function
 Function getPositionalArgumentCount()
     myNumPosArgs = 0
     For Each arg In WScript.Arguments
-        If isOption(arg) Then
-            Exit For
+        If Not isOption(arg) Then
+            myNumPosArgs = myNumPosArgs + 1
         End If
-        myNumPosArgs = myNumPosArgs + 1
     Next
     getPositionalArgumentCount = myNumPosArgs
 End Function

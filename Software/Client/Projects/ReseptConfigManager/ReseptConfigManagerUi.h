@@ -13,6 +13,10 @@
 #include <vector>
 #include <memory>
 
+#ifdef _WIN32
+#include "ta/sysinfo.h"
+#endif
+
 class ReseptConfigManagerUi;
 
 class GeneralTab : public QWidget
@@ -121,9 +125,15 @@ public:
     bool hasValidValues(std::string& anErrorMsg);
     bool hasValidMailNotificationValues(std::string& anErrorMsg);
 private:
+    std::vector<std::string> getIisSites();
+    std::vector<std::string> getIisBindings();
+    bool isIisBindingValid(const std::string& anIp, const std::string& aPort, const std::string& aSiteName);
     void checkMailNotificationValues(std::vector<std::string>& anErrors);
     const std::string theTask;
     Ui::IISUpdateTaskSettingDialog* theUi;
+#ifdef _WIN32
+    static ta::SysInfo::ScopedComInitializer scopedComInitializer;
+#endif
 };
 
 class TaskSettingsTab : public QWidget

@@ -228,6 +228,14 @@
       </Component>
     </DirectoryRef>
 
+    <Property Id="WINBUILDVERSION" Secure="yes">
+      <RegistrySearch Id="WindowsBuildVersion"
+             Root="HKLM"
+             Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+             Name="CurrentBuild"
+             Type="raw" />
+    </Property>
+
 
     <!-- Features dialog -->
     <Feature Id="Complete" Title="$(var.ProductName) $(var.MajorVersion).$(var.MinorVersion)" Description="The complete package." Level="1" Absent="disallow" ConfigurableDirectory="RESEPTINSTALLDIR" Display="expand" InstallDefault="local" AllowAdvertise="no">
@@ -248,7 +256,10 @@
         <ComponentRef Id="ReseptConsoleClientComp" />
         <ComponentRef Id="SilentRunnerComp" />
       </Feature>
-      <Feature Id="ValidateCertificateFeature" Title="$(var.ProductName) Scheduled Certificate Validition" Description="$(var.ProductName) Certificates checked for validity on a regular interval" Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
+      <Feature Id="ValidateCertificateFeature" Title="$(var.ProductName) Scheduled Certificate Validition" Description="$(var.ProductName) Certificates checked for validity on a regular interval. Only supported on Windows 10 and higher" Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
+        <Condition Level="0">WINBUILDVERSION &lt; 10000</Condition>
+        <!-- We're not using VersionNT. The Windows 10 value of VersionNT is 603, which is the Windows 8.1 version (same goes for Server 2016 and Server 2012 R2) -->
+        <!-- Thus we cannot differentiate between Windows 10 and Windows 8.1 and needed a different solution, like 603 -->
         <ComponentRef Id="ScheduledValidateCertificateScriptComp" />
         <ComponentRef Id="ReseptConfigToolComp" />
         <ComponentRef Id="SilentRunnerAsyncComp" />
@@ -301,8 +312,7 @@
       <Custom Action="RestartIeUserExe"   After="WriteRegistryValues">NOT Installed</Custom>
       <Custom Action="RemindToCloseIE"    After="RestartIeUserExe">NOT Installed AND NOT RCCDPATH</Custom>
       <Custom Action="LaunchConfigManNoUi" Before="InstallFinalize">NOT Installed AND RCCDPATH</Custom>
-      <!-- Scheduling Validate Certificate check is only supported on Windows 10 (and Windows Server 2016), ergo: VersionNT >= 603 -->
-      <Custom Action="ScheduleValidateCertificateScript" After="UpdateReseptConfig">NOT Installed AND <![CDATA[&ValidateCertificateFeature=INSTALLSTATE_LOCAL]]> AND VersionNT >= 603</Custom>
+      <Custom Action="ScheduleValidateCertificateScript" After="UpdateReseptConfig">NOT Installed AND <![CDATA[&ValidateCertificateFeature=INSTALLSTATE_LOCAL]]></Custom>
 
       <!-- Actions performed during uninstallation -->
       <!-- @note &CoreFeature=INSTALLSTATE_ABSENT means that KT has been selected for uninstalling (we assume that uninstalling of CoreFeature means uninstalling the entire KT Client).
@@ -310,7 +320,7 @@
       <!-- @note UPGRADINGPRODUCTCODE is set when we are being upgraded and therefore are about to be uninstalled.
            In this case we keep configuration and backup provider data to a temporary location (we cannot just keep provider data because it lives in KT installation dir which may change by a new installation). -->
       <Custom Action="UnScheduleScriptsRunner"   After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
-      <Custom Action="UnScheduleValidateCertificate" After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE AND VersionNT >= 603</Custom>
+      <Custom Action="UnScheduleValidateCertificate" After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="UninstallUserData"   After="UnScheduleScriptsRunner">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="UninstallCommonData" After="UninstallUserData">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="BackupData" After="InstallInitialize">Installed AND <![CDATA[&CoreFeature=INSTALLSTATE_ABSENT]]> AND UPGRADINGPRODUCTCODE</Custom>

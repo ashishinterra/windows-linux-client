@@ -309,6 +309,35 @@ public:
         TS_ASSERT_DIFFERS(myErrorMsg, "");
 
 
+		myErrorMsg.clear();
+		TS_ASSERT(isValidHttpsBindingDomain("domain.com", myErrorMsg));
+		TS_ASSERT_EQUALS(myErrorMsg, "");
+
+		myErrorMsg.clear();
+		TS_ASSERT(isValidHttpsBindingDomain(" domain.com ", myErrorMsg));
+		TS_ASSERT_EQUALS(myErrorMsg, "");
+
+		myErrorMsg.clear();
+		TS_ASSERT(isValidHttpsBindingDomain("this.is_a.very-long.domain.com", myErrorMsg));
+		TS_ASSERT_EQUALS(myErrorMsg, "");
+
+		myErrorMsg.clear();
+		TS_ASSERT(!isValidHttpsBindingDomain("domain/", myErrorMsg));
+		TS_ASSERT_DIFFERS(myErrorMsg, "");
+
+		myErrorMsg.clear();
+		TS_ASSERT(!isValidHttpsBindingDomain("123.456*", myErrorMsg));
+		TS_ASSERT_DIFFERS(myErrorMsg, "");
+
+		myErrorMsg.clear();
+		TS_ASSERT(!isValidHttpsBindingDomain("&*^(((", myErrorMsg));
+		TS_ASSERT_DIFFERS(myErrorMsg, "");
+
+		myErrorMsg.clear();
+		TS_ASSERT(!isValidHttpsBindingDomain(".com", myErrorMsg));
+		TS_ASSERT_DIFFERS(myErrorMsg, "");
+
+
         myErrorMsg.clear();
         TS_ASSERT(isValidScriptLogFilePath(ta::Process::getTempDir() + "mylogfile.txt",  myErrorMsg));
         TS_ASSERT_EQUALS(myErrorMsg, "");
@@ -413,6 +442,15 @@ public:
         TS_ASSERT_EQUALS(getHttpsBindingPort("TestTask"), myValidUnsignedInt);
         TS_ASSERT_THROWS(setHttpsBindingPort("TestTask", myInvalidUnsignedInt), TaskSettingsError);
         TS_ASSERT_EQUALS(getHttpsBindingPort("TestTask"), myValidUnsignedInt);
+
+		myValidString = "test.keytalk.com";
+		setHttpsBindingDomain("TestTask", myValidString);
+		TS_ASSERT_EQUALS(getHttpsBindingDomain("TestTask"), myValidString);
+		TS_ASSERT_THROWS(setHttpsBindingDomain("TestTask", "test.invalid*com"), TaskSettingsError);
+		TS_ASSERT_EQUALS(getHttpsBindingDomain("TestTask"), myValidString);
+		// Empty domain is valid
+		setHttpsBindingDomain("TestTask", "");
+		TS_ASSERT_EQUALS(getHttpsBindingDomain("TestTask"), "");
 
         myValidString = "TestProvider";
         setKeyTalkProvider("TestTask", myValidString);

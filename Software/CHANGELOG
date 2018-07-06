@@ -1,7 +1,7 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
-server-5.3.2, under development
+server-5.3.2, 6 July 2018
 ----------------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.2.0, 2.1.0 and 2.0.0
@@ -11,13 +11,26 @@ Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: REST API to check self-service is enabled for the given account (KEYTALK-461)
     - ADDED: REST API to retrieve address books (KEYTALK-462)
     - ADDED: End-user mass-certificate pre-enrollment via DevID import (KEYTALK-464)
-    - ADDED: Windows client background certificate validity check (KEYTALK-463)
-    - ADDED: Revocation support on the server (KEYTALK-465)
+    - ADDED: Revocation support (KEYTALK-465)
     - FIXED: More robust custom routes configuration (KEYTALK-458)
     - FIXED: Logging stalls sometimes as a result of log rotation (KEYTALK-459)
 
       CHANGED shared Db schema:
       - version 3.0-> 3.1
+
+client-5.2.2, 6 July 2018
+------------------------
+    Linux client supports: Debian 8 x64, Debian 9 x64, Ubuntu 16.04 (LTS) x64
+    Windows client supports: Windows 7, Windows 8, Windows 10, Windows Server 2012
+    - ADDED: Support TPM 2.0 by Windows client (KEYTALK-429)
+    - ADDED: Windows client background certificate validity check (KEYTALK-463)
+    - ADDED Made Windows and Linux clients publicly available at https://github.com/KeyTalk/windows-linux-client.git
+    - ADDED: Allow signing CSR using REST API v2.2.0 (KEYTALK-398)
+    - ADDED: SNI support for KeyTalk IIS client (KEYTALK-460)
+    - CHANGED Phased out SDKs for Windows and Linux clients
+    - CHANGED Dropped support for http proxy in RCCD ini files (RCCD 2.0.0 -> 2.0.1)
+    - CHANGED Switched from gcc to clang to build Linux clients
+    - CHANGED Tag "developer" log entries iso encrypting them
 
 server-5.3.1, 29 May 2018
 ----------------------------
@@ -70,17 +83,6 @@ server-5.3.0 preview-20180214 (14 Feb 2018; preview version)
     - version 2.1-> 3.0
     CHANGED log rotation configuration moved from /etc/logrotate.d/keytalk-* to /etc/keytalk/logrotate.conf and is triggered hourly iso daily
 
-
-client-5.2.2, in progress
-------------------------
-    Linux client supports: Debian 8 x64, Debian 9 x64, Ubuntu 16.04 (LTS) x64
-    Windows client supports: Windows 7, Windows 8, Windows 10, Windows Server 2012
-    - ADDED Made Windows and Linux clients publicly available at https://github.com/KeyTalk/windows-linux-client.git
-    - ADDED: Allow signing CSR using REST API v2.2.0 (KEYTALK-398)
-    - CHANGED Phased out SDKs for Windows and Linux clients
-    - CHANGED Dropped support for http proxy in RCCD ini files (RCCD 2.0.0 -> 2.0.1)
-    - CHANGED Switched from gcc to clang to build Linux clients
-    - CHANGED Tag "developer" log entries iso encrypting them
 
 server-5.2.3, 5 December 2017
 ------------------------

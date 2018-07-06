@@ -27,6 +27,26 @@ namespace ta
           @throw std::runtime_error
           */
         std::string getWinRegisteredOwner();
+
+        /**
+          Whether SNI is supported by the installed IIS version
+          Background: SNI is supported from IIS 8 and up.
+          The IIS version is bound to a Windows version.
+          IIS 8 belongs to Windows 8 (and server 2012) which have NT version 6.2
+        */
+        bool isIisSniSupported();
+
+        /**
+          Scoped class initialize COM using CoInitialize()
+        */
+        class ScopedComInitializer
+        {
+        public:
+            ScopedComInitializer();
+            ~ScopedComInitializer();
+        private:
+            bool isComInitialized;
+        };
 #endif //_WIN32
         /**
           Retrieves the serial number from BIOS. When BIOS is not available (e.g. on RaspberryPi) return CPU serial number

@@ -248,6 +248,10 @@ int main(int argc, char *argv[])
             {
                 printValue(getHttpsBindingIp(myTaskName));
             }
+            else if (myParamName == HttpsBindingDomain)
+            {
+                printValue(getHttpsBindingDomain(myTaskName));
+            }
             else if (myParamName == HttpsBindingPort)
             {
                 printValue(getHttpsBindingPort(myTaskName));

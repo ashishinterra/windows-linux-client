@@ -28,6 +28,8 @@ Set-StrictMode -Version 3.0
 # 2. how a certificate is retrieved (see: RetrieveKeyTalkCertificate)
 # 3. how to apply the obtained certificate to your system (see: ApplyRetrievedCertificate)
 
+# SCRIPTING REFERENCE: https://docs.microsoft.com/en-us/iis/configuration/
+
 ################################################################################
 # Global initialization
 ################################################################################
@@ -103,6 +105,9 @@ Function IsCertRenewalNeeded() {
 # The $sendEmailIfApplyNotRequired variable determines if a report is sent or not.
 Function IsCertRenewalNeeded() {
     $httpsBindingPath = "IIS:\SslBindings\${httpsBindingIp}!${httpsBindingPort}"
+    if ($httpsBindingDomain) {
+        $httpsBindingPath = $httpsBindingPath + "!${httpsBindingDomain}"
+    }
     ($oldCertificate, $oldCertificateStore) = GetIISHttpsCertificate $httpsBindingPath
 
     $renewalNeeded = $TRUE
@@ -248,6 +253,9 @@ Function ApplyRetrievedCertificate(
         [parameter(mandatory)][string]$pfxPassword) {
     try {
         $httpsBindingPath = "IIS:\SslBindings\${httpsBindingIp}!${httpsBindingPort}"
+        if ($httpsBindingDomain) {
+            $httpsBindingPath = $httpsBindingPath + "!${httpsBindingDomain}"
+        }
         LogVerbose 'Retrieving current IIS HTTPS binding configuration'
         ($oldCertificate, $oldCertificateStore) = GetIISHttpsCertificate $httpsBindingPath
         if ($oldCertificate) {
@@ -349,7 +357,12 @@ Function AssignIISHttpsCertificate(
         [parameter(mandatory)][System.Security.Cryptography.X509Certificates.X509Certificate2]$certificate) {
     $certificateHash = $certificate.GetCertHashString()
     $certificatePath = "Cert:\$certificateRootStore\$certificateStore\$certificateHash"
-    $httpsBinding = (get-item $certificatePath | new-item $httpsBindingPath)
+    if ($httpsBindingDomain) {
+        $httpsBinding = (get-item $certificatePath | new-item $httpsBindingPath -SslFlags 1)
+    } else {
+        $httpsBinding = (get-item $certificatePath | new-item $httpsBindingPath)
+    }
+    
 
     if ($httpsBinding.Thumbprint -ne $newCertificate.GetCertHashString()) {
         throw "Could not apply new certificate: New certificate has not been successfully assigned to the IIS HTTPS binding"
@@ -415,6 +428,11 @@ Function LoadTaskConfiguration() {
 
         [string]$global:httpsBindingIp            = Invoke-ConfigToolChecked @( 'task', 'getparam', $taskName, 'HttpsBindingIp' )
         [int]$global:httpsBindingPort             = Invoke-ConfigToolChecked @( 'task', 'getparam', $taskName, 'HttpsBindingPort' )
+        [string]$global:httpsBindingDomain        = Invoke-ConfigToolChecked @( 'task', 'getparam', $taskName, 'HttpsBindingDomain' )
+        $iisInfo = Get-ItemProperty HKLM:\SOFTWARE\Microsoft\InetStp\
+        if ($iisInfo.MajorVersion -le 7) {
+            $httpsBindingDomain = ""
+        }
 
         [string]$global:keyTalkProvider           = Invoke-ConfigToolChecked @( 'task', 'getparam', $taskName, 'KeyTalkProvider' )
         [string]$global:keyTalkService            = Invoke-ConfigToolChecked @( 'task', 'getparam', $taskName, 'KeyTalkService' )

@@ -14,12 +14,18 @@
 #include "ta/logger.h"
 #include "ta/utils.h"
 #include "ta/common.h"
-
 #include <qformlayout.h>
 #include <QFileDialog>
 #include "boost/bind.hpp"
 #include "boost/range/algorithm.hpp"
 #include "boost/filesystem.hpp"
+
+#ifdef _WIN32
+#include "ta/scopedresource.hpp"
+#include <ahadmin.h>
+#include <atlbase.h>
+#include "comdef.h"
+#endif
 
 using std::string;
 using std::vector;
@@ -42,6 +48,32 @@ namespace
         TaskSettingLoader(const string& aTaskName)
             : theTaskName(aTaskName)
         {}
+
+        void loadHttpsBindingUse(const StringSettingSource aSourceIp,
+                                 QRadioButton* aHttpsBindingUseIp,
+                                 QRadioButton* aHttpsBindingUseDomain,
+                                 QComboBox* aHttpsBindingIp,
+                                 QComboBox* aHttpsBindingDomain)
+        {
+            try
+            {
+#ifdef _WIN32
+                if (!ta::SysInfo::isIisSniSupported())
+                {
+                    return;
+                }
+#endif
+                const bool isIpSelected = !aSourceIp(theTaskName).empty();
+                aHttpsBindingUseIp->setChecked(isIpSelected);
+                aHttpsBindingIp->setEnabled(isIpSelected);
+                aHttpsBindingUseDomain->setChecked(!isIpSelected);
+                aHttpsBindingDomain->setEnabled(!isIpSelected);
+            }
+            catch (rclient::Settings::TaskSettingsError&)
+            {
+                theSettingsWithError.push_back(stripInputLabel("Https Binding Use Radiobuttons"));
+            }
+        }
 
         void loadBool(const BoolSettingSource aSourceCbk, QCheckBox* aCheckBox, const string& anInputLabel)
         {
@@ -670,6 +702,177 @@ void ServiceSettingsTab::onServiceSelected(const QString& aSelectedService)
     updateUiFromServiceSettings(theProvidersCombo->currentText().toStdString(), aSelectedService.toStdString());
 }
 
+vector<string> IISUpdateTaskSettingDialog::getIisBindings()
+{
+#ifdef _WIN32
+    HRESULT hr = S_OK;
+
+    CComPtr<IAppHostAdminManager> myAdminManager;
+    hr = CoCreateInstance(__uuidof(AppHostAdminManager), NULL, CLSCTX_INPROC_SERVER, __uuidof(IAppHostAdminManager), (void**)&myAdminManager);
+    if (FAILED(hr))
+    {
+        TA_THROW_MSG(std::runtime_error, boost::format("CoCreateInstance failed with error: %s") % _com_error(hr).ErrorMessage());
+    }
+
+    const ta::ScopedResource<BSTR> scopedSectionName(SysAllocString(L"system.applicationHost/sites"), SysFreeString);
+    const ta::ScopedResource<BSTR> scopedConfigCommitPath(SysAllocString(L"MACHINE/WEBROOT/APPHOST"), SysFreeString);
+    CComPtr<IAppHostElement> mySites;
+    hr = myAdminManager->GetAdminSection(scopedSectionName, scopedConfigCommitPath, &mySites);
+    if (FAILED(hr))
+    {
+        TA_THROW_MSG(std::runtime_error, boost::format("GetAdminSection failed with error: %s") % _com_error(hr).ErrorMessage());
+    }
+
+    CComPtr<IAppHostElementSchema> pSitesSchema;
+    hr = mySites->get_Schema(&pSitesSchema);
+    if (FAILED(hr))
+    {
+        TA_THROW_MSG(std::runtime_error, boost::format("Sites get_Schema failed with error: %s") % _com_error(hr).ErrorMessage());
+    }
+
+    CComPtr<IAppHostElementCollection> pSitesCollection;
+    hr = mySites->get_Collection(&pSitesCollection);
+    if (FAILED(hr))
+    {
+        TA_THROW_MSG(std::runtime_error, boost::format("Sites get_Collection failed with error: %s") % _com_error(hr).ErrorMessage());
+    }
+
+    DWORD mySiteCount = 0;
+    hr = pSitesCollection->get_Count(&mySiteCount);
+    if (FAILED(hr))
+    {
+        TA_THROW_MSG(std::runtime_error, boost::format("Sites get_Count failed with error: %s") % _com_error(hr).ErrorMessage());
+    }
+    vector<string> myIisBindings;
+    for (int i = 0; (DWORD)i < mySiteCount; ++i)
+    {
+        VARIANT myItemIndex;
+        myItemIndex.vt = VT_I4;
+        myItemIndex.lVal = i;
+
+        CComPtr<IAppHostElement> mySite;
+        hr = pSitesCollection->get_Item(myItemIndex, &mySite);
+        if (FAILED(hr))
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Sites get_Item failed with for index %i error: %s") % i % _com_error(hr).ErrorMessage());
+        }
+
+        CComPtr<IAppHostChildElementCollection> mySiteChildElements;
+        hr = mySite->get_ChildElements(&mySiteChildElements);
+        if (FAILED(hr))
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Sites get_ChildElements failed with error: %s") % _com_error(hr).ErrorMessage());
+        }
+
+        CComPtr<IAppHostElement> myBindings;
+        VARIANT myBindingsProperty;
+        myBindingsProperty.vt = VT_BSTR;
+        myBindingsProperty.bstrVal = L"bindings";
+        hr = mySiteChildElements->get_Item(myBindingsProperty, &myBindings);
+        if (FAILED(hr))
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Sites get_Item <bindings> failed with error: %s") % _com_error(hr).ErrorMessage());
+        }
+
+        CComPtr<IAppHostElementCollection> myBindingsCollection;
+        hr = myBindings->get_Collection(&myBindingsCollection);
+        if (FAILED(hr))
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Bindings get_Collection failed with error: %s") % _com_error(hr).ErrorMessage());
+        }
+
+        DWORD myBindingsCount = 0;
+        hr = myBindingsCollection->get_Count(&myBindingsCount);
+        if (FAILED(hr))
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Bindings get_Count failed with error: %s") % _com_error(hr).ErrorMessage());
+        }
+
+        for (int j = 0; (DWORD)j < myBindingsCount; ++j)
+        {
+            VARIANT myBindingIndex;
+            myBindingIndex.vt = VT_I4;
+            myBindingIndex.lVal = j;
+
+            CComPtr<IAppHostElement> myBinding;
+            hr = myBindingsCollection->get_Item(myBindingIndex, &myBinding);
+            if (FAILED(hr))
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Bindings get_Item failed with for index %i error: %s") % i % _com_error(hr).ErrorMessage());
+            }
+
+            CComPtr<IAppHostProperty> myBindingInformationProperty;
+            hr = myBinding->GetPropertyByName(L"bindingInformation", &myBindingInformationProperty);
+            if (FAILED(hr))
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Bindings GetPropertyByName bindingInformation failed with error: %s") % _com_error(hr).ErrorMessage());
+            }
+
+            BSTR bstrBindingInformation = NULL;
+            hr = myBindingInformationProperty->get_StringValue(&bstrBindingInformation);
+            if (FAILED(hr))
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("BindingInformation get_StringValue failed with error: %s") % _com_error(hr).ErrorMessage());
+            }
+            ta::ScopedResource<BSTR> scopedBindingInformation(bstrBindingInformation, SysFreeString);
+
+            const string myBindingInformation = ta::Strings::toMbyte(bstrBindingInformation);
+            if (!myBindingInformation.empty())
+            {
+                myIisBindings.push_back(myBindingInformation);
+            }
+        }
+    }
+    return myIisBindings;
+#elif
+    TA_THROW_MSG(std::runtime_exception, "IIS Sites are only supported in Windows");
+#endif
+}
+
+
+vector<string> IISUpdateTaskSettingDialog::getIisSites()
+{
+    vector<string> myBindings = getIisBindings();
+    vector<string> myIisSiteNames;
+    foreach(const string& binding, myBindings)
+    {
+        vector<string> myBindingParts = ta::Strings::split(binding, ':');
+        if (myBindingParts.size() != 3)
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Binding Information \"%s\" does not contain 3 elements") % binding);
+        }
+        const string myIisSiteName = myBindingParts[2];
+        if (!myIisSiteName.empty())
+        {
+            myIisSiteNames.push_back(myIisSiteName);
+        }
+    }
+    myIisSiteNames = ta::removeDuplicates(myIisSiteNames);
+    return myIisSiteNames;
+}
+
+bool IISUpdateTaskSettingDialog::isIisBindingValid(const string& anIp, const string& aPort, const string& aSiteName)
+{
+    vector<string> myBindings = getIisBindings();
+    foreach(const string& binding, myBindings)
+    {
+        vector<string> myBindingParts = ta::Strings::split(binding, ':');
+        if (myBindingParts.size() != 3)
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("Binding Information \"%s\" does not contain 3 elements") % binding);
+        }
+        if (theUi->httpsBindingUseIp->isChecked() && boost::trim_copy(anIp) == myBindingParts[0] && boost::trim_copy(aPort) == myBindingParts[1])
+        {
+            return true;
+        }
+        if (theUi->httpsBindingUseDomain->isChecked() && boost::trim_copy(aPort) == myBindingParts[1] && boost::trim_copy(aSiteName) == myBindingParts[2])
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 //////////
 IISUpdateTaskSettingDialog::IISUpdateTaskSettingDialog(const string& aTask)
@@ -708,6 +911,36 @@ IISUpdateTaskSettingDialog::IISUpdateTaskSettingDialog(const string& aTask)
     {
         theUi->httpsBindingIp->addItem(QString::fromStdString(ipAddress));
     }
+
+#ifdef _WIN32
+    if (!ta::SysInfo::isIisSniSupported())
+    {
+        theUi->httpsBindingUseDomain->setVisible(false);
+        theUi->httpsBindingDomain->setVisible(false);
+        return;
+    }
+
+    vector<string> myIisSites;
+    try
+    {
+        myIisSites = getIisSites();
+    }
+    catch (std::exception ex)
+    {
+        // Ignore the failure, but report it
+        WARNDEVLOG(boost::format("getIisSites failed with error: %s") % ex.what());
+    }
+
+    if (myIisSites.size() <= 0)
+    {
+        theUi->httpsBindingUseDomain->setEnabled(false);
+    }
+
+    foreach(const string& iisSite, myIisSites)
+    {
+        theUi->httpsBindingDomain->addItem(QString::fromStdString(iisSite));
+    }
+#endif
 }
 
 void IISUpdateTaskSettingDialog::onTestMailClicked()
@@ -868,6 +1101,32 @@ bool IISUpdateTaskSettingDialog::hasValidValues(string& anErrorMsg)
         myErrors.push_back(myError);
     }
 
+    if (!rclient::Settings::IISTaskParameters::isValidHttpsBindingDomain(theUi->httpsBindingDomain->currentText().toStdString(), myError))
+    {
+        myErrors.push_back(myError);
+    }
+
+    // Check if the binding is valid, if site binding information can be found
+    if (getIisBindings().size() > 0)
+    {
+        const string myPort = ta::Strings::toString(theUi->httpsBindingPort->value());
+        if (!isIisBindingValid(
+                    theUi->httpsBindingIp->currentText().toStdString(),
+                    myPort,
+                    theUi->httpsBindingDomain->currentText().toStdString()))
+        {
+            myErrors.push_back("Invalid binding, make sure the set binding exists in IIS.");
+        }
+    }
+
+    const string httpsBindingIpText = theUi->httpsBindingIp->currentText().toStdString();
+    const string httpsBindingDomainText = theUi->httpsBindingDomain->currentText().toStdString();
+    // Domain and IP should not both be empty
+    if (httpsBindingIpText.empty() && httpsBindingDomainText.empty())
+    {
+        myErrors.push_back("IIS HTTPS binding must be set.");
+    }
+
     checkMailNotificationValues(myErrors);
 
     if (myErrors.empty())
@@ -905,7 +1164,16 @@ void IISUpdateTaskSettingDialog::saveValues()
 
     setCertificateStore(theTask, theUi->certificateStore->currentText().toStdString());
 
-    setHttpsBindingIp(theTask, theUi->httpsBindingIp->currentText().toStdString());
+    if (theUi->httpsBindingUseIp->isChecked())
+    {
+        setHttpsBindingIp(theTask, theUi->httpsBindingIp->currentText().toStdString());
+        setHttpsBindingDomain(theTask, "");
+    }
+    else if (theUi->httpsBindingUseDomain->isChecked())
+    {
+        setHttpsBindingIp(theTask, "");
+        setHttpsBindingDomain(theTask, theUi->httpsBindingDomain->currentText().toStdString());
+    }
 
     setHttpsBindingPort(theTask, theUi->httpsBindingPort->value());
 
@@ -960,9 +1228,19 @@ void IISUpdateTaskSettingDialog::loadValues(ValidationPolicy aValidate)
                      theUi->certificateStore,
                      theUi->certificateStoreLabel->text().toStdString());
 
+    settings.loadHttpsBindingUse(&getHttpsBindingIp,
+                                 theUi->httpsBindingUseIp,
+                                 theUi->httpsBindingUseDomain,
+                                 theUi->httpsBindingIp,
+                                 theUi->httpsBindingDomain);
+
     settings.loadStr(&getHttpsBindingIp,
                      theUi->httpsBindingIp,
-                     theUi->httpsBindingIpLabel->text().toStdString());
+                     theUi->httpsBindingUseIp->text().toStdString());
+
+    settings.loadStr(&getHttpsBindingDomain,
+                     theUi->httpsBindingDomain,
+                     theUi->httpsBindingUseDomain->text().toStdString());
 
     settings.loadUInt(&getHttpsBindingPort,
                       theUi->httpsBindingPort,

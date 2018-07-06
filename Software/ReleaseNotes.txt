@@ -1,7 +1,7 @@
 Release Notes of KeyTalk
 ==============================================
 
-server-5.3.2, under development
+server-5.3.2, 6 July 2018
 ----------------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.2.0, 2.1.0 and 2.0.0
@@ -11,10 +11,23 @@ Support import of settings created in v5.2.0-v5.3.2, v4.6.0 and v4.6.2
     - ADDED: REST API to check self-service is enabled for the given account
     - ADDED: REST API to retrieve address books
     - ADDED: End-user mass-certificate pre-enrollment via DevID import
-    - ADDED: Windows client background certificate validity check
-    - ADDED: Revocation support on the server
+    - ADDED: Revocation support
     - FIXED: More robust custom routes configuration
     - FIXED: Logging stalls sometimes as a result of log rotation
+
+
+client-5.2.2, 6 July 2018
+------------------------
+    Linux client supports: Debian 8 x64, Debian 9 x64, Ubuntu 16.04 (LTS) x64
+    Windows client supports: Windows 7, Windows 8, Windows 10, Windows Server 2012
+    - ADDED: Support TPM 2.0 by Windows client
+    - ADDED: Windows client background certificate validity check
+    - ADDED Made Windows and Linux clients publicly available at https://github.com/KeyTalk/windows-linux-client.git
+    - ADDED: Allow signing CSR using REST API v2.2.0
+    - ADDED: SNI support for KeyTalk IIS client
+    - CHANGED Phased out SDKs for Windows and Linux clients
+    - CHANGED Dropped support for http proxy in RCCD ini files (RCCD 2.0.0 -> 2.0.1)
+
 
 server-5.3.1, 29 May 2018
 ----------------------------
@@ -49,16 +62,6 @@ Supports import of settings created in v5.2.0-v5.3.0, v4.6.0 and v4.6.2
     - FIXED: Improved robustness of server PR generation
     - FIXED: Excessive server logging results in huge PR file
     - FIXED: KeyTalk server runs out of disk space
-
-
-client-5.2.2, in progress
-------------------------
-    Linux client supports: Debian 8 x64, Debian 9 x64, Ubuntu 16.04 (LTS) x64
-    Windows client supports: Windows 7, Windows 8, Windows 10, Windows Server 2012
-    - ADDED Made Windows and Linux clients publicly available at https://github.com/KeyTalk/windows-linux-client.git
-    - ADDED: Allow signing CSR using REST API v2.2.0
-    - CHANGED Phased out SDKs for Windows and Linux clients
-    - CHANGED Dropped support for http proxy in RCCD ini files (RCCD 2.0.0 -> 2.0.1)
 
 server-5.2.3, 5 December 2017
 ------------------------

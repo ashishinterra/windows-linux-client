@@ -331,7 +331,7 @@ namespace rclient
 
         bool isScheduledTaskFeatureInstalled()
         {
-            return boost::filesystem::exists(getScriptsDirectoryPath());
+            return boost::filesystem::exists(getScriptsDirectoryPath()+"/"+"UpdateIISCertificate.ps1");
         }
 
         string getTaskConfigPath()
@@ -817,8 +817,7 @@ namespace rclient
 
                 if (myValue == "")
                 {
-                    anErrorMsg = "IIS HTTPS binding IP may not be empty.";
-                    return false;
+                    return true;
                 }
 
                 if (myValue == "*" ||
@@ -835,6 +834,12 @@ namespace rclient
 
             void setHttpsBindingIp(const string& aTaskName, const string& aValue)
             {
+                if (boost::trim_copy(aValue).empty())
+                {
+                    setTaskParameter<string>(IISTask, aTaskName, HttpsBindingIp, "");
+                    return;
+                }
+
                 if (boost::trim_copy(aValue) == "*")
                 {
                     setTaskParameter<string>(IISTask, aTaskName, HttpsBindingIp, "0.0.0.0");
@@ -856,6 +861,43 @@ namespace rclient
                 }
 
                 setTaskParameter<string>(IISTask, aTaskName, HttpsBindingIp, myStrippedValue);
+            }
+
+            string getHttpsBindingDomain(const string& aTaskName)
+            {
+                string myValue;
+                const string myDefaultValue("");
+                getTaskParameterWithDefault<string>(IISTask, aTaskName, HttpsBindingDomain, myDefaultValue, myValue);
+                return myValue;
+            }
+
+            bool isValidHttpsBindingDomain(const std::string& aValue, std::string& anErrorMsg)
+            {
+                string myValue = boost::trim_copy(boost::trim_copy(aValue));
+                if (myValue.empty())
+                {
+                    return true;
+                }
+
+                NetUtils::DomainNameValidationResult result;
+                if (NetUtils::isValidDomainName(myValue, result, NetUtils::dnsName))
+                {
+                    return true;
+                }
+
+                anErrorMsg = "IIS HTTPS binding Domain is not valid";
+                return false;
+            }
+
+            void setHttpsBindingDomain(const string& aTaskName, const string& aValue)
+            {
+                string myErrorMsg;
+                if (!isValidHttpsBindingDomain(aValue, myErrorMsg))
+                {
+                    TA_THROW_MSG2(TaskSettingsError, myErrorMsg, myErrorMsg);
+                }
+
+                setTaskParameter<string>(IISTask, aTaskName, HttpsBindingDomain, aValue);
             }
 
 

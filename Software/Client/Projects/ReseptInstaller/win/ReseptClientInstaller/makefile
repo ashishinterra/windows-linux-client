@@ -20,7 +20,6 @@ SIGNTOOL_PATH = ..\..\..\..\..\Import\win32_utils\signtool.exe
 SIGNCERT_PATH = ..\..\..\..\..\CertKeys\CodeSigning\CodesigningWindows.pfx
 !INCLUDE ..\..\..\..\..\CertKeys\CodeSigning\CodesigningWindows.pfx.passwd
 SIGNCERT_PASSWD = $(PASSWORD)
-TIMESTAMP_URL = http://timestamp.globalsign.com/scripts/timstamp.dll
 MakeInstaller: SignBinaries $(OUT_FILE) SignMsi CopyMsiHelperScripts
 !ENDIF
 
@@ -30,23 +29,23 @@ $(OUT_FILE): ReseptClientInstaller.wixobj
 
 ReseptClientInstaller.wixobj: ReseptClientInstaller.wxs ReseptClientInstaller.wxi
   $(candle) $(CANDLE_ARGS) ReseptClientInstaller.wxs /nologo
-  
+
 ReseptClientInstaller.wxi: VersionGen.pl ReseptClientInstaller.wxi.templ ..\..\..\..\version
   $(PERL_BIN) VersionGen.pl ReseptClientInstaller.wxi.templ ..\..\..\..\version > $@.tmp
   $(PYTHON_BIN) ..\..\..\..\..\Tools\codegen\gen.py --raw $@.tmp ..\..\..\..\..\Common\common_config.py > $@
   @DEL $@.tmp
 
 SignBinaries: $(SIGNTOOL_PATH)
-	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) /t $(TIMESTAMP_URL) $(OUT_DIR)\ReseptDesktopClient.exe $(OUT_DIR)\ReseptConsoleClient.exe $(OUT_DIR)\ReseptConfigManager.exe $(OUT_DIR)\ReseptIeClient.dll $(OUT_DIR)\ReseptIeBroker.exe $(OUT_DIR)\ReseptBrokerService.exe $(OUT_DIR)\libtalogger.dll $(OUT_DIR)\ConfigUpdater.exe $(OUT_DIR)\MessageBoxManager.exe $(OUT_DIR)\Sweeper.exe $(OUT_DIR)\IeUserExeRestarter.exe $(OUT_DIR)\ReseptPrGenerator.exe
+	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\ReseptDesktopClient.exe $(OUT_DIR)\ReseptConsoleClient.exe $(OUT_DIR)\ReseptConfigManager.exe $(OUT_DIR)\ReseptIeClient.dll $(OUT_DIR)\ReseptIeBroker.exe $(OUT_DIR)\ReseptBrokerService.exe $(OUT_DIR)\libtalogger.dll $(OUT_DIR)\ConfigUpdater.exe $(OUT_DIR)\MessageBoxManager.exe $(OUT_DIR)\Sweeper.exe $(OUT_DIR)\IeUserExeRestarter.exe $(OUT_DIR)\ReseptPrGenerator.exe
 
 SignMsi: $(SIGNTOOL_PATH)
-	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) /t $(TIMESTAMP_URL) $(OUT_DIR)\$(OUT_FILE)
+	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\$(OUT_FILE)
 
 CopyMsiHelperScripts: MsiSilentInstall.vbs
     @copy /Y MsiSilentInstall.vbs $(OUT_DIR)\
 
 rebuild: clean MakeInstaller
-  
+
 clean:
   @echo Cleaning...
   del *.wixobj >NUL 2>&1
@@ -54,4 +53,4 @@ clean:
   del $(OUT_DIR)\$(OUT_FILE) >NUL 2>&1
 
 
-  
+
