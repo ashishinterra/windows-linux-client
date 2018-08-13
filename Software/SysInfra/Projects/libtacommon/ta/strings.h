@@ -109,6 +109,11 @@ namespace ta
         std::wstring toWide(const std::string& aStr);
         std::string  toMbyte(const std::wstring& aWstr);
 
+
+        // Case-sensitive wildcard match.
+        // Supports '*' matching any number of chacacters and '?' matching single character.
+        bool wildcardMatch(const std::string& aString, const std::string& aTempl);
+
     }
 }
 

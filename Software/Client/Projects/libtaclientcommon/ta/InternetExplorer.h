@@ -1,9 +1,6 @@
-#ifndef TA_INTERNET_EXPLORER_H
-#define TA_INTERNET_EXPLORER_H
+#pragma once
 
-#ifndef _WIN32
-#error "Only Windows platform is supported"
-#endif
+#ifdef _WIN32
 
 #include <string>
 
@@ -45,5 +42,4 @@ namespace ta
         void restartIeUser();
     }
 }
-
 #endif

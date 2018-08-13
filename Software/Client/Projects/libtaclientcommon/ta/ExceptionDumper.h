@@ -4,8 +4,7 @@
 //                ExceptionDumper namespace contains API to catch and dump Win32 exceptions
 //
 //----------------------------------------------------------------------------
-#ifndef	TA_EXCEPTIONDUMPER_H
-#define	TA_EXCEPTIONDUMPER_H
+#pragma once
 
 #ifdef _WIN32
 
@@ -33,6 +32,5 @@ namespace ta
         int __cdecl dump(PEXCEPTION_POINTERS data, const std::string& aModuleName);
     }
 }
-#endif
 
 #endif

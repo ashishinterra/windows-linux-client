@@ -75,6 +75,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testlibreseptcommon", "..\Common\TestProjects\testlibreseptcommon\testlibreseptcommon.vcxproj", "{48097C88-8371-4328-9D12-40E27D5539B1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testlibtaclientcommon", "TestProjects\testlibtaclientcommon\testlibtaclientcommon.vcxproj", "{4F2BFAD0-F71F-4EC9-9569-B37760BFCCCC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5FA53489-1939-43B3-9E47-5B8D02F2397A} = {5FA53489-1939-43B3-9E47-5B8D02F2397A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testlibrclientcore", "TestProjects\testlibrclientcore\testlibrclientcore.vcxproj", "{3C1458C6-1CC2-48D6-A2DC-8D97118B985A}"
 EndProject

@@ -1,16 +1,50 @@
 include ../../../mk/keytalk.common.mk
 
-SRCS=signutils.cpp certutils.cpp hashutils.cpp pngutils.cpp libconfigwrapper.cpp \
-     strings.cpp utils.cpp dynlibloader.cpp encodingutils.cpp version.cpp process.cpp url.cpp thread.cpp \
-     netutils.cpp dnsutils.cpp hostutils.cpp tcpsocketutils.cpp tcpclient.cpp tcpserver.cpp osinfoutils.cpp rsautils.cpp opensslapp.cpp \
-     timeutils.cpp ecutils.cpp opensslwrappers.cpp sysinfo.cpp linuxhwutils.cpp
+SRCS=signutils.cpp \
+     certutils.cpp \
+     hashutils.cpp \
+     pngutils.cpp \
+     libconfigwrapper.cpp \
+     strings.cpp \
+     utils.cpp \
+     dynlibloader.cpp \
+     encodingutils.cpp \
+     version.cpp \
+     process.cpp \
+     url.cpp \
+     thread.cpp \
+     netutils.cpp \
+     dnsutils.cpp \
+     hostutils.cpp \
+     tcpsocketutils.cpp \
+     tcpclient.cpp \
+     tcpserver.cpp \
+     osinfoutils.cpp \
+     rsautils.cpp \
+     opensslapp.cpp \
+     timeutils.cpp \
+     ecutils.cpp \
+     opensslwrappers.cpp \
+     sysinfo.cpp \
+     linuxhwutils.cpp \
+     httpproxy.cpp
 
 ifdef RESEPT_SERVER
-SRCS += aesutils.cpp dhutils.cpp ecdhutils.cpp
+SRCS += aesutils.cpp \
+        dhutils.cpp \
+        ecdhutils.cpp
 endif
 
-DEPS:=$(SRCS:.cpp=.h) common.h utilsimpl.hpp stringsimpl.hpp scopedresource.hpp singletonholder.hpp proto.hpp \
-       sessioncontainer.h sessioncontainerimpl.hpp boost_serialize_helper.hpp
+DEPS:=$(SRCS:.cpp=.h) \
+     common.h \
+     utilsimpl.hpp \
+     stringsimpl.hpp \
+     scopedresource.hpp \
+     singletonholder.hpp \
+     proto.hpp \
+     sessioncontainer.h \
+     sessioncontainerimpl.hpp \
+     boost_serialize_helper.hpp
 
 SRCS_DIR=ta
 OUT_DIR=../Export

@@ -63,7 +63,7 @@ namespace ta
         {
             struct TemplatePart
             {
-                TemplatePart(bool aQuoted, const string& aVal): quoted(aQuoted), val(aVal) {}
+                TemplatePart(bool aQuoted, const string& aVal) : quoted(aQuoted), val(aVal) {}
                 bool quoted; // whether the value is quoted as $${...} i.e. should not be substituted
                 string val;
             };
@@ -71,10 +71,10 @@ namespace ta
             void verifyMappingKeys(const StringDict& aMappings)
             {
                 static const std::locale& loc = std::locale::classic();
-                foreach (const StringDict::value_type& mapping, aMappings)
+                foreach(const StringDict::value_type& mapping, aMappings)
                 {
                     const string myKey = mapping.first;
-                    foreach (char ch, myKey)
+                    foreach(char ch, myKey)
                     {
                         if (!std::isalnum(ch, loc) && ch != '_' && ch != '-')
                             TA_THROW_MSG(std::invalid_argument, boost::format("Invalid template key %s. Template keys can only contain alphanumeric characters, '_' or '-'") % myKey);
@@ -85,7 +85,7 @@ namespace ta
             string buildOrRegexStrFromKeys(const StringDict& aMappings)
             {
                 string myRegexStr;
-                foreach (const StringDict::value_type& mapping, aMappings)
+                foreach(const StringDict::value_type& mapping, aMappings)
                 {
                     if (!myRegexStr.empty())
                         myRegexStr += "|";
@@ -97,12 +97,12 @@ namespace ta
 
             struct SubstPlaceholderCb
             {
-                SubstPlaceholderCb(const StringDict& aMappings): mappings(aMappings) {}
+                SubstPlaceholderCb(const StringDict& aMappings) : mappings(aMappings) {}
 
                 string operator()(boost::match_results<string::const_iterator> aMatch)
                 {
                     const string myPlaceholder = aMatch[0];
-                    foreach (const StringDict::value_type& mapping, mappings)
+                    foreach(const StringDict::value_type& mapping, mappings)
                     {
                         if (myPlaceholder == "$(" + mapping.first + ")")
                             return mapping.second;
@@ -112,37 +112,88 @@ namespace ta
                 const StringDict mappings;
             };
 
-        } // unnamed ns
+
+            bool wildcardMatchImpl(char const* aString, char const* aTempl)
+            {
+                // Adapted from https://stackoverflow.com/questions/3300419/file-name-matching-with-wildcard
+
+                for (; *aTempl != '\0'; ++aTempl)
+                {
+                    switch (*aTempl)
+                    {
+                    case '?':
+                    {
+                        if (*aString == '\0')
+                        {
+                            return false;
+                        }
+                        ++aString;
+                        break;
+                    }
+                    case '*':
+                    {
+                        if (aTempl[1] == '\0')
+                        {
+                            return true;
+                        }
+                        size_t max = strlen(aString);
+                        for (size_t i = 0; i < max; i++)
+                        {
+                            if (wildcardMatchImpl(aString + i, aTempl + 1))
+                            {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                    default:
+                    {
+                        if (*aString != *aTempl)
+                        {
+                            return false;
+                        }
+                        ++aString;
+                    }
+                    }// switch
+                }// for
+
+                return *aString == '\0';
+            }
+
+        }
+        //
+        // end of private API
+        //
 
         //
         // Public API
         //
 
-        string toString (int aNumber)
+        string toString(int aNumber)
         {
             ostringstream myOs;
             myOs << aNumber;
             return myOs.str();
         }
-        string toString (unsigned int aNumber)
+        string toString(unsigned int aNumber)
         {
             ostringstream myOs;
             myOs << aNumber;
             return myOs.str();
         }
-        string toString (unsigned long aNumber)
+        string toString(unsigned long aNumber)
         {
             ostringstream myOs;
             myOs << aNumber;
             return myOs.str();
         }
-        string toString (int64_t aNumber)
+        string toString(int64_t aNumber)
         {
             ostringstream myOs;
             myOs << aNumber;
             return myOs.str();
         }
-        string toString (double aNumber)
+        string toString(double aNumber)
         {
             ostringstream myOs;
 #ifdef WIN32
@@ -160,9 +211,9 @@ namespace ta
         {
             if (!aBuf || !aLen)
                 return string();
-            char* myBuf = new char[2*aLen+1];
+            char* myBuf = new char[2 * aLen + 1];
             char* myPtr = myBuf;
-            for(size_t i = 0; i<aLen; ++i)
+            for (size_t i = 0; i < aLen; ++i)
             {
                 if (aCase == caseLower)
                     snprintf(myPtr, 3, "%02x", aBuf[i]);
@@ -170,8 +221,8 @@ namespace ta
                     snprintf(myPtr, 3, "%02X", aBuf[i]);
                 myPtr += 2;
             }
-            string myRetVal(myBuf, 2*aLen);
-            delete []myBuf;
+            string myRetVal(myBuf, 2 * aLen);
+            delete[]myBuf;
             return myRetVal;
         }
         string toHex(const vector<unsigned char>& aBuf, CharCase aCase)
@@ -189,10 +240,10 @@ namespace ta
             if (aHexStr.empty())
                 return myRetVal;
             if (aHexStr.size() % 2)
-                TA_THROW_MSG(std::invalid_argument, boost::format("Odd number of bytes in hex string '%1%'") % aHexStr );
+                TA_THROW_MSG(std::invalid_argument, boost::format("Odd number of bytes in hex string '%1%'") % aHexStr);
 
             static const char hexSmall[] = "0123456789abcdef";
-            static const char hexBig  [] = "0123456789ABCDEF";
+            static const char hexBig[] = "0123456789ABCDEF";
             myRetVal.reserve(aHexStr.size() / 2);
             const char* myHexBufPtr = aHexStr.c_str();
             while (*myHexBufPtr)
@@ -211,14 +262,14 @@ namespace ta
                     myHiWord = (boost::int8_t)(myHiWordPtr - hexBig);
                 }
                 boost::int8_t myLoWord;
-                const char* myLoWordPtr = strchr(hexSmall, *(myHexBufPtr+1));
+                const char* myLoWordPtr = strchr(hexSmall, *(myHexBufPtr + 1));
                 if (myLoWordPtr)
                 {
                     myLoWord = (boost::int8_t)(myLoWordPtr - hexSmall);
                 }
                 else
                 {
-                    myLoWordPtr = strchr(hexBig, *(myHexBufPtr+1));
+                    myLoWordPtr = strchr(hexBig, *(myHexBufPtr + 1));
                     if (!myLoWordPtr)
                         TA_THROW_MSG(std::invalid_argument, boost::format("Invalid hex string: %1%") % aHexStr);
                     myLoWord = (boost::int8_t)(myLoWordPtr - hexBig);
@@ -249,9 +300,9 @@ namespace ta
             {
                 if (anAdjacentSepsMergeMode == sepsMergeOff || mySepPos != myFrom)
                 {
-                    myParts.push_back(anSrc.substr(myFrom, mySepPos-myFrom));
+                    myParts.push_back(anSrc.substr(myFrom, mySepPos - myFrom));
                 }
-                myFrom = mySepPos+1;
+                myFrom = mySepPos + 1;
             }
             myParts.push_back(anSrc.substr(myFrom));
 
@@ -265,7 +316,7 @@ namespace ta
 
         string join(const vector<string>& aList, char aSep, EmptyStringsPolicy anEmptyStringsPolicy)
         {
-            return join(aList, string(1, aSep), anEmptyStringsPolicy );
+            return join(aList, string(1, aSep), anEmptyStringsPolicy);
         }
 
         string join(const vector<string>& aList, const string& aSep, EmptyStringsPolicy anEmptyStringsPolicy)
@@ -273,7 +324,7 @@ namespace ta
             string myRetVal;
             bool isPopulated = false;
 
-            foreach (const string& elem, aList)
+            foreach(const string& elem, aList)
             {
                 if (elem.empty() && anEmptyStringsPolicy == emptyStringsSkip)
                 {
@@ -305,13 +356,13 @@ namespace ta
 
         string join(const std::vector<int>& aList, char aSep)
         {
-            return join(aList, string(1, aSep) );
+            return join(aList, string(1, aSep));
         }
 
         string join(const std::vector<int>& aList, const string& aSep)
         {
             string myRetVal;
-            foreach (int elem, aList)
+            foreach(int elem, aList)
             {
                 if (myRetVal.empty())
                     myRetVal = toString(elem);
@@ -323,13 +374,13 @@ namespace ta
 
         string join(const std::vector<unsigned int>& aList, char aSep)
         {
-            return join(aList, string(1, aSep) );
+            return join(aList, string(1, aSep));
         }
 
         string join(const std::vector<unsigned int>& aList, const string& aSep)
         {
             string myRetVal;
-            foreach (unsigned int elem, aList)
+            foreach(unsigned int elem, aList)
             {
                 if (myRetVal.empty())
                     myRetVal = toString(elem);
@@ -341,13 +392,13 @@ namespace ta
 
         string join(const std::vector<unsigned long>& aList, char aSep)
         {
-            return join(aList, string(1, aSep) );
+            return join(aList, string(1, aSep));
         }
 
         string join(const std::vector<unsigned long>& aList, const string& aSep)
         {
             string myRetVal;
-            foreach (unsigned long elem, aList)
+            foreach(unsigned long elem, aList)
             {
                 if (myRetVal.empty())
                     myRetVal = toString(elem);
@@ -388,7 +439,7 @@ namespace ta
 
             // Perform substitution for each split part and join the substituted parts back
             string myRetVal;
-            foreach (TemplatePart& part, mySplitTemplate)
+            foreach(TemplatePart& part, mySplitTemplate)
             {
                 if (part.quoted)
                 {
@@ -416,7 +467,7 @@ namespace ta
             size_t i = 0;
             while (i < aTempl.size())
             {
-                switch ( aTempl[i] )
+                switch (aTempl[i])
                 {
                 case '$':
                     myReadPattern = !myReadPattern;
@@ -424,12 +475,12 @@ namespace ta
                 case '(':
                     if (myReadPattern)
                     {
-                        size_t myEnd = aTempl.find(')', i+1);
+                        size_t myEnd = aTempl.find(')', i + 1);
                         if (myEnd == string::npos)
                             i = aTempl.size();
                         else
                         {
-                            result.insert(aTempl.substr(i+1, myEnd-i-1));
+                            result.insert(aTempl.substr(i + 1, myEnd - i - 1));
                             i = myEnd;
                         }
                     }
@@ -450,20 +501,26 @@ namespace ta
             wchar_t* myPtr = new wchar_t[myWsLen];
             mbstowcs(myPtr, aStr.c_str(), myWsLen);
             wstring myRetVal(myPtr, myWsLen);
-            delete []myPtr;
+            delete[]myPtr;
             return myRetVal;
         }
         string toMbyte(const wstring& aWstr)
         {
-            size_t myMbyteLen = wcstombs(NULL, aWstr.c_str(), aWstr.length()*sizeof(wchar_t)+1);
+            size_t myMbyteLen = wcstombs(NULL, aWstr.c_str(), aWstr.length()*sizeof(wchar_t) + 1);
             if (myMbyteLen == (size_t)(-1))
                 TA_THROW_MSG(std::invalid_argument, "Invalid wide character string");
             char* myPtr = new char[myMbyteLen];
             wcstombs(myPtr, aWstr.c_str(), myMbyteLen);
             string myRetVal(myPtr, myMbyteLen);
-            delete []myPtr;
+            delete[]myPtr;
             return myRetVal;
         }
+
+        bool wildcardMatch(const string& aString, const string& aTempl)
+        {
+            return wildcardMatchImpl(aString.c_str(), aTempl.c_str());
+        }
+
 
     }// namespace Strings
 } // namespace ta

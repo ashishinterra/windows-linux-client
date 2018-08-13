@@ -30,7 +30,8 @@ CXX_TESTS              = CertUtilsTest.h \
                          TimeUtilsTest.h \
                          URLTest.h \
                          UtilsTest.h \
-                         VersionTest.h
+                         VersionTest.h \
+                         HttpProxyTest.h
 
 ifdef RESEPT_SERVER
 CXX_TESTS +=             AesUtilsTest.h \

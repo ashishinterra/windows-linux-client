@@ -52,7 +52,7 @@
       <DisableSpecificWarnings>4290;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libtacommon.lib;libtalogger.lib;libconfig++.lib;ws2_32.lib;Dbghelp.lib;Psapi.lib;Setupapi.lib;Iphlpapi.lib;libeay32.lib;ssleay32.lib;crypt32.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libtacommon.lib;libtalogger.lib;libconfig++.lib;ws2_32.lib;Dbghelp.lib;Psapi.lib;winhttp.lib;Setupapi.lib;Iphlpapi.lib;libeay32.lib;ssleay32.lib;crypt32.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -103,6 +103,7 @@ IF %25ERRORLEVEL%25 NEQ 0 exit 1
     <ClInclude Include="EncodingUtilsTest.h" />
     <ClInclude Include="GlobFixture.h" />
     <ClInclude Include="HashUtilsTest.h" />
+    <ClInclude Include="HttpProxyTest.h" />
     <ClInclude Include="LibConfigWrapperTest.h" />
     <ClInclude Include="LoggerTest.h" />
     <ClInclude Include="NetUtilsTest.h" />

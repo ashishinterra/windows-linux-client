@@ -305,4 +305,49 @@ public:
         TS_ASSERT_EQUALS(myStr, "");
     }
 
+    void testWildcardMatch()
+    {
+        using namespace ta::Strings;
+
+
+        // simple
+        TS_ASSERT(wildcardMatch("", ""));
+        TS_ASSERT(!wildcardMatch("myfile.txt", ""));
+        TS_ASSERT(wildcardMatch("myfile.txt", "myfile.txt"));
+        TS_ASSERT(!wildcardMatch("mYfile.txt", "myfile.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "mYfile.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "otherfile.txt"));
+
+        // '*'
+        TS_ASSERT(!wildcardMatch("*", "*.txt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "*.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.TXT", "*.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "*.tXt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "*file.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "*file.xls"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "my*"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "my*file.txt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "my*.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "my*.xls"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "*.*"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "*"));
+
+        // '?'
+        TS_ASSERT(wildcardMatch("myfile.txt", "??file.txt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "m?file.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "?file.txt"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "???file.txt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "??file.???"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "??????.???"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "?????.???"));
+
+        // '*' and '?'
+        TS_ASSERT(wildcardMatch("myfile.txt", "?*file.txt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "*?file.txt"));
+        TS_ASSERT(wildcardMatch("myfile.txt", "myfile.*"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "?myfile.*"));
+        TS_ASSERT(!wildcardMatch("myfile.txt", "*myfile.??"));
+        
+    }
+
 };

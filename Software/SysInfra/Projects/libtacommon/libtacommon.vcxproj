@@ -61,6 +61,7 @@
     <ClCompile Include="ta\ecutils.cpp" />
     <ClCompile Include="ta\encodingutils.cpp" />
     <ClCompile Include="ta\hashutils.cpp" />
+    <ClCompile Include="ta\httpproxy.cpp" />
     <ClCompile Include="ta\libconfigwrapper.cpp" />
     <ClCompile Include="ta\netutils.cpp" />
     <ClCompile Include="ta\opensslapp.cpp" />
@@ -93,6 +94,7 @@
     <ClInclude Include="ta\ecutils.h" />
     <ClInclude Include="ta\encodingutils.h" />
     <ClInclude Include="ta\hashutils.h" />
+    <ClInclude Include="ta\httpproxy.h" />
     <ClInclude Include="ta\libconfigwrapper.h" />
     <ClInclude Include="ta\netutils.h" />
     <ClInclude Include="ta\opensslapp.h" />

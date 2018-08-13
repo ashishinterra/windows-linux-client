@@ -1,4 +1,5 @@
 #pragma once
+
 #ifdef _WIN32
 #include <string>
 #include "resept/common.h"
@@ -30,6 +31,4 @@ namespace ta
 #endif
     } // end WinSmartCardUtil namespace
 } // end ta namespace
-#else
-// Only for Windows
 #endif
