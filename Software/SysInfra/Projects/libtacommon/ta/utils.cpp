@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "strings.h"
+#include "url.h"
 #include "scopedresource.hpp"
 
 #include "boost/format.hpp"
@@ -91,7 +92,7 @@ namespace ta
             if (myTlsSessionInfo->backend == CURLSSLBACKEND_SCHANNEL)
             {
                 // disable certificate revocation checks for curl built against WinSSL (schannel)
-                // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which is way too strict I believe)
+                // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which we believe is somewhat too strict)
                 myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
                 if (myCurlRetCode != CURLE_OK)
                 {
@@ -376,6 +377,19 @@ namespace ta
 
     std::vector<unsigned char> fetchHttpUrl(const string& anUrl)
     {
+        try
+        {
+            const ta::url::Scheme myScheme = ta::url::getScheme(anUrl);
+            if (myScheme != ta::url::Http && myScheme != ta::url::Https)
+            {
+                TA_THROW_MSG(UrlFetchError, boost::format("Cannot fetch %s. Please use https:// or http:// URL such as https://server.com/path/to/file") % anUrl);
+            }
+        }
+        catch (ta::UrlParseError& e)
+        {
+            TA_THROW_MSG2(ta::UrlFetchError, boost::format("Cannot fetch %s. Please use valid https:// or http:// URL such as https://server.com/path/to/file") % anUrl, e.what());
+        }
+
         ta::ScopedResource<CURL*> myCurl(curl_easy_init(), curl_easy_cleanup);
         if (!myCurl)
         {
@@ -416,33 +430,42 @@ namespace ta
         // set buffer for error messages
         char myExtraErrorMsg[CURL_ERROR_SIZE + 1] = {};
         curl_easy_setopt(myCurl, CURLOPT_ERRORBUFFER, myExtraErrorMsg);
-        // setting this is believed to prevent segfaults in curl_resolv_timeout() when DNS lookup times out
+
+        // this is believed to prevent segfaults in curl_resolv_timeout() when DNS lookup times out
         curl_easy_setopt(myCurl, CURLOPT_NOSIGNAL, 1);
 
         setupSSL(myCurl);
 
+        //disableProxy(myCurl);
+
         myCurlRetCode = curl_easy_perform(myCurl);
         if (myCurlRetCode != CURLE_OK)
         {
-            string myErrorMsg = "Cannot fetch URL " + anUrl;
+            string myFriendlyErrorMsg = "Cannot fetch URL " + anUrl;
             if (myCurlRetCode == CURLE_PEER_FAILED_VERIFICATION || myCurlRetCode == CURLE_SSL_CACERT)
             {
-                myErrorMsg += ". Your remote server cannot be trusted by known CA certificates.";
+                myFriendlyErrorMsg += ". The remote SSL server cannot be trusted by client CA certificates.";
             }
             else if (myCurlRetCode == CURLE_SSL_CONNECT_ERROR)
             {
-                myErrorMsg += ". Error establishing secure SSL connection.";
+                myFriendlyErrorMsg += ". Error establishing secure SSL connection.";
             }
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to fetch URL %s. %s (curl error code %d). Extra error info: %s") % anUrl % curl_easy_strerror(myCurlRetCode) % myCurlRetCode % myExtraErrorMsg);
+            TA_THROW_MSG2(ta::UrlFetchError, myFriendlyErrorMsg, boost::format("Failed to fetch URL %s. %s (curl error code %d). Extra error info: %s") % anUrl % curl_easy_strerror(myCurlRetCode) % myCurlRetCode % myExtraErrorMsg);
         }
         long myHttpResponseCode = -1;
         myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode);
         if (myCurlRetCode != CURLE_OK)
+        {
             TA_THROW_MSG(std::runtime_error, "Cannot get HTTP response code from URL " + anUrl);
+        }
         if (myHttpResponseCode == 0)
-            TA_THROW_MSG(std::runtime_error, "Cannot connect to " + anUrl);
+        {
+            TA_THROW_MSG(ta::UrlFetchError, "Cannot connect to " + anUrl);
+        }
         if (myHttpResponseCode != 200)
-            TA_THROW_MSG(std::runtime_error, boost::format("HTTP %d received when fetching %s") % myHttpResponseCode % anUrl);
+        {
+            TA_THROW_MSG(ta::UrlFetchError, boost::format("HTTP %d received when fetching %s") % myHttpResponseCode % anUrl);
+        }
 
         return ta::str2Vec<unsigned char>(myResponse);
     }

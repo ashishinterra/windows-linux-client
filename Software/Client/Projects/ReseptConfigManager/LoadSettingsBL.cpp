@@ -21,7 +21,6 @@
 #include "boost/filesystem/convenience.hpp"
 #include "boost/algorithm/string.hpp"
 #include "boost/cstdint.hpp"
-#include "curl/curl.h"
 
 using std::string;
 using std::vector;
@@ -31,17 +30,6 @@ using std::vector;
 //
 namespace
 {
-    static const unsigned long ConnectTimeout = 2;
-
-    size_t responseCallback(void* buffer, size_t size, size_t nmemb, void* aResponse)
-    {
-        assert(buffer && aResponse);
-        string* myReponse = (string*)aResponse;
-        size_t myNumBytesConsumed = nmemb*size;
-        myReponse->append((char*)buffer, myNumBytesConsumed);
-        return myNumBytesConsumed;
-    }
-
 #ifdef _WIN32
     enum ServiceStatus
     {
@@ -302,77 +290,7 @@ namespace
         return false;
     }
 
-#ifdef _WIN32
-    //@nothrow
-    bool isResolvable(const string& aHostName)
-    {
-        try  {
-            ta::DnsUtils::resolveIpByName(aHostName);
-            return true;
-        } catch (std::exception& e) {
-            WARNLOG(boost::format("Cannot resolve %s. %s") % aHostName % e.what());
-            return false;
-        }
-    }
-
-    string makeUrl(const ta::NetUtils::RemoteAddress& anAddr)
-    {
-        if (ta::NetUtils::isValidIpv6(anAddr.host))
-            return str(boost::format("[%s]:%u") % anAddr.host % anAddr.port);
-        return str(boost::format("%s:%u") % anAddr.host % anAddr.port);
-    }
-#endif
-
-    void setupSSL(CURL* aCurl)
-    {
-        if (!aCurl)
-        {
-            TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
-        }
-
-#ifdef _WIN32
-        curl_tlssessioninfo * myTlsSessionInfo = NULL;
-        CURLcode myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo);
-        if (myCurlRetCode != CURLE_OK)
-        {
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve TLS backend information. %s") % curl_easy_strerror(myCurlRetCode));
-        }
-        if (myTlsSessionInfo->backend == CURLSSLBACKEND_SCHANNEL)
-        {
-            // disable certificate revocation checks for curl built against WinSSL (schannel)
-            // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which is way too strict I believe)
-            myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
-            if (myCurlRetCode != CURLE_OK)
-            {
-                TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable CLR option. %s") % curl_easy_strerror(myCurlRetCode));
-            }
-        }
-#endif
-    }
-
-    void disableProxy(CURL* aCurl)
-    {
-        if (!aCurl)
-        {
-            TA_THROW_MSG(std::invalid_argument, "CURL handle is NULL");
-        }
-
-        // In order to completely disable proxy we shall explicitly specify proxy address to empty string to prevent curl from using 'http_proxy' environment variable
-
-        CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        if (myCurlRetCode != CURLE_OK)
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup supported proxy type. %s") % curl_easy_strerror(myCurlRetCode));
-
-        myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXYAUTH, CURLAUTH_ANY);
-        if (myCurlRetCode != CURLE_OK)
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup supported proxy authentication type. %s") % curl_easy_strerror(myCurlRetCode));
-
-        myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXY, "");
-        if (myCurlRetCode != CURLE_OK)
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable proxy. %s") % curl_easy_strerror(myCurlRetCode));
-    }
-
-    string fixUrl(string& anUrl)
+    string fixRccdUrl(string& anUrl)
     {
         string myUrl = boost::trim_copy(anUrl);
 
@@ -465,119 +383,31 @@ namespace LoadSettingsBL
     bool loadRccdFromUrl(const string& anUrl, vector<unsigned char>& aBlob, string& anErrorMsg)
     {
         string myUrl = boost::trim_copy(anUrl);
-        DEBUGLOG(boost::format("Loading RCCD from URL '%s'") % myUrl);
         if (myUrl.empty())
         {
             anErrorMsg = "Please specify URL to " + resept::ProductName + " Client Customization File";
             return false;
         }
+        myUrl = fixRccdUrl(myUrl);
 
-        myUrl = fixUrl(myUrl);
+        DEBUGLOG(boost::format("Loading RCCD from URL '%s'") % myUrl);
 
         try
         {
-            ta::ScopedResource<CURL*> myCurl(curl_easy_init(), curl_easy_cleanup);
-            if (!myCurl)
-            {
-                anErrorMsg = "Cannot initialize network subsystem";
-                ERRORLOG2(anErrorMsg, "Failed to initialize curl");
-                return false;
-            }
-            CURLcode myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEFUNCTION, responseCallback);
-            if (myCurlRetCode != CURLE_OK)
-            {
-                anErrorMsg = "Cannot initialize network subsystem";
-                ERRORLOG2(anErrorMsg, boost::format("Failed to setup response callback. %s") % curl_easy_strerror(myCurlRetCode));
-                return false;
-            }
-            string myResponse;
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEDATA, &myResponse);
-            if (myCurlRetCode != CURLE_OK)
-            {
-                anErrorMsg = "Cannot initialize network subsystem";
-                ERRORLOG2(anErrorMsg, boost::format("Failed to setup cookie for response callback. %s") % curl_easy_strerror(myCurlRetCode));
-                return false;
-            }
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, myUrl.c_str());
-            if (myCurlRetCode != CURLE_OK)
-            {
-                anErrorMsg = "Cannot initialize network subsystem";
-                ERRORLOG2(anErrorMsg, boost::format("Failed to set CURLOPTURL curl option. %s") % curl_easy_strerror(myCurlRetCode));
-                return false;
-            }
-
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, ConnectTimeout);
-            if (myCurlRetCode != CURLE_OK)
-            {
-                anErrorMsg = "Cannot initialize network subsystem";
-                ERRORLOG2(anErrorMsg, boost::format("Failed to set CURLOPT_CONNECTTIMEOUT curl option. %s") % curl_easy_strerror(myCurlRetCode));
-                return false;
-            }
-
-            // follow HTTP redirects (3xx)
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_FOLLOWLOCATION, 1L);
-            if (myCurlRetCode != CURLE_OK)
-            {
-                anErrorMsg = "Cannot enable HTTP redirects";
-                ERRORLOG2(anErrorMsg, boost::format("Failed to set CURLOPT_FOLLOWLOCATION curl option. %s") % curl_easy_strerror(myCurlRetCode));
-                return false;
-            }
-
-
-            // set buffer for error messages
-            char myExtraErrorMsg[CURL_ERROR_SIZE + 1] = {};
-            curl_easy_setopt(myCurl, CURLOPT_ERRORBUFFER, myExtraErrorMsg);
-            // setting this is believed to prevent segfaults in curl_resolv_timeout() when DNS lookup times out
-            curl_easy_setopt(myCurl, CURLOPT_NOSIGNAL, 1);
-
-            try {
-                setupSSL(myCurl);
-            } catch (std::exception& e) {
-                anErrorMsg = "Failed to configure SSL";
-                ERRORLOG2(anErrorMsg, e.what());
-                return false;
-            }
-
-            try  {
-                ta::url::parse(myUrl);
-            } catch (ta::UrlParseError& e) {
-                anErrorMsg = "Invalid customization URL " + myUrl + ". Valid https:// or http:// URL expected such as https://server.com/path-to-rccd";
-                ERRORLOG2(anErrorMsg, e.what());
-                return false;
-            }
-
-            disableProxy(myCurl);
-
-            myCurlRetCode = curl_easy_perform(myCurl);
-            if (myCurlRetCode != CURLE_OK)
-            {
-                anErrorMsg = "Cannot fetch URL " + myUrl;
-                if (myCurlRetCode == CURLE_PEER_FAILED_VERIFICATION || myCurlRetCode == CURLE_SSL_CACERT)
-                {
-                    anErrorMsg += ". Your remote server cannot be trusted by known CA certificates.";
-                }
-                else if (myCurlRetCode == CURLE_SSL_CONNECT_ERROR)
-                {
-                    anErrorMsg += ". Error establishing secure SSL connection.";
-                }
-                ERRORLOG2(anErrorMsg, boost::format("Failed to fetch URL %s. %s (curl error code %d). Extra error info: %s") % myUrl % curl_easy_strerror(myCurlRetCode) % myCurlRetCode % myExtraErrorMsg);
-                return false;
-            }
-            long myHttpResponseCode = -1;
-            myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode);
-            if (myCurlRetCode != CURLE_OK)
-                return anErrorMsg = "Cannot get HTTP response code from URL " + myUrl, false;
-            if (myHttpResponseCode == 0)
-                return anErrorMsg = "Cannot connect to " + myUrl, false;
-            if (myHttpResponseCode != 200)
-                return anErrorMsg = str(boost::format("HTTP %d received when fetching %s") % myHttpResponseCode % myUrl), false;
-            aBlob = ta::str2Vec<unsigned char>(myResponse);
+            aBlob = ta::fetchHttpUrl(myUrl);
             return true;
         }
-        catch (std::exception& e)
+        catch (ta::UrlFetchError &e)
         {
-            ERRORDEVLOG(e.what());
-            return anErrorMsg = "Unexpected error occurred trying to fetch " + myUrl, false;
+            anErrorMsg = e.friendlyMsg;
+            ERRORLOG2(anErrorMsg, e.what());
+            return false;
+        }
+        catch (std::exception &e)
+        {
+            anErrorMsg = "Failed to download Client Customization File from " + myUrl;
+            ERRORLOG2(anErrorMsg, e.what());
+            return false;
         }
     }
 

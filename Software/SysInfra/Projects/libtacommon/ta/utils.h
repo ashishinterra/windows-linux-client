@@ -17,15 +17,8 @@ namespace ta
 
       @param[in] aFileName String of filename to read contents from
       @return Data read from file
-      @throw std::runtime_error
      */
     RetType readData(const std::string& aFileName);
-
-
-    /**
-     Fetch data from the given http(s) URL
-    */
-    std::vector<unsigned char> fetchHttpUrl(const std::string& anUrl);
 
     /**
       Read at most last aMaxLines to a memory buffer. Supported memory buffers: std::vector, std::basic_string
@@ -33,7 +26,6 @@ namespace ta
       @param[in] aFileName String of filename to read contents from
       @param[in] aMaxLines desired number of lines to read
       @return Data read from file
-      @throw std::runtime_error
      */
     RetTailType readTail(const std::string& aFileName, unsigned long aMaxLines);
 
@@ -97,6 +89,21 @@ namespace ta
     	Recursively copy the contents of source directory to another directory
     **/
     void copyDir(const std::string& aSrcDir, const std::string& aDestDir);
+
+    struct UrlFetchError : std::runtime_error
+    {
+        UrlFetchError(const std::string& aFriendlyMsg, const std::string& aDeveloperMsg = "") :
+            std::runtime_error(aDeveloperMsg), friendlyMsg(aFriendlyMsg)
+        {}
+        ~UrlFetchError() throw() {}
+
+        std::string friendlyMsg;
+    };
+    /**
+     Fetch data from the given http(s) URL
+     @throw UrlFetchError for errors that might be useful for callers such as invalid URL; std::exception for the rest errors
+    */
+    std::vector<unsigned char> fetchHttpUrl(const std::string& anUrl);
 
     /**
       Escape all non-alphanumeric characters in the string to let the string to be used in regex
