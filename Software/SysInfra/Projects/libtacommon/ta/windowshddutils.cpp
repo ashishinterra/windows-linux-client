@@ -9,8 +9,8 @@
 #endif
 
 #include "ta/scopedresource.hpp"
-#include "ta/logger.h"
 #include "ta/common.h"
+#include "ta/logger.h"
 #include <windows.h>
 #include <winioctl.h>
 #include "boost/algorithm/string.hpp"

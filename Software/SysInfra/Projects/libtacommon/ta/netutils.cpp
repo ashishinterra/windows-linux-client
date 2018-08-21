@@ -2,10 +2,11 @@
 #include "url.h"
 #include "strings.h"
 #include "process.h"
+#include "httpproxy.h"
 #include "utils.h"
 #include "scopedresource.hpp"
-#include "ta/logger.h"
 #include "common.h"
+#include "ta/logger.h"
 
 #ifdef _WIN32
 # include <winsock2.h>
@@ -35,6 +36,7 @@
 #endif
 #include <memory>
 #include <vector>
+#include "curl/curl.h"
 #include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
 #include "boost/regex.hpp"
@@ -579,6 +581,96 @@ namespace ta
                 }
                 return Strings::join(myStrOctets, '.');
             }
+            size_t responseCallback(void* buffer, size_t size, size_t nmemb, void* aResponse)
+            {
+                assert(buffer && aResponse);
+                string* myReponse = (string*)aResponse;
+                size_t myNumBytesConsumed = nmemb*size;
+                myReponse->append((char*)buffer, myNumBytesConsumed);
+                return myNumBytesConsumed;
+            }
+
+            void validateHttpFetchUrl(const string& aUrl)
+            {
+                try
+                {
+                    const ta::url::Scheme myScheme = ta::url::getScheme(aUrl);
+                    if (myScheme != ta::url::Http && myScheme != ta::url::Https)
+                    {
+                        TA_THROW_MSG(UrlFetchError, boost::format("Cannot fetch %s. Please use https:// or http:// URL such as https://server.com/path/to/file") % aUrl);
+                    }
+                }
+                catch (ta::UrlParseError& e)
+                {
+                    TA_THROW_MSG2(UrlFetchError, boost::format("Cannot fetch %s. Please use valid https:// or http:// URL such as https://server.com/path/to/file") % aUrl, e.what());
+                }
+            }
+
+            void setupSSL(CURL* aCurl)
+            {
+                if (!aCurl)
+                {
+                    TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
+                }
+
+#ifdef _WIN32
+                curl_tlssessioninfo * myTlsSessionInfo = NULL;
+                CURLcode myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo);
+                if (myCurlRetCode != CURLE_OK)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve TLS backend information. %s") % curl_easy_strerror(myCurlRetCode));
+                }
+                if (myTlsSessionInfo->backend == CURLSSLBACKEND_SCHANNEL)
+                {
+                    // disable certificate revocation checks for curl built against WinSSL (schannel)
+                    // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which we believe is somewhat too strict)
+                    myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
+                    if (myCurlRetCode != CURLE_OK)
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable CLR option. %s") % curl_easy_strerror(myCurlRetCode));
+                    }
+                }
+#endif
+            }
+
+            //@return applied proxy if any
+#ifdef _WIN32
+            boost::optional<RemoteAddress> setupProxy(CURL* aCurl, const string& aUrl)
+            {
+                // curl respects http_proxy etc. environment variables hence there is no need for explicit proxy setup on Linux
+                // Windows uses its own way to setup proxy which curl can't sniff itself, so we need to help curl with it
+
+                if (!aCurl)
+                {
+                    TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
+                }
+
+                if (const boost::optional<RemoteAddress> httpProxy = ta::HttpProxy::getProxy(aUrl))
+                {
+                    CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+                    if (myCurlRetCode != CURLE_OK)
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to enable HTTP proxy. %s") % curl_easy_strerror(myCurlRetCode));
+                    }
+                    const string myProxyStr = toString(*httpProxy);
+                    myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXY, myProxyStr.c_str());
+                    if (myCurlRetCode != CURLE_OK)
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to set HTTP proxy '%s'. %s") % myProxyStr % curl_easy_strerror(myCurlRetCode));
+                    }
+                    return httpProxy;
+                }
+                else
+                {
+                    return boost::none;
+                }
+            }
+#else
+            boost::optional<RemoteAddress> setupProxy(CURL* UNUSED(aCurl), const string& UNUSED(aUrl))
+            {
+                return boost::none;
+            }
+#endif
         } // end of private API
 
 
@@ -1733,6 +1825,95 @@ namespace ta
             return string(&myFQDN[0], myFQDN.size() - 1);
         }
 #endif
+
+        std::vector<unsigned char> fetchHttpUrl(const string& aUrl)
+        {
+            validateHttpFetchUrl(aUrl);
+
+            ta::ScopedResource<CURL*> myCurl(curl_easy_init(), curl_easy_cleanup);
+            if (!myCurl)
+            {
+                TA_THROW_MSG(std::runtime_error, "Error initializing curl");
+            }
+            CURLcode myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEFUNCTION, responseCallback);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup response callback. %s") % curl_easy_strerror(myCurlRetCode));
+            }
+            string myResponse;
+            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEDATA, &myResponse);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup cookie for response callback. %s") % curl_easy_strerror(myCurlRetCode));
+            }
+            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, aUrl.c_str());
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to set CURLOPTURL curl option to %s. %s") % aUrl % curl_easy_strerror(myCurlRetCode));
+            }
+
+            static const unsigned long myConnectTimeoutSeconds = 2;
+            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, myConnectTimeoutSeconds);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to set CURLOPT_CONNECTTIMEOUT curl option. %s") % curl_easy_strerror(myCurlRetCode));
+            }
+
+            // follow HTTP redirects (3xx)
+            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_FOLLOWLOCATION, 1L);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to set CURLOPT_FOLLOWLOCATION curl option. %s") % curl_easy_strerror(myCurlRetCode));
+            }
+
+
+            // set buffer for error messages
+            char myExtraErrorMsg[CURL_ERROR_SIZE + 1] = {};
+            curl_easy_setopt(myCurl, CURLOPT_ERRORBUFFER, myExtraErrorMsg);
+
+            // this is believed to prevent segfaults in curl_resolv_timeout() when DNS lookup times out
+            curl_easy_setopt(myCurl, CURLOPT_NOSIGNAL, 1);
+
+            setupSSL(myCurl);
+            const boost::optional<RemoteAddress> httpProxy = setupProxy(myCurl, aUrl);
+            const string myUrlWithProxyInfo = httpProxy ? aUrl + " using proxy at " + toString(*httpProxy) : aUrl;
+
+            myCurlRetCode = curl_easy_perform(myCurl);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                string myFriendlyErrorMsg = "Cannot fetch URL " + myUrlWithProxyInfo;
+                if (myCurlRetCode == CURLE_PEER_FAILED_VERIFICATION || myCurlRetCode == CURLE_SSL_CACERT)
+                {
+                    myFriendlyErrorMsg += ". The remote SSL server cannot be trusted by client CA certificates.";
+                }
+                else if (myCurlRetCode == CURLE_SSL_CONNECT_ERROR)
+                {
+                    myFriendlyErrorMsg += ". Error establishing secure SSL connection.";
+                }
+                TA_THROW_MSG2(UrlFetchError, myFriendlyErrorMsg, boost::format("Failed to fetch URL %s. %s (curl error code %d). Extra error info: %s") % myUrlWithProxyInfo % curl_easy_strerror(myCurlRetCode) % myCurlRetCode % myExtraErrorMsg);
+            }
+
+            long myHttpResponseCode = -1;
+            myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Cannot get HTTP response code from URL %s. %s") % myUrlWithProxyInfo % curl_easy_strerror(myCurlRetCode));
+            }
+            if (myHttpResponseCode == 0)
+            {
+                TA_THROW_MSG(UrlFetchError, "Cannot connect to " + myUrlWithProxyInfo);
+            }
+            if (myHttpResponseCode == 407)
+            {
+                TA_THROW_MSG(UrlFetchError, "Connect to " + myUrlWithProxyInfo + " requires proxy authentication, however it is not supported.");
+            }
+            if (myHttpResponseCode != 200)
+            {
+                TA_THROW_MSG(UrlFetchError, boost::format("HTTP %d received when fetching %s") % myHttpResponseCode % myUrlWithProxyInfo);
+            }
+
+            return ta::str2Vec<unsigned char>(myResponse);
+        }
 
     } // NetUtils
 } // ta

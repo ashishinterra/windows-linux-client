@@ -1,5 +1,4 @@
 #include "httpproxy.h"
-#include "ta/logger.h"
 #include "netutils.h"
 #include "strings.h"
 #include "process.h"
@@ -7,6 +6,7 @@
 #include "url.h"
 #include "scopedresource.hpp"
 #include "common.h"
+#include "ta/logger.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -49,26 +49,29 @@ namespace ta
                     return true;
                 }
 
-                static const vector<char> mySeps = boost::assign::list_of('\t')('\r')('\n')(';');
+                static const vector<char> mySeps = boost::assign::list_of(' ')('\t')('\r')('\n')(';');
                 foreach(const string& bypassTempl, ta::Strings::split(aBypassList, mySeps))
                 {
-                    if (boost::iequals(bypassTempl, "<local>"))
+                    if (!bypassTempl.empty())
                     {
-                        // exclude local hostname
-                        if (myHostName.find('.') == std::string::npos && myHostName.find(':') == std::string::npos)
+                        if (boost::iequals(bypassTempl, "<local>"))
+                        {
+                            // exclude local hostname
+                            if (myHostName.find('.') == std::string::npos && myHostName.find(':') == std::string::npos)
+                            {
+                                return true;
+                            }
+                            //@todo also check we're in subnet, as in http://cep.xray.aps.anl.gov/software/qt4-x11-4.8.6-browser/de/dfe/qnetworkproxy__win_8cpp_source.html
+                        }
+
+                        if (boost::istarts_with(myHostName, bypassTempl))
                         {
                             return true;
                         }
-                        //@todo also check we're in subnet, as in http://cep.xray.aps.anl.gov/software/qt4-x11-4.8.6-browser/de/dfe/qnetworkproxy__win_8cpp_source.html
-                    }
-
-                    if (boost::istarts_with(myHostName, bypassTempl))
-                    {
-                        return true;
-                    }
-                    if (ta::Strings::wildcardMatch(boost::to_lower_copy(myHostName), boost::to_lower_copy(bypassTempl)))
-                    {
-                        return true;
+                        if (ta::Strings::wildcardMatch(boost::to_lower_copy(myHostName), boost::to_lower_copy(bypassTempl)))
+                        {
+                            return true;
+                        }
                     }
                 }
 

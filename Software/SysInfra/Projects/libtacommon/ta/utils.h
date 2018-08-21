@@ -90,21 +90,6 @@ namespace ta
     **/
     void copyDir(const std::string& aSrcDir, const std::string& aDestDir);
 
-    struct UrlFetchError : std::runtime_error
-    {
-        UrlFetchError(const std::string& aFriendlyMsg, const std::string& aDeveloperMsg = "") :
-            std::runtime_error(aDeveloperMsg), friendlyMsg(aFriendlyMsg)
-        {}
-        ~UrlFetchError() throw() {}
-
-        std::string friendlyMsg;
-    };
-    /**
-     Fetch data from the given http(s) URL
-     @throw UrlFetchError for errors that might be useful for callers such as invalid URL; std::exception for the rest errors
-    */
-    std::vector<unsigned char> fetchHttpUrl(const std::string& anUrl);
-
     /**
       Escape all non-alphanumeric characters in the string to let the string to be used in regex
 

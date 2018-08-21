@@ -394,7 +394,7 @@ namespace LoadSettingsBL
 
         try
         {
-            aBlob = ta::fetchHttpUrl(myUrl);
+            aBlob = ta::NetUtils::fetchHttpUrl(myUrl);
             return true;
         }
         catch (ta::UrlFetchError &e)

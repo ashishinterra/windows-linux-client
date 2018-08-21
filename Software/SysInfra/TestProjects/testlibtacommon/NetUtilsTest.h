@@ -17,23 +17,6 @@ using std::string;
 class NetUtilsAccessorsTest : public CxxTest::TestSuite
 {
 public:
-    NetUtilsAccessorsTest()
-    {
-#ifdef _WIN32
-        std::cout << "*** NOTICE. Please make sure at least one site-local (\"fdXX\") IPv6 is setup on Windows using \"ipv6 install\" and \"netsh\" tools.\n";
-#endif
-    }
-    ~NetUtilsAccessorsTest()
-    {}
-    static NetUtilsAccessorsTest *createSuite()
-    {
-        return new NetUtilsAccessorsTest();
-    }
-    static void destroySuite( NetUtilsAccessorsTest *suite )
-    {
-        delete suite;
-    }
-
     void testValidIpV4()
     {
         using namespace ta::NetUtils;
@@ -641,6 +624,21 @@ public:
         TS_ASSERT_THROWS(calcIpv4NetworkAddress("198.168.10.44", "invalid-netmask"), std::exception);
         TS_ASSERT_THROWS(calcIpv4NetworkAddress("198.168.10.44", ""), std::exception);
         TS_ASSERT_THROWS(calcIpv4NetworkAddress("198.168.10.44", "255.255.255.223"), std::exception);
+    }
+
+    void test_download_http()
+    {
+        // given
+        const std::string myGoodUrl = "http://www.apache.org/licenses/LICENSE-2.0";
+        // when
+        const std::string myContent = ta::vec2Str(ta::NetUtils::fetchHttpUrl(myGoodUrl));
+        // then
+        TS_ASSERT_DIFFERS(myContent.find("Apache License"), std::string::npos);
+
+        // given
+        const std::string myBadUrl = "http://www.apache.org/invalid/path";
+        // when-then
+        TS_ASSERT_THROWS(ta::NetUtils::fetchHttpUrl(myBadUrl), std::exception);
     }
 
 

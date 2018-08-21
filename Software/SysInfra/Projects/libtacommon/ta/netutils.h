@@ -25,6 +25,16 @@ namespace ta
     {
         explicit NetworkUnreachableError(const std::string& aMessage = ""): std::runtime_error(aMessage) {}
     };
+    struct UrlFetchError : std::runtime_error
+    {
+        UrlFetchError(const std::string& aFriendlyMsg, const std::string& aDeveloperMsg = "")
+            : std::runtime_error(!aDeveloperMsg.empty() ? aDeveloperMsg : aFriendlyMsg)
+            , friendlyMsg(aFriendlyMsg)
+        {}
+        ~UrlFetchError() throw() {}
+
+        std::string friendlyMsg;
+    };
 
     namespace NetUtils
     {
@@ -571,7 +581,7 @@ namespace ta
         static const int NoDefaultPort = -1;
         RemoteAddress parseHost(const std::string& aHost, int aDefaultPort = 80);
 
-        // format remote address as string
+        // Format remote address as string e.g. "localhost:8080"
         // @param[in] aRemovePort when matches port passed in anAddr argument, port will NOT appear in the resulted format string.
         // Default value -1 is set to invalid port to make sure that port always appear in the resulted string by default.
         std::string toString(const RemoteAddress& anAddr, int aRemovePort = -1);
@@ -602,6 +612,12 @@ namespace ta
         // Retrieves fully qualified DNS name that uniquely identifies the local computer such as test.keytalk.com
         std::string getSelfFqdn();
 #endif
+
+        /**
+        Fetch data from the given http(s) URL
+        @throw UrlFetchError for errors that might be useful for callers such as invalid URL; std::exception for the rest errors
+        */
+        std::vector<unsigned char> fetchHttpUrl(const std::string& anUrl);
     } // namespace NetUtils
 
 } // namespace ta

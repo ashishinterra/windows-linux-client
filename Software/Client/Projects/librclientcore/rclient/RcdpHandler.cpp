@@ -9,6 +9,7 @@
 #include "ta/encodingutils.h"
 #include "ta/hashutils.h"
 #include "ta/tcpsocketutils.h"
+#include "ta/httpproxy.h"
 #include "ta/logger.h"
 #include "ta/utils.h"
 #include "ta/scopedresource.hpp"
@@ -122,6 +123,88 @@ namespace rclient
             return false;
         }
 
+        string makePostData(const ta::StringDict& aReqParams)
+        {
+            ta::StringArray myPostData;
+            foreach(const ta::StringDict::value_type& kv, aReqParams)
+            {
+                const string myEncodedKv = ta::EncodingUtils::urlEncode(kv.first) + "=" + ta::EncodingUtils::urlEncode(kv.second);
+                myPostData.push_back(myEncodedKv);
+            }
+            return ta::Strings::join(myPostData, '&');
+        }
+
+
+        void setupSSL(CURL* aCurl)
+        {
+            if (!aCurl)
+            {
+                TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
+            }
+
+            CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2 /* i.e. TLS-XXX and higher */);
+            if (myCurlRetCode != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to set TLS version for RESEPT server connection. %s") % curl_easy_strerror(myCurlRetCode));
+            }
+
+#ifdef _WIN32
+            curl_tlssessioninfo * myTlsSessionInfo = NULL;
+            if ((myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo)) != CURLE_OK)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve TLS backend information. %s") % curl_easy_strerror(myCurlRetCode));
+            }
+            if (myTlsSessionInfo->backend == CURLSSLBACKEND_SCHANNEL)
+            {
+                // disable certificate revocation checks for curl built against WinSSL (schannel)
+                // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which is way too strict I believe)
+                if ((myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE)) != CURLE_OK)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable CLR option. %s") % curl_easy_strerror(myCurlRetCode));
+                }
+            }
+#endif
+        }
+
+        //@return applied proxy if any
+#ifdef _WIN32
+        boost::optional<ta::NetUtils::RemoteAddress> setupProxy(CURL* aCurl, const string& aUrl)
+        {
+            // curl respects http_proxy etc. environment variables hence there is no need for explicit proxy setup on Linux
+            // Windows uses its own way to setup proxy which curl can't sniff itself, so we need to help curl with it
+
+            if (!aCurl)
+            {
+                TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
+            }
+
+            if (const boost::optional<ta::NetUtils::RemoteAddress> httpProxy = ta::HttpProxy::getProxy(aUrl))
+            {
+                CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+                if (myCurlRetCode != CURLE_OK)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to enable HTTP proxy. %s") % curl_easy_strerror(myCurlRetCode));
+                }
+                const string myProxyStr = ta::NetUtils::toString(*httpProxy);
+                myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXY, myProxyStr.c_str());
+                if (myCurlRetCode != CURLE_OK)
+                {
+                    TA_THROW_MSG(std::runtime_error, boost::format("Failed to set HTTP proxy '%s'. %s") % myProxyStr % curl_easy_strerror(myCurlRetCode));
+                }
+                return httpProxy;
+            }
+            else
+            {
+                return boost::none;
+            }
+        }
+#else
+        boost::optional<ta::NetUtils::RemoteAddress> setupProxy(CURL* UNUSED(aCurl), const string& UNUSED(aUrl))
+        {
+            return boost::none;
+        }
+#endif
+
         enum HttpRequestMethod
         {
             methodGET,
@@ -142,11 +225,8 @@ namespace rclient
 
         string sendHttpRequest(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams = ta::StringDict(), const HttpRequestMethod aMethod = methodGET);
         string makeRequestUrl(const resept::rcdpv2::Request aReqType, const ta::StringDict& aReqParams = ta::StringDict()) const;
-        string makePostData(const ta::StringDict& aReqParams) const;
-        void setupSSL(CURL* aCurl) const;
         void logExtraHttpResponseInfo(CURL* aCurl);
         void parseSidFromHttpResponse(CURL* aCurl);
-        static void disableProxy(CURL* aCurl);
 
         const ta::NetUtils::RemoteAddress server;
         UserRcdpSessionData session;
@@ -593,35 +673,6 @@ namespace rclient
         return pImpl->session;
     }
 
-
-    void RcdpHandler::RcdpHandlerImpl::disableProxy(CURL* aCurl)
-    {
-        if (!aCurl)
-        {
-            TA_THROW_MSG(std::runtime_error, "NULL curl handle");
-        }
-
-        // In order to completely disable proxy we should explicitly specify proxy address to empty string to prevent curl from implicitly using 'http_proxy' environment variable
-
-        CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        if (myCurlRetCode != CURLE_OK)
-        {
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup supported proxy type. %s") % curl_easy_strerror(myCurlRetCode));
-        }
-
-        myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXYAUTH, CURLAUTH_ANY);
-        if (myCurlRetCode != CURLE_OK)
-        {
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup supported proxy authentication type. %s") % curl_easy_strerror(myCurlRetCode));
-        }
-
-        myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_PROXY, "");
-        if (myCurlRetCode != CURLE_OK)
-        {
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable proxy. %s") % curl_easy_strerror(myCurlRetCode));
-        }
-    }
-
     void RcdpHandler::RcdpHandlerImpl::logExtraHttpResponseInfo(CURL* aCurl)
     {
         if (!aCurl)
@@ -671,47 +722,6 @@ namespace rclient
         return myUrl;
     }
 
-    string RcdpHandler::RcdpHandlerImpl::makePostData(const ta::StringDict& aReqParams) const
-    {
-        ta::StringArray myPostData;
-        foreach (const ta::StringDict::value_type& kv, aReqParams)
-        {
-            const string myEncodedKv = ta::EncodingUtils::urlEncode(kv.first) + "=" + ta::EncodingUtils::urlEncode(kv.second);
-            myPostData.push_back(myEncodedKv);
-        }
-        return ta::Strings::join(myPostData, '&');
-    }
-
-    void RcdpHandler::RcdpHandlerImpl::setupSSL(CURL* aCurl) const
-    {
-        if (!aCurl)
-        {
-            TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
-        }
-
-        CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2 /* i.e. TLS-XXX and higher */);
-        if (myCurlRetCode != CURLE_OK)
-        {
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to set TLS version for RESEPT server connection. %s") % curl_easy_strerror(myCurlRetCode));
-        }
-
-#ifdef _WIN32
-        curl_tlssessioninfo * myTlsSessionInfo = NULL;
-        if ((myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo)) != CURLE_OK)
-        {
-            TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve TLS backend information. %s") % curl_easy_strerror(myCurlRetCode));
-        }
-        if (myTlsSessionInfo->backend == CURLSSLBACKEND_SCHANNEL)
-        {
-            // disable certificate revocation checks for curl built against WinSSL (schannel)
-            // without disabling this flag WinSSL would cut TLS handshake if it does not find CLR or OSCP lists in the server's issuers CAs (which is way too strict I believe)
-            if ((myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE)) != CURLE_OK)
-            {
-                TA_THROW_MSG(std::runtime_error, boost::format("Failed to disable CLR option. %s") % curl_easy_strerror(myCurlRetCode));
-            }
-        }
-#endif
-    }
 
     /**
     Send HTTP GET or POST request
@@ -744,12 +754,13 @@ namespace rclient
 
 
             struct curl_slist *headerlist = NULL;
+            string myRequestUrl;
 
             if (aMethod == methodGET)
             {
                 // HTTP GET. Send parameters in URL
 
-                const string myRequestUrl = makeRequestUrl(aReqType, aReqParams);
+                myRequestUrl = makeRequestUrl(aReqType, aReqParams);
                 // DEBUGDEVLOG("Sending GET request: " + myRequestUrl);
                 if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, myRequestUrl.c_str())) != CURLE_OK)
                 {
@@ -760,7 +771,7 @@ namespace rclient
             {
                 // HTTP POST. Send parameters in body (application/x-www-form-urlencoded)
 
-                const string myRequestUrl = makeRequestUrl(aReqType);
+                myRequestUrl = makeRequestUrl(aReqType);
                 if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, myRequestUrl.c_str())) != CURLE_OK)
                 {
                     TA_THROW_MSG(HttpRequestError, boost::format("Failed to set URL curl option. %s") % curl_easy_strerror(myCurlRetCode));
@@ -796,8 +807,6 @@ namespace rclient
                 }
             }
 
-            setupSSL(myCurl);
-
             if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, ConnectTimeout)) != CURLE_OK)
             {
                 TA_THROW_MSG(HttpRequestError, boost::format("Failed to set CURLOPT_CONNECTTIMEOUT curl option. %s") % curl_easy_strerror(myCurlRetCode));
@@ -824,6 +833,11 @@ namespace rclient
                 }
             }
 
+            setupSSL(myCurl);
+
+            const boost::optional<ta::NetUtils::RemoteAddress> httpProxy = setupProxy(myCurl, myRequestUrl);
+            const string myUrlWithProxyInfo = httpProxy ? myRequestUrl + " using proxy at " + ta::NetUtils::toString(*httpProxy) : myRequestUrl;
+
             // setup extra debugging and other convenience options; do not bother if they fail
             curl_easy_setopt(myCurl, CURLOPT_HEADERFUNCTION, logExtraHttpResponseInfoCb);
             curl_easy_setopt(myCurl, CURLOPT_USERAGENT, str(boost::format("%s/%s") % resept::ProductName % ta::version::toStr(ClientVersion, ta::version::fmtMajorMinor)).c_str());
@@ -834,7 +848,6 @@ namespace rclient
             char myExtraErrorMsg[CURL_ERROR_SIZE + 1] = {};
             curl_easy_setopt(myCurl, CURLOPT_ERRORBUFFER, myExtraErrorMsg);
 
-            disableProxy(myCurl);
 
             // Send request and read response
             if ((myCurlRetCode = curl_easy_perform(myCurl)) != CURLE_OK)
@@ -843,22 +856,26 @@ namespace rclient
                 {
                     ERRORLOG("HINT: When IP address is used for " + resept::ProductName + " server address, it should be specified in \"IP:\" and in \"DNS:\" fields of the Subject Alternative Names extension of the client-server communication certificate server-side. Specifying IP in \"DNS:\" fields is necessary to make it work on Windows 7.");
                 }
-                TA_THROW_MSG(HttpRequestError, boost::format("Failed to send HTTP GET request to %s (curl error code: %d). %s. Extra error info: %s") % toString(server) % myCurlRetCode % curl_easy_strerror(myCurlRetCode) % myExtraErrorMsg);
+                TA_THROW_MSG(HttpRequestError, boost::format("Failed to send HTTP GET request to %s (curl error code: %d). %s. Extra error info: %s") % myUrlWithProxyInfo % myCurlRetCode % curl_easy_strerror(myCurlRetCode) % myExtraErrorMsg);
             }
 
             long myHttpResponseCode = -1;
             if ((myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode)) != CURLE_OK)
             {
-                TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve response code for HTTP GET request to %s. %s") % toString(server) % curl_easy_strerror(myCurlRetCode));
+                TA_THROW_MSG(std::runtime_error, boost::format("Failed to retrieve response code for HTTP GET request to %s. %s") % myUrlWithProxyInfo % curl_easy_strerror(myCurlRetCode));
             }
             if (myHttpResponseCode == 0)
             {
-                TA_THROW_MSG(HttpRequestError, boost::format("Failed to connect to the RESEPT server at %s") % toString(server));
+                TA_THROW_MSG(HttpRequestError, boost::format("Failed to connect to %s server at %s") % resept::ProductName % myUrlWithProxyInfo);
+            }
+            if (myHttpResponseCode == 407)
+            {
+                TA_THROW_MSG(HttpRequestError, "Connect to " + myUrlWithProxyInfo + " requires proxy authentication, however it is not supported.");
             }
             logExtraHttpResponseInfo(myCurl);
             if (myHttpResponseCode != 200)
             {
-                TA_THROW_MSG(HttpRequestError, boost::format("Got HTTP %d for HTTP GET request at %s") % myHttpResponseCode % toString(server));
+                TA_THROW_MSG(HttpRequestError, boost::format("Got HTTP %d for HTTP GET request at %s") % myHttpResponseCode % myUrlWithProxyInfo);
             }
 
 

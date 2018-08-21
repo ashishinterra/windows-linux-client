@@ -229,19 +229,4 @@ public:
         TS_TRACE("My username is: " + myUserName);
     }
 
-
-    void test_download_http()
-    {
-        // given
-        const std::string myGoodUrl = "http://www.apache.org/licenses/LICENSE-2.0";
-        // when
-        const std::string myContent = ta::vec2Str(ta::fetchHttpUrl(myGoodUrl));
-        // then
-        TS_ASSERT_DIFFERS(myContent.find("Apache License"), std::string::npos);
-
-        // given
-        const std::string myBadUrl = "http://www.apache.org/invalid/path";
-        // when-then
-        TS_ASSERT_THROWS(ta::fetchHttpUrl(myBadUrl), std::exception);
-    }
 };

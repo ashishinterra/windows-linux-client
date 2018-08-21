@@ -51,7 +51,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/SAFESEH /NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>libtacommon.lib;Dbghelp.lib;Psapi.lib;libeay32.lib;ssleay32.lib;ws2_32.lib;libcurl.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libtacommon.lib;Dbghelp.lib;Psapi.lib;libeay32.lib;ssleay32.lib;ws2_32.lib;winhttp.lib;libcurl.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\Export;..\..\..\..\..\SysInfra\Projects\Export;..\..\..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>

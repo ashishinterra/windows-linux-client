@@ -6,11 +6,11 @@
 #else
 #include "ta/linuxhwutils.h"
 #endif //_WIN32
-#include "ta/version.h"
-#include "ta/timeutils.h"
+#include "version.h"
+#include "timeutils.h"
+#include "process.h"
+#include "common.h"
 #include "ta/logger.h"
-#include "ta/process.h"
-#include "ta/common.h"
 
 #ifdef _WIN32
 #include <windows.h>

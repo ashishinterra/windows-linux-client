@@ -2664,7 +2664,7 @@ namespace ta
             foreach (const string& crlUrl, aCrlDistributionPoints)
             {
                 try {
-                    const vector<unsigned char> myCRL = ta::fetchHttpUrl(crlUrl);
+                    const vector<unsigned char> myCRL = ta::NetUtils::fetchHttpUrl(crlUrl);
                     myCRLs.push_back(myCRL);
                 } catch (std::exception& e) {
                     if (aWarnings) {
