@@ -60,7 +60,9 @@ LIBS += $(EXT_LIBS_DIR)/$(YAMLCPP_LIB)
 LIBS += $(EXT_LIBS_DIR)/$(CURL_LIB)
 endif
 ifdef RESEPT_SERVER
-LIBS += -lconfig++ -lyaml-cpp
+LIBS += -lconfig++
+LIBS += -lyaml-cpp
+LIBS += -lcurl
 endif
 LIBS += -lssl -lcrypto -lpthread
 
