@@ -29,7 +29,7 @@ Before installing the KeyTalk client with Apache certificate renewal script
 please make sure that your server meets the following requirements:
 
 - RHEL 6/7 x64 or CentOS 6/7 x64
-- Debian 8 x64, Debian 9 x64 or Ubuntu 16.04 LTS x64
+- Debian 8 x64, Debian 9 x64, Ubuntu 16.04 LTS x64 and Ubuntu 18.04 LTS x64
 - Python 2.7.x
 - Apache 2.2 - 2.4 installed with SSL module enabled
 

@@ -38,16 +38,6 @@ all_warning_messages = []
 force_arg = '--force'
 
 
-def shellquoted_site(site):
-    newdict = {}
-    for key, val in site.iteritems():
-        if isinstance(val, basestring):
-            newdict[key] = pipes.quote(val)
-        else:
-            newdict[key] = val
-    return newdict
-
-
 def is_cert_renewal_needed(site):
     vhost = site['VHost']
     server_name = site.get('ServerName')
@@ -91,7 +81,7 @@ def is_cert_renewal_needed(site):
 
 
 def get_cert(site):
-    quoted_site = shellquoted_site(site)
+    quoted_site = util.shellquoted_site(site)
     Logger.info(
         'Retrieving SSL certificate for virtual host at {VHost}. Provider {KeyTalkProvider}, service {KeyTalkService}, user {KeyTalkUser}'.format(
             **site))

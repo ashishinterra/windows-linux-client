@@ -491,3 +491,13 @@ def has_executable(executable_name):
         return False
 
     return True
+
+
+def shellquoted_site(site):
+    newdict = {}
+    for key, val in site.iteritems():
+        if isinstance(val, basestring):
+            newdict[key] = pipes.quote(val)
+        else:
+            newdict[key] = val
+    return newdict

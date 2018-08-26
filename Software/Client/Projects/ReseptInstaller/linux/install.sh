@@ -8,7 +8,7 @@ set -o errexit
 set -o nounset
 
 VERBOSE=true
-IS_CERT_RENEWAL_PREREQUISITES_OK=false
+IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK=false
 
 function usage()
 {
@@ -80,7 +80,7 @@ function install_keytalk()
     cp resept.ini apache.ini version devstage cr.conf /etc/keytalk/
     /usr/local/bin/keytalk/ktconfupdater --set-install-dir /usr/local/bin/keytalk
 
-    if ${IS_CERT_RENEWAL_PREREQUISITES_OK} ; then
+    if ${IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK} ; then
         echo "    Installing KeyTalk Apache certificate renewal..."
         cp renew_apache_ssl_cert util.py apache_util.py /usr/local/bin/keytalk/
         cp etc_cron.d_keytalk /etc/cron.d/keytalk
@@ -150,35 +150,50 @@ function check_platform_compatibility()
         return 1
     fi
 
-    # KeyTalk built on Debian 8 can be installed on Debian 8 and on Ubuntu-16.04
-    # KeyTalk built on Debian 9 can be installed on Debian 9 only
-    # KeyTalk built on RHEL/CentOS 6, RHEL/CentOS 7 can be installed on RHEL/CentOS 6, RHEL/CentOS 7 respectively
 
     if [ x"${build_distro_name}" == x"Debian" ]; then
-
         if [ ${build_distro_version_major} -eq 8 ] ; then
             # KeyTalk is built on Debian 8
             if [ x"${distro_name}" == x"Debian" -a ${distro_version_major} -eq 8 ]; then
                 return 0 # ok
-            elif [ x"${distro_name}" == x"Ubuntu" -a x"${distro_version}" == x"16.04" ]; then
-                return 0 # ok
             else
-              echo "Debian 8 or Ubuntu 16.04 (LTS) is required to install KeyTalk but ${distro_name} ${distro_version} found"
-              return 1
+                echo "Debian 8 is required to install KeyTalk but ${distro_name} ${distro_version} found"
+                return 1
             fi
         elif [ ${build_distro_version_major} -eq 9 ] ; then
             # KeyTalk is built on Debian 9
             if [ x"${distro_name}" == x"Debian" -a ${distro_version_major} -eq 9 ]; then
                 return 0 # ok
             else
-            echo "Debian 9 is required to install KeyTalk but ${distro_name} ${distro_version} found"
-            return 1
+                echo "Debian 9 is required to install KeyTalk but ${distro_name} ${distro_version} found"
+                return 1
             fi
         else
             echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
             return 1
         fi
 
+    elif [ x"${build_distro_name}" == x"Ubuntu" ]; then
+        if [ ${build_distro_version_major} -eq 16 ] ; then
+            # KeyTalk is built on Ubuntu 16
+            if [ x"${distro_name}" == x"Ubuntu" -a ${distro_version_major} -eq 16  ]; then
+                return 0 # ok
+            else
+                echo "Ubuntu 16 is required to install KeyTalk but ${distro_name} ${distro_version} found"
+                return 1
+            fi
+        elif [ ${build_distro_version_major} -eq 18 ] ; then
+            # KeyTalk is built on Ubuntu 18
+            if [ x"${distro_name}" == x"Ubuntu" -a ${distro_version_major} -eq 18 ]; then
+                return 0 # ok
+            else
+                echo "Ubuntu 18 is required to install KeyTalk but ${distro_name} ${distro_version} found"
+                return 1
+            fi
+        else
+            echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
+            return 1
+        fi
 
     elif [ x"${build_distro_name}" == x"CentOS" -a ${distro_version_major} -eq 7 ]; then
         return 0 # ok
@@ -242,11 +257,11 @@ function install_apache_cert_renewal_prerequisities()
 
     if [ -f /etc/debian_version ]; then
         apt-get -qq -y install cron python-lxml python-openssl
-        IS_CERT_RENEWAL_PREREQUISITES_OK=true
+        IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK=true
         return 0
     elif [ -f /etc/redhat-release ]; then
         yum -y install cronie python-lxml pyOpenSSL
-        IS_CERT_RENEWAL_PREREQUISITES_OK=true
+        IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK=true
         return 0
     fi
 

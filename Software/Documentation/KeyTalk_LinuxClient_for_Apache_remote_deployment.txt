@@ -138,13 +138,15 @@ Deploy Remotely
 After preparing your servers for password-less SSH login and configuring your
 VHosts you can use the following command to start deployment:
 
-    $ ./ktclient_remote_deploy install <vhost_configurations.ini>
+    $ ./ktclient_remote_deploy install <PATH_TO_apache.ini>
           <KeyTalk installer.tgz> <service_configuration.rccd> | tee <logfile>
 
 For example:
 
-    $ ./ktclient_remote_deploy install vhosts.ini
+    $ ./ktclient_remote_deploy install apache.ini
           KeyTalkClient-5.Y.Z.linux.tgz my_services.rccd | tee log.txt
+
+**Note:Name of configuration file should be apache.ini.**
 
 If deployment on one of the hosts fails, the deployment script will attempt
 to uninstall the failed installation and continue with the next host.
