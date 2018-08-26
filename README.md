@@ -6,30 +6,18 @@
 Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 
   - KeyTalk Windows client support Windows 7, Windows 8 and Windows 10.
-  - KeyTalk Linux client supports Rhel 6/7 x64, CentOS 6/7 x64, Debian 8 x64, Debian 9 x64 and Ubuntu 16.04 x64.
+  - KeyTalk Linux client supports RHEL 6/7 x64, CentOS 6/7 x64, Debian 8/9 x64, Ubuntu 16.04/18.04 x64.
 
 ## Building KeyTalk Linux Client
 
 
-We will create seperate development environments:
-
-  - Debian 8-based for building KeyTalk clients for Debian 8 and Ubuntu 16.04
-  - Debian 9-based for building KeyTalk clients for Debian 9
-  - CentOS 7-based for building KeyTalk clients for CentOS 7
-  - RedHat 7-based for building KeyTalk clients for RHEL 7
-  - CentOS 6-based for building KeyTalk clients for CentOS 6
-  - RedHat 6-based for building KeyTalk clients for RHEL 6
-
-The reason for creating separate development environments is incompatibility of libraries on different operating systems (for example: app linked against OpenSSL-1.0.1 on Debian 8 cannot start on Debian 9 having OpenSSL-1.0.2)
-
-
 ### Setup base system
-Install Debian 8 x64 to build for Debian 8/Ubuntu 16.04 or Debian 9 x64 to build for Debian 9 or RHEL 6/7 x64 to build on RHEL 6&7 or CentOS 6/7 x64 to build on CentOS 6/7.
+Install Linux distribution (minimal installation) matching the system the KeyTalk Linux client is supposed to run on.
 - 10 GB disk space
 - 512 MB RAM
 
 
-### _Setting up development environment for Debian 8/9 & Ubuntu 16.04 Client_
+### _Setting up development environment for Debian 8/9, Ubuntu 16.04/18.04 Client_
 
 Become root
 
@@ -44,13 +32,15 @@ Set hostname
 
 Install packages
 
+    Make sure 'universe' repository is listed in /etc/apt/sources.list, add it if not
+
     # apt-get update
-    # apt -y install gdb vim git ntp ntpdate curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang lsb-release
+    # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang lsb-release
     # a2enmod ssl
     # pip install lxml pyopenssl
     # curl https://bootstrap.pypa.io/get-pip.py | python3
 
-Debain 9 only. Install ccache to speedup C/C++ builds (it seems ccache can't cache clang on Debian 8)
+Ubuntu 16/18 and Debain 9: install ccache to speedup C/C++ builds (it seems ccache can't cache clang on Debian 8)
 
     # apt install -y ccache
     # echo 'export PATH=/usr/lib/ccache:$PATH' >> ~/.bashrc
