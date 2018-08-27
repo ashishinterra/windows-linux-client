@@ -145,70 +145,39 @@ function check_platform_compatibility()
     local build_distro_version_major=$(cat ./build-platform | cut -d '-' -f 2)
     local build_arch=$(cat ./build-platform | cut -d '-' -f 3)
     local distro_version_major=$(echo ${distro_version} | egrep -o [0-9]+ | sed -n '1p')
+
+    if [ x"${distro_name}" != x"${build_distro_name}" ]; then
+        echo "KeyTalk Linux client requires Linux ${distro_name} to install"
+        return 1
+    fi
+    if [ x"${distro_version_major}" != x"${build_distro_version_major}" ]; then
+        echo "KeyTalk Linux client requires Linux ${distro_name} ${distro_version_major} to install"
+        return 1
+    fi
     if [ x"${arch}" != x"${build_arch}" ]; then
         echo "KeyTalk Linux client requires Linux with ${build_arch} architecture to install"
         return 1
     fi
 
-
-    if [ x"${build_distro_name}" == x"Debian" ]; then
-        if [ ${build_distro_version_major} -eq 8 ] ; then
-            # KeyTalk is built on Debian 8
-            if [ x"${distro_name}" == x"Debian" -a ${distro_version_major} -eq 8 ]; then
-                return 0 # ok
-            else
-                echo "Debian 8 is required to install KeyTalk but ${distro_name} ${distro_version} found"
-                return 1
-            fi
-        elif [ ${build_distro_version_major} -eq 9 ] ; then
-            # KeyTalk is built on Debian 9
-            if [ x"${distro_name}" == x"Debian" -a ${distro_version_major} -eq 9 ]; then
-                return 0 # ok
-            else
-                echo "Debian 9 is required to install KeyTalk but ${distro_name} ${distro_version} found"
-                return 1
-            fi
-        else
-            echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
-            return 1
-        fi
-
-    elif [ x"${build_distro_name}" == x"Ubuntu" ]; then
-        if [ ${build_distro_version_major} -eq 16 ] ; then
-            # KeyTalk is built on Ubuntu 16
-            if [ x"${distro_name}" == x"Ubuntu" -a ${distro_version_major} -eq 16  ]; then
-                return 0 # ok
-            else
-                echo "Ubuntu 16 is required to install KeyTalk but ${distro_name} ${distro_version} found"
-                return 1
-            fi
-        elif [ ${build_distro_version_major} -eq 18 ] ; then
-            # KeyTalk is built on Ubuntu 18
-            if [ x"${distro_name}" == x"Ubuntu" -a ${distro_version_major} -eq 18 ]; then
-                return 0 # ok
-            else
-                echo "Ubuntu 18 is required to install KeyTalk but ${distro_name} ${distro_version} found"
-                return 1
-            fi
-        else
-            echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
-            return 1
-        fi
-
-    elif [ x"${build_distro_name}" == x"CentOS" -a ${distro_version_major} -eq 7 ]; then
+    # Check the platform the client is built on is supported
+    if [ x"${build_distro_name}" == x"Debian" -a ${build_distro_version_major} -eq 8 ] ; then
+            return 0 # ok
+    elif [ x"${build_distro_name}" == x"Debian" -a ${build_distro_version_major} -eq 9 ] ; then
         return 0 # ok
-
-    elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${distro_version_major} -eq 7 ]; then
+    elif [ x"${build_distro_name}" == x"Ubuntu" -a ${build_distro_version_major} -eq 16 ]; then
         return 0 # ok
-
-    elif [ x"${build_distro_name}" == x"CentOS" -a ${distro_version_major} -eq 6 ]; then
+    elif [ x"${build_distro_name}" == x"Ubuntu" -a ${build_distro_version_major} -eq 18 ]; then
+        return 0 # ok
+    elif [ x"${build_distro_name}" == x"CentOS" -a ${build_distro_version_major} -eq 7 ]; then
+        return 0 # ok
+    elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${build_distro_version_major} -eq 7 ]; then
+        return 0 # ok
+    elif [ x"${build_distro_name}" == x"CentOS" -a ${build_distro_version_major} -eq 6 ]; then
         update-ca-trust enable
         return 0 # ok
-
-    elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${distro_version_major} -eq 6 ]; then
+    elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${build_distro_version_major} -eq 6 ]; then
         update-ca-trust enable
         return 0 # ok
-
     else
         echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
         return 1
