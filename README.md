@@ -38,7 +38,12 @@ Install packages
     # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang lsb-release
     # a2enmod ssl
     # pip install lxml pyopenssl
+
+
+Ubuntu 16 and Debain 9 only: install Python3
+
     # curl https://bootstrap.pypa.io/get-pip.py | python3
+
 
 Ubuntu 16/18 and Debain 9: install ccache to speedup C/C++ builds (it seems ccache can't cache clang on Debian 8)
 
