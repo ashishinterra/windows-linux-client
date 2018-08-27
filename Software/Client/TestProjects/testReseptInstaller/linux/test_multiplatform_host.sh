@@ -11,7 +11,6 @@ FAILED_TESTS=0
 # dictionary { image name => build-server-address }
 TEST_IMAGES=\
 "debian-jessie-keytalk-test:192.168.33.109\
- ubuntu-16.04-keytalk-test:192.168.33.109\
  debian-stretch-keytalk-test:192.168.33.110"
 LOG_DIR=/var/log/keytalk
 
