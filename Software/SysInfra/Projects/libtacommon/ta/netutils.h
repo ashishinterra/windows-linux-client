@@ -38,12 +38,6 @@ namespace ta
 
     namespace NetUtils
     {
-        enum DomainNameType
-        {
-            hostName,
-            dnsName
-        };
-
         enum DomainNameValidationResult
         {
             domainNameOk,
@@ -606,7 +600,8 @@ namespace ta
 #endif
 
         std::string normalizeDomainName(const std::string& aDomainName);
-        bool isValidDomainName(const std::string& aDomainName, DomainNameValidationResult& aValidationResult, const DomainNameType aDomainNameType);
+        bool isValidHostName(const std::string& aDomainName, DomainNameValidationResult* aDetailedValidationResult = NULL);
+        bool isValidDnsName(const std::string& aDomainName, DomainNameValidationResult* aDetailedValidationResult = NULL);
 
 #ifdef _WIN32
         // Retrieves fully qualified DNS name that uniquely identifies the local computer such as test.keytalk.com

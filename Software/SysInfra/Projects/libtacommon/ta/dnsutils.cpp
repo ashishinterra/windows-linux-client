@@ -426,7 +426,7 @@ namespace ta
                 }
 
                 ta::NetUtils::DomainNameValidationResult domainNameValidationResult;
-                if (!ta::NetUtils::isValidDomainName(hostName, domainNameValidationResult, ta::NetUtils::dnsName))
+                if (!ta::NetUtils::isValidDnsName(hostName, &domainNameValidationResult))
                 {
                     aValidationResult = mapHostNameValidationResult(domainNameValidationResult);
                     aValidationData = hostName;
@@ -438,7 +438,7 @@ namespace ta
                 foreach (string alias, lineParts)
                 {
                     ta::NetUtils::DomainNameValidationResult domainNameValidationResult;
-                    if (!ta::NetUtils::isValidDomainName(alias, domainNameValidationResult, ta::NetUtils::dnsName))
+                    if (!ta::NetUtils::isValidDnsName(alias, &domainNameValidationResult))
                     {
                         if (domainNameValidationResult != ta::NetUtils::domainNameEmpty)
                         {

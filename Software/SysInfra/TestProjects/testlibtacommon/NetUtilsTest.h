@@ -499,75 +499,75 @@ public:
         DomainNameValidationResult validationResult;
 
         TS_TRACE("--- Testing valid domain names as hostname");
-        TS_ASSERT(isValidDomainName("abcd", validationResult, hostName));
+        TS_ASSERT(isValidHostName("abcd", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
-        TS_ASSERT(isValidDomainName("a.b.c", validationResult, hostName));
+        TS_ASSERT(isValidHostName("a.b.c", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
-        TS_ASSERT(isValidDomainName("0123456789", validationResult, hostName));
+        TS_ASSERT(isValidHostName("0123456789", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
         TS_TRACE("--- Testing valid domain names as DNS name");
-        TS_ASSERT(isValidDomainName("_abcd", validationResult, dnsName));
+        TS_ASSERT(isValidDnsName("_abcd", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
-        TS_ASSERT(isValidDomainName("_a.b.c", validationResult, dnsName));
+        TS_ASSERT(isValidDnsName("_a.b.c", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
-        TS_ASSERT(isValidDomainName("_0123456789", validationResult, dnsName));
+        TS_ASSERT(isValidDnsName("_0123456789", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
         TS_TRACE("--- Testing valid domain names as hostname (valid after normalization)");
-        TS_ASSERT(isValidDomainName("  abcd   ", validationResult, hostName));
+        TS_ASSERT(isValidHostName("  abcd   ", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
-        TS_ASSERT(isValidDomainName("aBCd", validationResult, hostName));
+        TS_ASSERT(isValidHostName("aBCd", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
         TS_TRACE("--- Testing valid domain names as DNS name (valid after normalization)");
-        TS_ASSERT(isValidDomainName("  _abcd   ", validationResult, dnsName));
+        TS_ASSERT(isValidDnsName("  _abcd   ", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
-        TS_ASSERT(isValidDomainName("_aBCd", validationResult, dnsName));
+        TS_ASSERT(isValidDnsName("_aBCd", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
         TS_TRACE("--- Testing domain name without any characters");
-        TS_ASSERT(!isValidDomainName("", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameEmpty);
 
         TS_TRACE("--- Testing domain name without any characters (after normalization)");
-        TS_ASSERT(!isValidDomainName("  ", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("  ", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameEmpty);
 
         TS_TRACE("--- Testing domain name as hostname with invalid characters");
-        TS_ASSERT(!isValidDomainName("a.b.c^", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("a.b.c^", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameInvalidCharacter);
-        TS_ASSERT(!isValidDomainName("a@", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("a@", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameInvalidCharacter);
 
         TS_TRACE("--- Testing domain name as DNS name with invalid characters");
-        TS_ASSERT(!isValidDomainName("a.b.c^", validationResult, dnsName));
+        TS_ASSERT(!isValidDnsName("a.b.c^", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameInvalidCharacter);
-        TS_ASSERT(!isValidDomainName("a@", validationResult, dnsName));
+        TS_ASSERT(!isValidDnsName("a@", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameInvalidCharacter);
 
         TS_TRACE("--- Testing domain name with an invalid label (without a character)");
-        TS_ASSERT(!isValidDomainName("a..c", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("a..c", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameLabelEmpty);
-        TS_ASSERT(!isValidDomainName("a.b..", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("a.b..", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameLabelEmpty);
-        TS_ASSERT(!isValidDomainName("..a.b", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("..a.b", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameLabelEmpty);
 
         TS_TRACE("--- Testing domain name with a maximum label size");
         // A label with 63 characters is allowed
-        TS_ASSERT(isValidDomainName("a.012345678901234567890123456789012345678901234567890123456789123.c", validationResult, hostName));
+        TS_ASSERT(isValidHostName("a.012345678901234567890123456789012345678901234567890123456789123.c", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
         TS_TRACE("--- Testing domain name with an invalid label size");
         // A label with 64 characters is not allowed
-        TS_ASSERT(!isValidDomainName("a.0123456789012345678901234567890123456789012345678901234567891234.c", validationResult, hostName));
+        TS_ASSERT(!isValidHostName("a.0123456789012345678901234567890123456789012345678901234567891234.c", &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameLabelTooLong);
 
         TS_TRACE("--- Testing domain name with a maximum number of characters");
@@ -579,7 +579,7 @@ public:
             "0123456789012345678901234567890123456789012345678."
             "0123456789012345678901234567890123456789012345678."
             "01234";
-        TS_ASSERT(isValidDomainName(domainNameWithMaximumSize, validationResult, hostName));
+        TS_ASSERT(isValidHostName(domainNameWithMaximumSize, &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameOk);
 
         TS_TRACE("--- Testing domain name with an invalid number of characters");
@@ -591,7 +591,7 @@ public:
             "0123456789012345678901234567890123456789012345678."
             "0123456789012345678901234567890123456789012345678."
             "012345";
-        TS_ASSERT(!isValidDomainName(domainNameWithInvalidMaximumSize, validationResult, hostName));
+        TS_ASSERT(!isValidHostName(domainNameWithInvalidMaximumSize, &validationResult));
         TS_ASSERT_EQUALS(validationResult, domainNameTooLong);
     }
 

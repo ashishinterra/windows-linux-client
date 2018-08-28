@@ -51,6 +51,7 @@ namespace ta
         // Private stuff
         namespace
         {
+            enum DomainNameType { hostName, dnsName };
             enum IpType { IPV4, IPV6 };
 
 #ifdef __linux__
@@ -296,7 +297,7 @@ namespace ta
 
             // @pre all non-loopback interfaces should have manual (non-DHCP) setting
             //@return the original configuration
-            std::string saveDefaultIpv4Gateway(const DefGateway& aDefGateway)
+            string saveDefaultIpv4Gateway(const DefGateway& aDefGateway)
             {
                 if (existIfaceWithAutoConfiguration(IPV4))
                 {
@@ -357,7 +358,7 @@ namespace ta
 
             // @return old configuration
             template <class Routes>
-            std::string saveIpv4CustomRoutes(const Routes& aRoutes, const string& aSaveScriptPath)
+            string saveIpv4CustomRoutes(const Routes& aRoutes, const string& aSaveScriptPath)
             {
                 const bool mySaveScriptExist = ta::isFileExist(aSaveScriptPath);
                 const string myContentsOrig = mySaveScriptExist ? (string)ta::readData(aSaveScriptPath) : "";
@@ -671,7 +672,63 @@ namespace ta
                 return boost::none;
             }
 #endif
-        } // end of private API
+
+            string getValidCharactersForDomainName(const DomainNameType aDomainNameType)
+            {
+                static const string myHostNameValidChars = ".-0123456789abcdefghijklmnopqrstuvwxyz";
+                static const string myDnsNameValidChars = myHostNameValidChars + "_";
+
+                switch (aDomainNameType)
+                {
+                case hostName:
+                    return myHostNameValidChars;
+                case dnsName:
+                    return myDnsNameValidChars;
+                default:
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Unknown domain name type") % aDomainNameType);
+                }
+            }
+
+            bool isValidDomainName(const string& aDomainName, DomainNameValidationResult& aValidationResult, const DomainNameType aDomainNameType)
+            {
+                const string myNormalizedDomainName = normalizeDomainName(aDomainName);
+
+                // Check length
+                if (myNormalizedDomainName.length() < 1)
+                {
+                    return aValidationResult = domainNameEmpty, false;
+                }
+                if (myNormalizedDomainName.length() > 255)
+                {
+                    return aValidationResult = domainNameTooLong, false;
+                }
+
+                // Check for valid characters
+                const string validCharacters = getValidCharactersForDomainName(aDomainNameType);
+                if (myNormalizedDomainName.find_first_not_of(validCharacters) != string::npos)
+                {
+                    return aValidationResult = domainNameInvalidCharacter, false;
+                }
+
+                foreach(const string& label, Strings::split(myNormalizedDomainName, '.'))
+                {
+                    // Each hostname label size must be between 1 and 63 characters
+                    if (label.length() < 1)
+                    {
+                        return aValidationResult = domainNameLabelEmpty, false;
+                    }
+                    if (label.length() > 63)
+                    {
+                        return aValidationResult = domainNameLabelTooLong, false;
+                    }
+                }
+
+                // Innocent!
+                return aValidationResult = domainNameOk, true;
+            }
+
+        }
+        // end of private API
 
 
         //
@@ -696,7 +753,7 @@ namespace ta
 #endif
         }
 
-        Ipv6AddrType getIpv6AddrInfo(const std::string& anAddrStr, sockaddr_in6& anAddr, bool aServerUse)
+        Ipv6AddrType getIpv6AddrInfo(const string& anAddrStr, sockaddr_in6& anAddr, bool aServerUse)
         {
             SockInitializer mySockSockInitializer;
             memset(&anAddr, 0, sizeof(anAddr));
@@ -1213,7 +1270,7 @@ namespace ta
             effectuateSavedIpSettings(anIface.first);
         }
 
-        IPv4Routes getIpv4CustomRoutes(const std::string& anIfaceName)
+        IPv4Routes getIpv4CustomRoutes(const string& anIfaceName)
         {
             const string myCmd = "ip -4 route show";
             const string myStdOut = boost::trim_copy(Process::checkedShellExecSync(myCmd));
@@ -1410,7 +1467,7 @@ namespace ta
             TA_THROW_MSG(std::runtime_error, boost::format("inet_pton() failed. %1%") % getLastErrorStr());
         }
 
-        bool isLoopbackIpv4(const std::string& anAddr)
+        bool isLoopbackIpv4(const string& anAddr)
         {
             const string myAddr = boost::trim_copy(anAddr);
             if (!isValidIpv4(myAddr))
@@ -1733,73 +1790,34 @@ namespace ta
         }
 #endif
 
-        static string getValidCharactersForDomainName(DomainNameType aDomainNameType)
-        {
-            static const string myHostNameValidChars = ".-0123456789abcdefghijklmnopqrstuvwxyz";
-            static const string myDnsNameValidChars = myHostNameValidChars + "_";
-
-            switch (aDomainNameType)
-            {
-            case hostName:
-                return myHostNameValidChars;
-            case dnsName:
-                return myDnsNameValidChars;
-            default:
-                TA_THROW_MSG(std::invalid_argument, "Unknown domain name type");
-            }
-        }
-
         string normalizeDomainName(const string& aDomainName)
         {
             return boost::trim_copy( boost::to_lower_copy(aDomainName) );
         }
 
-        bool isValidDomainName(const string& aDomainName, DomainNameValidationResult& aValidationResult, const DomainNameType aDomainNameType)
+        bool isValidHostName(const string& aDomainName, DomainNameValidationResult* aDetailedValidationResult)
         {
-            string domainName = normalizeDomainName(aDomainName);
-
-            // The domain name must have a maximum of 255 characters
-            size_t hostnameLength = domainName.length();
-            if (hostnameLength < 1)
+            DomainNameValidationResult myValidationResult = domainNameOk;
+            const bool myIsValid = isValidDomainName(aDomainName, myValidationResult, hostName);
+            if (aDetailedValidationResult)
             {
-                aValidationResult = domainNameEmpty;
-                return false;
+                *aDetailedValidationResult = myValidationResult;
             }
-
-            if (hostnameLength > 255)
-            {
-                aValidationResult = domainNameTooLong;
-                return false;
-            }
-
-            // Check for valid characters
-            string validCharacters = getValidCharactersForDomainName(aDomainNameType);
-            if (domainName.find_first_not_of(validCharacters) != string::npos)
-            {
-                aValidationResult = domainNameInvalidCharacter;
-                return false;
-            }
-
-            foreach(const string& label, Strings::split(domainName, '.'))
-            {
-                // Each hostname label size must be between 1 and 63 characters
-                size_t labelLength = label.length();
-                if (labelLength < 1)
-                {
-                    aValidationResult = domainNameLabelEmpty;
-                    return false;
-                }
-
-                if (labelLength > 63)
-                {
-                    aValidationResult = domainNameLabelTooLong;
-                    return false;
-                }
-            }
-
-            aValidationResult = domainNameOk;
-            return true;
+            return myIsValid;
         }
+
+        bool isValidDnsName(const string& aDomainName, DomainNameValidationResult* aDetailedValidationResult)
+        {
+            DomainNameValidationResult myValidationResult = domainNameOk;
+            const bool myIsValid = isValidDomainName(aDomainName, myValidationResult, dnsName);
+            if (aDetailedValidationResult)
+            {
+                *aDetailedValidationResult = myValidationResult;
+            }
+            return myIsValid;
+        }
+
+
 
 #ifdef _WIN32
         string getSelfFqdn()

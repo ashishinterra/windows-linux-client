@@ -1031,8 +1031,7 @@ void IISUpdateTaskSettingDialog::checkMailNotificationValues(vector<string>& anE
     }
 
     myStringValue = theUi->smtpServer->text().toStdString();
-    ta::NetUtils::DomainNameValidationResult myDNResult;
-    if (!ta::NetUtils::isValidDomainName(myStringValue, myDNResult, ta::NetUtils::dnsName))
+    if (!ta::NetUtils::isValidHostName(myStringValue))
     {
         if (boost::trim_copy(myStringValue) == "")
         {

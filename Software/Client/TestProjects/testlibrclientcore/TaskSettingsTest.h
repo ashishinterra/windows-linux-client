@@ -318,7 +318,7 @@ public:
 		TS_ASSERT_EQUALS(myErrorMsg, "");
 
 		myErrorMsg.clear();
-		TS_ASSERT(isValidHttpsBindingDomain("this.is_a.very-long.domain.com", myErrorMsg));
+		TS_ASSERT(isValidHttpsBindingDomain("this.is.a.very-long.domain.com", myErrorMsg));
 		TS_ASSERT_EQUALS(myErrorMsg, "");
 
 		myErrorMsg.clear();

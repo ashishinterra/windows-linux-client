@@ -5,6 +5,9 @@
 #else
 #include <string>
 
+//
+// API to retrieve and set Unix/Linux hostname
+//
 namespace ta
 {
     namespace HostUtils
@@ -14,7 +17,6 @@ namespace ta
             std::string get();
             void set(const std::string& aHostName);
         }
-
     }
 }
 #endif

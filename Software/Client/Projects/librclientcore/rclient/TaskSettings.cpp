@@ -596,10 +596,9 @@ namespace rclient
                             result = false;
                         }
 
-                        ta::NetUtils::DomainNameValidationResult myDNResult;
-                        if (!ta::NetUtils::isValidDomainName(getSmtpServer(aTaskName), myDNResult, NetUtils::dnsName))
+                        if (!ta::NetUtils::isValidHostName(getSmtpServer(aTaskName)))
                         {
-                            ERRORLOG("Smtp server invalid.");
+                            ERRORLOG("SMTP server invalid.");
                             result = false;
                         }
 
@@ -737,8 +736,7 @@ namespace rclient
 
             void setSmtpServer(const string& aTaskName, const string& aValue)
             {
-                NetUtils::DomainNameValidationResult myDNResult;
-                if (!NetUtils::isValidDomainName(aValue, myDNResult, NetUtils::dnsName))
+                if (!NetUtils::isValidHostName(aValue))
                 {
                     const string myErrorMsg(str(format("'%s' is not a valid SMTP server name. Valid DNS name required.") % aValue));
                     TA_THROW_MSG2(TaskSettingsError, myErrorMsg, myErrorMsg);
@@ -873,14 +871,12 @@ namespace rclient
 
             bool isValidHttpsBindingDomain(const std::string& aValue, std::string& anErrorMsg)
             {
-                string myValue = boost::trim_copy(boost::trim_copy(aValue));
+                const string myValue = boost::trim_copy(boost::trim_copy(aValue));
                 if (myValue.empty())
                 {
                     return true;
                 }
-
-                NetUtils::DomainNameValidationResult result;
-                if (NetUtils::isValidDomainName(myValue, result, NetUtils::dnsName))
+                if (NetUtils::isValidHostName(myValue))
                 {
                     return true;
                 }

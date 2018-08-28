@@ -31,14 +31,14 @@ namespace ta
                 // validate
                 const string myNormalizedHostName = ta::NetUtils::normalizeDomainName(aHostName);
                 ta::NetUtils::DomainNameValidationResult validationResult;
-                if (!ta::NetUtils::isValidDomainName(myNormalizedHostName, validationResult, ta::NetUtils::hostName))
+                if (!ta::NetUtils::isValidHostName(myNormalizedHostName, &validationResult))
                 {
                     throw ta::NetUtils::DomainNameValidationError(validationResult, aHostName);
                 }
 
                 // effectuate
-                ta::Process::checkedShellExecSync("sudo hostname " + myNormalizedHostName);
                 //@note we use "sudo hostname" iso sethostname(2) to make it easier to deal with permissions)
+                ta::Process::checkedShellExecSync("sudo hostname " + myNormalizedHostName);
 
                 // make the changes persistent
                 ta::writeData("/etc/hostname", myNormalizedHostName + "\n");
