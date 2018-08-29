@@ -29,7 +29,7 @@ namespace ta
             };
             static const char SafeUrlEncodingChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.-/";
 
-            std::string hexEncode(const unsigned char ch)
+            string hexEncode(const unsigned char ch)
             {
                 const unsigned char hex[]= { (unsigned char)(ch/16),
                                              (unsigned char)(ch%16)
@@ -164,9 +164,9 @@ namespace ta
             return myRetVal;
         }
 
-        std::string urlDecode(const std::string& anSrc)
+        string urlDecode(const string& anSrc)
         {
-            std::string myRetVal;
+            string myRetVal;
             string::size_type mySize = anSrc.size();
             for (string::size_type pos = 0; pos < mySize; ++pos)
             {
@@ -360,7 +360,7 @@ namespace ta
         {
             return toStringDictArray(jsonToTree(aJson));
         }
-        boost::property_tree::ptree jsonToTree(const std::string& aJson)
+        boost::property_tree::ptree jsonToTree(const string& aJson)
         {
             std::stringstream myJsonSs;
             myJsonSs << aJson;

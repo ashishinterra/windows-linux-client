@@ -1667,21 +1667,29 @@ namespace ta
         RemoteAddress parseHost(const string& aHost, int aDefaultPort)
         {
             const url::Authority::Parts myParts = url::Authority::parse(aHost);
-            if (myParts.host.empty())
-                TA_THROW_MSG(std::invalid_argument, boost::format("Empty host in %s") % aHost);
-            int myPort;
+
+            if (!isValidIpv4(myParts.host) && !isValidIpv6(myParts.host) && !isValidHostName(myParts.host))
+            {
+                TA_THROW_MSG(std::invalid_argument, boost::format("Invalid host '%s'") % aHost);
+            }
+
             if (!myParts.port.empty())
             {
-                if (!isValidPort(myParts.port, (unsigned int*)&myPort))
-                    TA_THROW_MSG(std::logic_error, boost::format("Bad port in %s") % aHost);
+                int myParsedPort;
+                if (!isValidPort(myParts.port, (unsigned int*)&myParsedPort))
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Bad port in %s") % aHost);
+                }
+                return RemoteAddress(myParts.host, myParsedPort);
             }
             else
             {
                 if (aDefaultPort == NoDefaultPort)
+                {
                     TA_THROW_MSG(std::invalid_argument, boost::format("Host '%s' should include port as host:port") % aHost);
-                myPort = aDefaultPort;
+                }
+                return RemoteAddress(myParts.host, aDefaultPort);
             }
-            return RemoteAddress(myParts.host, myPort);
         }
 
         string toString(const RemoteAddress& anAddr, int aRemovePort)
