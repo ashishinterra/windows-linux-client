@@ -5,6 +5,14 @@
 #include <string>
 #include "boost/serialization/access.hpp"
 
+// Undefine system-defined 'major' and 'minor' macro otherwise clashing with our function name counterparts
+#ifdef major
+#undef major
+#endif
+#ifdef minor
+#undef minor
+#endif
+
 namespace ta
 {
     namespace version
