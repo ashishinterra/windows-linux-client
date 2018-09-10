@@ -263,13 +263,6 @@ namespace ta
          */
         std::string getWindowsDir();
 
-        /**
-          Retrieve LocalLow app directory.
-          This directory is one of so called "low integrity mode" write locations used e.g. by IE running protected mode (typically %USERPROFILE%\AppData\LocalLow\)
-
-          @throw std::std::exception e.g. if the Windows version is less than Windows Vista/Windows Server 2008
-        */
-        std::string getLocalAppDataLowDir();
 #endif
         /**
           Retrieve environment variables

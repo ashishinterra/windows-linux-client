@@ -31,10 +31,8 @@ namespace rclient
     static const std::string ConfigUpdaterLogFileName = "ktconfupdater.log";
     static const std::string SavedPemName             = "ktusercert.pem";
     static const std::string SavedPemKeyPasswdName    = "ktusercert.passwd.txt";
-    static const std::string ReseptIeBroker           = "ReseptIeBroker.exe";
-    static const char       BrokerServiceName[]       = "ReseptBrokerService";
+    static const std::string BrokerServiceName        = "ReseptBrokerService";
     static const std::string BrokerServiceLogName     = "ktbrokerservice.log";
-    static const std::string IeBrokerProxyLogName     = "ktiebrokerproxy.log";
     static const std::string SweeperLogFileName       = "ktsweeper.log";
     static const std::string PrGeneratorLogName       = "ktprgenerator.log";
 
@@ -80,7 +78,7 @@ namespace rclient
 
     struct AuthRequirements
     {
-        AuthRequirements() : resolve_service_uris(false), calc_service_uris_digest(false), use_tpm_vsc(false) {}
+        AuthRequirements() : resolve_service_uris(false), calc_service_uris_digest(false), use_tpm_vsc(false), use_kerberos_authentication(false) {}
         resept::CredentialTypes cred_types;
         std::string hwsig_formula;
         std::string password_prompt;
@@ -88,11 +86,12 @@ namespace rclient
         bool resolve_service_uris;
         bool calc_service_uris_digest;
         bool use_tpm_vsc;
+        bool use_kerberos_authentication;
     };
 
     inline std::string str(const AuthRequirements& aReq)
     {
-        return str(boost::format("credential types: %s, HWSIG formula: %s, password prompt: %s, service URIs: %s, resolve service URIs: %s, calculate service URIs digest: %s, use TPM VSC: %s")
+        return str(boost::format("credential types: %s, HWSIG formula: %s, password prompt: %s, service URIs: %s, resolve service URIs: %s, calculate service URIs digest: %s, use TPM VSC: %s, use Kerberos authentication: %s")
                    % fmtCredTypes(aReq.cred_types)
                    % aReq.hwsig_formula
                    % aReq.password_prompt
@@ -100,6 +99,7 @@ namespace rclient
                    % (aReq.resolve_service_uris ? "yes" : "no")
                    % (aReq.calc_service_uris_digest ? "yes" : "no")
                    % (aReq.use_tpm_vsc ? "yes" : "no")
+                   % (aReq.use_kerberos_authentication ? "yes" : "no")
                   );
     }
 

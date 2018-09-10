@@ -231,42 +231,6 @@ namespace PrGenerator
             return myRetVal;
         }
 
-        ta::StringArray tryCopyKeyTalkIeBrokerLog(const string& aDir)
-        {
-            ta::StringArray myRetVal;
-            try
-            {
-                //@note This will fail if Windows < Vista/2008 and if IE protected mode is 'off' but try anyway
-                const string mySrcPath = ta::Process::getLocalAppDataLowDir() + "\\" + rclient::IeBrokerProxyLogName;
-                if (ta::isFileExist(mySrcPath))
-                {
-                    const string myDestPath = aDir + ta::getDirSep() + rclient::IeBrokerProxyLogName;
-                    copyFile(mySrcPath, myDestPath);
-                    myRetVal.push_back(myDestPath);
-                }
-            }
-            catch (std::exception& e)
-            {
-                WARNLOG(boost::format("Failed to copy %s IE Broker Service log to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
-            }
-            try
-            {
-                //@note This will fail if Windows < Vista/2008 and if IE protected mode is 'off' but try anyway
-                const string mySrcPath = ta::Process::getLocalAppDataLowDir() + "\\" + rclient::IeBrokerProxyLogName + ".old";
-                if (ta::isFileExist(mySrcPath))
-                {
-                    const string myDestPath = aDir + ta::getDirSep() + rclient::IeBrokerProxyLogName + ".old";
-                    copyFile(mySrcPath, myDestPath);
-                    myRetVal.push_back(myDestPath);
-                }
-            }
-            catch (std::exception& e)
-            {
-                WARNLOG(boost::format("Failed to copy %s IE Broker Service old log to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
-            }
-            return myRetVal;
-        }
-
         ta::StringArray tryCopyMiniDump(const string& aDir)
         {
             ta::StringArray myRetVal;
@@ -302,7 +266,7 @@ namespace PrGenerator
                     WARNLOG(boost::format("Failed to copy %s minidump report to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
                 }
             }
-            //@todo add SEH for IE plugin
+
             return myRetVal;
         }
 #else
@@ -697,7 +661,6 @@ namespace PrGenerator
 #ifdef _WIN32
         myFileList += tryCopyKeyTalkScheduledTasksFiles(aDir);
         myFileList += tryCopyKeyTalkBrokerServiceLog(aDir);
-        myFileList += tryCopyKeyTalkIeBrokerLog(aDir);
         myFileList += tryCopyKeyTalkSweeperLogs(aDir);
         myFileList += tryCopyMiniDump(aDir);
 #else

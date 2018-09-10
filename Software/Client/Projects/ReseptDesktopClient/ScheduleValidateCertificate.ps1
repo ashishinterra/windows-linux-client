@@ -29,9 +29,9 @@ $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date
 $action = New-ScheduledTaskAction -Execute $keytalk_install_path'\RunSilentAsync.vbs' -Argument $args_to_execute
 # Keep the task name in sync with ReseptClientInstaller.wxs 'UnScheduleValidateCertificate'. Removal is based on task name.
 [string]$task_name = 'KeyTalk Certificate Validation Check'
-$description = 'Checks whether the KeyTalk certificate is still valid on a regular basis'
+$description = 'Renew KeyTalk certificate once it is missing, expires or gets revoked'
 
-Register-ScheduledTask -Action $action -Trigger $trigger -TaskName $task_name -Description $description
+Register-ScheduledTask -Force -Action $action -Trigger $trigger -TaskName $task_name -Description $description
 
 $task = Get-ScheduledTask -TaskName $task_name
 $task.Triggers.Repetition.Duration = "P10950D" # 30 years should be plenty

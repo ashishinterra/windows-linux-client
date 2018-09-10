@@ -339,7 +339,7 @@ namespace resept
                 {
                     try
                     {
-                        myHwId = ta::OsUserInfo::getCurentUserSID();
+                        myHwId = ta::OsUserInfo::getCurrentUserSID();
                     }
                     catch (std::exception& e)
                     {

@@ -233,6 +233,16 @@ namespace rclient
                 }
                 case resept::AuthResult::Locked:
                 {
+                    if (myAuthResponse.auth_result.delay > 0)
+                    {
+                        WARNLOG(boost::format("User %s is locked for %d seconds because of invalid credentials provided for provider %s, service %s") % userid % myAuthResponse.auth_result.delay % provider % service);
+                        if (aOnAuthenticationDelayed)
+                        {
+                            aOnAuthenticationDelayed(myAuthResponse.auth_result.delay, cookie);
+                        }
+                        return myAuthResponse.auth_result;
+                    }
+
                     WARNLOG(boost::format("User %s is locked trying to authenticate against provider %s, service %s") % userid % provider % service);
                     if (aOnAuthenticationUserLocked)
                     {
@@ -687,7 +697,15 @@ namespace rclient
             }
             else if (pwdChangeResult.auth_result.type == resept::AuthResult::Locked)
             {
-                TA_THROW_MSG(std::runtime_error, "This account is locked. Please contact " + resept::ProductName + " support.");
+                if (pwdChangeResult.auth_result.delay > 0)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Failed to change the password. \n" \
+                                 "Please check that you typed the passwords correctly. Please also make sure the password satisfies password policy.");
+                }
+                else
+                {
+                    TA_THROW_MSG(std::runtime_error, "This account is locked. Please contact " + resept::ProductName + " support.");
+                }
             }
 
             return false;

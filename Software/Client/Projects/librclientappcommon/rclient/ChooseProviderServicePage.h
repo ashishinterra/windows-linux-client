@@ -1,6 +1,6 @@
 #ifndef RCLIENT_CHOOSEPROVIDERSERVICEPAGE_H
 #define RCLIENT_CHOOSEPROVIDERSERVICEPAGE_H
-
+#pragma once
 #include "rclient/AuthenticationWizard.h"
 
 #include <QWizard>
@@ -15,7 +15,7 @@ namespace rclient
     {
         Q_OBJECT
     public:
-        ChooseProviderServicePage(CurrentUser* aCurrentUser, ClientType aClientType, AuthenticationWizard* anAuthenticationWizard);
+        ChooseProviderServicePage(CurrentUser* aCurrentUser, AuthenticationWizard* anAuthenticationWizard);
     private:
         // Overriden QWiazardPage methods
         virtual int nextId() const;
@@ -32,7 +32,6 @@ namespace rclient
 
     private:
         CurrentUser* theCurrentUser;
-        const ClientType theClientType;
         AuthenticationWizard* theAuthenticationWizard;
         QComboBox* theProvidersCombo;
         QComboBox* theServicesCombo;

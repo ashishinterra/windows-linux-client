@@ -79,10 +79,8 @@ copy log.conf  "$(OutDir)"
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GlobFixture.h" />
-    <ClInclude Include="BrowserTest.h" />
     <ClInclude Include="ExceptionDumperTest.h" />
     <ClInclude Include="FileVersionInfoTest.h" />
-    <ClInclude Include="InternetExplorerTest.h" />
     <ClInclude Include="WinSmartCardUtilTest.h" />
     <ClInclude Include="ZipTest.h" />
   </ItemGroup>

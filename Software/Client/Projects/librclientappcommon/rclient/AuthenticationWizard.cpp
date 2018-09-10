@@ -2,6 +2,8 @@
 #include "ChooseProviderServicePage.h"
 #include "ConfigUsersDialog.h"
 #include "AuthenticatePage.h"
+#include "AuthDelayedMessageBox.h"
+#include "rclient/KerberosAuthenticator.h"
 #include "rclient/Settings.h"
 #include "rclient/NativeCertStore.h"
 #include "rclient/CommonUtils.h"
@@ -38,7 +40,6 @@ namespace rclient
 {
     AuthenticationWizard::AuthenticationWizard(QWidget* parent)
         : QWizard(parent)
-        , theClientType(clientStandalone)
         , theAuthenticatePage(NULL)
     {
         verifyExistProviderService();
@@ -51,6 +52,11 @@ namespace rclient
 
             rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
             rclient::NativeCertStore::deleteAllReseptUserCerts();
+            if (authenticateWithKerberos())
+            {
+                throw KerberosAuthSuccessException(this);
+            }
+
             myStartPage = pageAuthenticate;
 
             if (!selectUser(mySelectedProvider, mySelectedService, NULL /* NULL because we call from c'tor */))
@@ -67,92 +73,63 @@ namespace rclient
         init(myStartPage);
     }
 
-
-    AuthenticationWizard::AuthenticationWizard(const vector<std::pair<string, string> >& aProviderServicePairs, QWidget* parent)
-        : QWizard(parent)
-        , theClientType(clientBrowser)
-        , theAuthenticatePage(NULL)
+    bool AuthenticationWizard::authenticateWithKerberos()
     {
-        verifyExistProviderService();
+        const ta::NetUtils::RemoteAddress mySvr = rclient::Settings::getReseptSvrAddress();
 
-        Page myStartPage = pageAuthenticate;
-
-        const string myLatestProvider = rclient::Settings::getLatestProvider();
-        const string myLatestService = rclient::Settings::getLatestService();
-
-        if (ta::isElemExist(std::make_pair(myLatestProvider, myLatestService), aProviderServicePairs))
+        DEBUGLOG(boost::format("Connecting to %s server at %s") % resept::ProductName % toString(mySvr));
+        rclient::RcdpHandler myRcdpClient(mySvr);
+        myRcdpClient.hello();
+        myRcdpClient.handshake();
+        rclient::AuthRequirements myAuthReqs = myRcdpClient.getAuthRequirements(rclient::Settings::getLatestService());
+        if (!myAuthReqs.use_kerberos_authentication)
         {
-            // the latest provider/service is in aProviderServicePairs, skip provider/service selection UI
-            rclient::NativeCertStore::deleteInvalidReseptUserCerts();
-            if (rclient::NativeCertStore::validateReseptUserCert() > 0)
+            return false;
+        }
+        int myDelay = 0;
+        const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelay);
+        // Only fallback to normal flow when authentication fails because of Kerberos. Exit if it fails for other reasons
+        // And of course allow the user to retry when account is Locked with a set delay
+        switch (myAuthResult)
+        {
+        case rclient::KerberosAuthenticator::Result::success:
+            DEBUGLOG("Got TGT alright, skipping the rest of the app");
+            return true;
+        case rclient::KerberosAuthenticator::kerberosFailure:
+            // Failure related to Kerberos. Fall back to normal use flow
+            return false;
+        case rclient::KerberosAuthenticator::authDelay:
+        // Exit because Delay is caused (only when using Kerberos) by incorrect Hwsig
+        case rclient::KerberosAuthenticator::defaultFailure:
+        {
+            const string msg = "Kerberos authentication unsuccessful.";
+            QMessageBox::warning(this, "Authentication failed", msg.c_str(), QMessageBox::Ok);
+            throw AuthCancelledException();
+        }
+        case rclient::KerberosAuthenticator::Result::authPermanentlyLocked:
+        {
+            const string msg = "This account is locked. Please contact " + resept::ProductName + " administrator.";
+            QMessageBox::warning(this, "Account locked", msg.c_str(), QMessageBox::Ok);
+            throw AuthCancelledException();
+        }
+        case rclient::KerberosAuthenticator::Result::authLockedWithDelay:
+            if (AuthDelayedMessageBox::show(this, "The account is still locked. Please try again later.", true, myDelay))
             {
-                DEBUGLOG("Certificate is still valid.");
-                throw CertStillValidException();
+                return authenticateWithKerberos();
             }
-            DEBUGLOG("No valid certificate found (browser), proceeding with authentication");
-            myStartPage = pageAuthenticate;
-
-            if (!selectUser(myLatestProvider, myLatestService, NULL /* NULL because we call from c'tor */))
+            else
             {
-                WARNLOG(boost::format("No user selected for provider %s, service %s, cancelling authentication") % myLatestProvider % myLatestService);
                 throw AuthCancelledException();
             }
+        default:
+            // Otherwise unknown result, throw exception
+            TA_THROW_MSG(std::exception, boost::format("Unknown Kerberos authentication result with result: %i") % myAuthResult);
         }
-        else if (aProviderServicePairs.size() == 1)
-        {
-            // the only provider/service pair, skip provider/service selection UI
-            const string mySelectedProvider = aProviderServicePairs.front().first;
-            const string mySelectedService = aProviderServicePairs.front().second;
-
-            rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
-            rclient::NativeCertStore::deleteInvalidReseptUserCerts();
-            if (rclient::NativeCertStore::validateReseptUserCert() > 0)
-            {
-                DEBUGLOG("Certificate is still valid.");
-                throw CertStillValidException();
-            }
-            DEBUGLOG("No valid certificate found (browser), proceeding with authentication");
-            myStartPage = pageAuthenticate;
-
-            if (!selectUser(mySelectedProvider, mySelectedService, NULL /* NULL because we call from c'tor */))
-            {
-                WARNLOG(boost::format("No user selected for provider %s, service %s, cancelling authentication") % mySelectedProvider % mySelectedService);
-                throw AuthCancelledException();
-            }
-        }
-        else if (rclient::Settings::getProviders().size() == 1 && rclient::Settings::getServices().size() == 1)
-        {
-            // only one provider and service
-            const string mySelectedProvider = rclient::Settings::getProviders()[0];
-            const string mySelectedService = rclient::Settings::getServices()[0];
-
-            rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
-            rclient::NativeCertStore::deleteInvalidReseptUserCerts();
-            if (rclient::NativeCertStore::validateReseptUserCert() > 0)
-            {
-                DEBUGLOG("Certificate is still valid.");
-                throw CertStillValidException();
-            }
-            DEBUGLOG("No valid certificate found (browser), proceeding with authentication");
-            myStartPage = pageAuthenticate;
-
-            if (!selectUser(mySelectedProvider, mySelectedService, NULL /* NULL because we call from c'tor */))
-            {
-                WARNLOG(boost::format("No user selected for provider %s, service %s, cancelling authentication") % mySelectedProvider % mySelectedService);
-                throw AuthCancelledException();
-            }
-        }
-        else
-        {
-            myStartPage = pageSelectProviderService;
-        }
-
-        init(myStartPage);
     }
 
     void AuthenticationWizard::init(Page aStartPage)
     {
-        setPage(pageSelectProviderService, new rclient::ChooseProviderServicePage(&theCurrentUser, theClientType, this));
+        setPage(pageSelectProviderService, new rclient::ChooseProviderServicePage(&theCurrentUser, this));
         theAuthenticatePage = new rclient::AuthenticatePage(&theCurrentUser, this);
         setPage(pageAuthenticate, theAuthenticatePage);
         setStartId(aStartPage);

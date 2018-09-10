@@ -172,7 +172,7 @@ namespace rclient
                 string myUserSID, myAppDataDir;
                 try
                 {
-                    myUserSID  = ta::OsUserInfo::getCurentUserSID();
+                    myUserSID  = ta::OsUserInfo::getCurrentUserSID();
                     myAppDataDir = ta::Process::getUserAppDataDir();
                 }
                 catch (std::runtime_error& e)
@@ -1374,31 +1374,6 @@ namespace rclient
 
                 Store myStore(storePersonal);
                 const ta::StringArray myRemovedCertsSha1Fingerprints = myStore.removeCertKeys(myCertFingerprints, certsRemoveAll, myServiceName);
-                Settings::removeImportedUserCertFingerprints(myRemovedCertsSha1Fingerprints);
-                return myRemovedCertsSha1Fingerprints.size();
-
-            }
-            catch (NativeCertStoreDeleteError&)
-            {
-                throw;
-            }
-            catch (std::exception& e)
-            {
-                TA_THROW_MSG(NativeCertStoreDeleteError, e.what());
-            }
-        }
-
-        unsigned int deleteInvalidReseptUserCerts()
-        {
-            try
-            {
-                cleanupImportedUserCertFingerpintsInSettings();
-
-                const string myServiceName = Settings::getLatestService();
-                const ta::StringArray myCertFingerprints = Settings::getImportedUserCertFingerprints();
-
-                Store myStore(storePersonal);
-                const ta::StringArray myRemovedCertsSha1Fingerprints = myStore.removeCertKeys(myCertFingerprints, certsRemoveInvalid, myServiceName);
                 Settings::removeImportedUserCertFingerprints(myRemovedCertsSha1Fingerprints);
                 return myRemovedCertsSha1Fingerprints.size();
 

@@ -11,10 +11,8 @@
 #include "rclient/RcdpHandler.h"
 #include "rclient/Common.h"
 #include "resept/Common.h"
-#include "ta/InternetExplorer.h"
 #include "ta/WinSmartCardUtil.h"
 #include "ta/logger.h"
-#include "ta/browser.h"
 #include "ta/netutils.h"
 #include "ta/timeutils.h"
 #include "ta/strings.h"
@@ -22,6 +20,11 @@
 #include "ta/url.h"
 #include "ta/utils.h"
 #include "ta/common.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
 #include <QtWidgets/QMessageBox>
 
 using namespace ta;
@@ -35,20 +38,16 @@ namespace
         const string userMsg;
     };
 
-    Browser::BrowserType getTargetBrowser()
+    void openUrl(const string& anUrl)
     {
 #ifdef _WIN32
-        if (!ta::InternetExplorer::isInstalled())
+        const size_t myResult = (size_t)::ShellExecute(NULL, "open", anUrl.c_str(), NULL, NULL, SW_SHOWNORMAL);
+        if (myResult <= 32)
         {
-            throw BrowserSelectonError("Internet Explorer is not installed. Please install Internet Explorer and try again.");
+            TA_THROW_MSG(std::runtime_error, boost::format("Failed to open URL '%s'. ::ShellExecute returned %u") % anUrl % (unsigned short)myResult);
         }
-        if (!rclient::isReseptIeAddonInstalled())
-        {
-            throw BrowserSelectonError(resept::ProductName + " IE add-on is not installed. Please reinstall " + resept::ProductName + " selecting IE add-on feature during installation.");
-        }
-        return Browser::IE;
 #else
-# error "Not implemented"
+        TA_THROW_MSG(std::invalid_argument, "Open URL is currently only implemented on Windows");
 #endif
     }
 }
@@ -160,9 +159,8 @@ void ReseptDesktopClientApp::execute()
             case url::Ftp:
             case url::Ftps:
             {
-                DEBUGLOG(boost::format("Opening %s in a browser") % myServiceUri);
-                Browser::BrowserType myBrowserType = getTargetBrowser();
-                Browser::open(myServiceUri, myBrowserType);
+                DEBUGLOG(boost::format("Opening URL '%s'") % myServiceUri);
+                openUrl(myServiceUri);
                 break;
             }
             case url::File:
@@ -231,6 +229,10 @@ void ReseptDesktopClientApp::execute()
     catch (ReseptDesktopClientAppError&)
     {
         throw;
+    }
+    catch (rclient::KerberosAuthSuccessException&)
+    {
+        INFOLOG("Kerberos authentication successful, wizard should exit");
     }
     catch (rclient::RcdpVersionMismatchError& e)
     {
@@ -375,20 +377,6 @@ void ReseptDesktopClientApp::execute()
         const string myUserMsg = "Cannot open URL in a browser. " + string(e.userMsg);
         ERRORLOG(myUserMsg);
         QMessageBox::warning(NULL, "Cannot open URL in a browser", myUserMsg.c_str());
-        TA_THROW(ReseptDesktopClientAppError);
-    }
-    catch (ta::BrowserNotSupportedError& e)
-    {
-        const string myUserMsg = "No supported browser found to open URL. Please contact " + resept::ProductName + " administrator.";
-        ERRORLOG2(myUserMsg, boost::format("Browser is not supported. %s") % e.what());
-        QMessageBox::warning(NULL, "Browser is not supported", myUserMsg.c_str());
-        TA_THROW(ReseptDesktopClientAppError);
-    }
-    catch (ta::BrowserLaunchError& e)
-    {
-        const string myUserMsg = "Failed to launch browser. Please contact " + resept::ProductName + " administrator.";
-        ERRORLOG2(myUserMsg, boost::format("Failed to launch browser. %s") % e.what());
-        QMessageBox::warning(NULL, "Failed to launch browser", myUserMsg.c_str());
         TA_THROW(ReseptDesktopClientAppError);
     }
     catch (ta::ProcessExecError& e)

@@ -8,8 +8,7 @@
 //                or in applications which perform Qt GUI operations only in the same thread the library Qt was initialized (singleton was created)
 //
 //----------------------------------------------------------------------------
-#ifndef RCLIENT_QTAPPSINGLETON_H
-#define RCLIENT_QTAPPSINGLETON_H
+#pragma once
 
 #include "ta/common.h"
 #include "ta/singletonholder.hpp"
@@ -29,5 +28,3 @@ namespace rclient
         QApplication* theQtAppPtr;
     };
 }
-
-#endif

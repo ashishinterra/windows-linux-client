@@ -38,12 +38,6 @@ namespace rclient
         static char* args[] = { mySzAppName };
         static int argc = 1;
 
-        // Indicate where Qt plugins are to be found (typically 'platform/qwindows.dll').
-        // Without this, in case IE protected mode is disabled (which happens when UAC is disabled)
-        // KT IE addon, running in IE process as library, will fail to find Qt plugins because IE will search for them in IE installation folder
-        // (the message will be 'This application failed to start because it could not find or load the Qt platform plugin "Windows" ')
-        QApplication::addLibraryPath(rclient::Settings::getReseptInstallDir().c_str());
-
         theQtAppPtr = new QApplication(argc, args);
 
         initQtResource();

@@ -1,1 +1,1 @@
-..\..\..\Import\python-2.7\python ..\..\..\Import\cxxtest\bin\cxxtestgen --have-eh --have-std --part -o testlibrclientappcommon.cpp BbpTest.h CommonUtilsTest.h QtExclusiveAppTest.h ReseptClientApiTest.h ContentConfigInstallationTest.h
+..\..\..\Import\python-2.7\python ..\..\..\Import\cxxtest\bin\cxxtestgen --have-eh --have-std --part -o testlibrclientappcommon.cpp CommonUtilsTest.h QtExclusiveAppTest.h ReseptClientApiTest.h ContentConfigInstallationTest.h KerberosTest.h

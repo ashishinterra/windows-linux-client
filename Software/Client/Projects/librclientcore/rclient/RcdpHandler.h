@@ -57,7 +57,8 @@ namespace rclient
         AuthResponse authenticate(const std::string& aServiceName,
                                   const resept::Credentials& aCredentials,
                                   const ta::StringArrayDict& aResolvedURIs = ta::StringArrayDict(),
-                                  const ta::StringDict& aCalculatedDigests = ta::StringDict());
+                                  const ta::StringDict& aCalculatedDigests = ta::StringDict(),
+                                  const boost::optional<std::string>& aKerberosTicket = boost::none);
 
         //
         // Phase 2 messages after at least one authentication attempt ended with expired or expiring password

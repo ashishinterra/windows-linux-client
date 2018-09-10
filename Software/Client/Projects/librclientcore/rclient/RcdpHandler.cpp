@@ -417,7 +417,8 @@ namespace rclient
     AuthResponse RcdpHandler::authenticate(const string& aServiceName,
                                            const resept::Credentials& aCredentials,
                                            const ta::StringArrayDict& aResolvedURIs,
-                                           const ta::StringDict& aCalculatedDigests)
+                                           const ta::StringDict& aCalculatedDigests,
+                                           const boost::optional<string>& aKerberosTicket)
     {
         using namespace resept::rcdpv2;
 
@@ -433,9 +434,9 @@ namespace rclient
             }
 
             const Request myReqType = reqAuthentication;
-            const ta::StringDict myReqParams = rcdpv2request::makeAuthenticateRequestParams(aServiceName, aCredentials, aResolvedURIs, aCalculatedDigests);
+            const ta::StringDict myReqParams = rcdpv2request::makeAuthenticateRequestParams(aServiceName, aCredentials, aResolvedURIs, aCalculatedDigests, aKerberosTicket);
 
-            const string myResp = pImpl->sendHttpRequest(myReqType, myReqParams);
+            const string myResp = pImpl->sendHttpRequest(myReqType, myReqParams, methodPOST);
             DEBUGDEVLOG(boost::format("Received RCDP response %s on %s request") % myResp % str(myReqType));
 
             handleErrors(myResp, myReqType);
@@ -452,9 +453,18 @@ namespace rclient
                 setState(stateConnected);
                 break;
             case resept::AuthResult::Locked:
-                pImpl->session.reset();
-                setState(stateClosed);
+                if (myAuthResult.auth_result.delay > 0)
+                {
+                    setState(stateConnected);
+                    break;
+                }
+                else
+                {
+                    pImpl->session.reset();
+                    setState(stateClosed);
+                }
                 break;
+            case resept::AuthResult::KerberosAuthNok:
             case resept::AuthResult::Expired:
             case resept::AuthResult::Challenge:
                 setState(stateConnected);
@@ -491,7 +501,7 @@ namespace rclient
             const ta::StringDict myReqParams = map_list_of(requestParamNameOldPassword, anOldPassword)
                                                (requestParamNameNewPassword, aNewPassword);
 
-            const string myResp = pImpl->sendHttpRequest(myReqType, myReqParams);
+            const string myResp = pImpl->sendHttpRequest(myReqType, myReqParams, methodPOST);
             DEBUGDEVLOG(boost::format("Received RCDP response %s on %s request") % myResp % str(myReqType));
 
             handleErrors(myResp, myReqType);
@@ -509,8 +519,11 @@ namespace rclient
                 // Remain in the current state when password change fails
                 break;
             case resept::AuthResult::Locked:
-                pImpl->session.reset();
-                setState(stateClosed);
+                if (myAuthResult.auth_result.delay == 0) // Otherwise remain in the current state when password change fails
+                {
+                    pImpl->session.reset();
+                    setState(stateClosed);
+                }
                 break;
             case resept::AuthResult::Challenge:
             default:

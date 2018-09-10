@@ -1,1 +1,1 @@
-..\..\..\Import\python-2.7\python ..\..\..\Import\cxxtest\bin\cxxtestgen --have-eh --have-std --part -o taclientcommontests.cpp BrowserTest.h FileVersionInfoTest.h ExceptionDumperTest.h InternetExplorerTest.h WinSmartCardUtilTest.h ZipTest.h
+..\..\..\Import\python-2.7\python ..\..\..\Import\cxxtest\bin\cxxtestgen --have-eh --have-std --part -o taclientcommontests.cpp FileVersionInfoTest.h ExceptionDumperTest.h WinSmartCardUtilTest.h ZipTest.h

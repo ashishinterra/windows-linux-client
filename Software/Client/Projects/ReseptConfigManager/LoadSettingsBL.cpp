@@ -1,6 +1,6 @@
 #include "LoadSettingsBL.h"
 #ifdef _WIN32
-#include "rclient/ReseptBrokerService.h"
+#include "rclient/IReseptBrokerService.h"
 #include "rclient/NativeCertStore.h"
 #endif
 #include "rclient/ContentConfig.h"
@@ -50,7 +50,7 @@ namespace
             TA_THROW_MSG(std::runtime_error, boost::format("EnumServicesStatus failed. Last error: %d") % ::GetLastError());
         for (DWORD i=0; i<myNumServices; ++i)
         {
-            if (strcmp(myServices[i].lpServiceName, rclient::BrokerServiceName) == 0)
+            if (string(myServices[i].lpServiceName) == rclient::BrokerServiceName)
             {
                 switch (myServices[i].ServiceStatus.dwCurrentState)
                 {

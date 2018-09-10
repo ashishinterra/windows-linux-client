@@ -369,5 +369,38 @@ namespace ta
             boost::property_tree::read_json(myJsonSs, pt);
             return pt;
         }
+
+        string parseStringVal(const ptree& aTree, const string& aKey)
+        {
+            if (boost::optional<string> myVal = aTree.get_optional<string>(aKey))
+            {
+                return *myVal;
+            }
+            TA_THROW_MSG(std::invalid_argument, "No string key " + aKey + " found");
+        }
+        int parseIntVal(const ptree& aTree, const string& aKey)
+        {
+            if (boost::optional<int> myVal = aTree.get_optional<int>(aKey))
+            {
+                return *myVal;
+            }
+            TA_THROW_MSG(std::invalid_argument, "No integer key " + aKey + " found");
+        }
+        bool parseBoolVal(const ptree& aTree, const string& aKey)
+        {
+            if (boost::optional<bool> myVal = aTree.get_optional<bool>(aKey))
+            {
+                return *myVal;
+            }
+            TA_THROW_MSG(std::invalid_argument, "No boolean key " + aKey + " found");
+        }
+        ta::StringArray parseStringArray(const ptree& aTree, const string& aKey)
+        {
+            return toStringArray(aTree.get_child(aKey));
+        }
+        ta::StringDictArray parseStringDictArray(const ptree& aResponse, const string& aKey)
+        {
+            return toStringDictArray(aResponse.get_child(aKey));
+        }
     }
 }

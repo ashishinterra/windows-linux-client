@@ -30,7 +30,7 @@ TestFileDestinationDir = r"d:\builds\keytalk\Software\Client\TestProjects\Export
 
 #Email
 SmtpSvr = "mail01.sioux.eu"
-EmailSender = "resept5.buildserver@sioux.eu"
+EmailSender = "keytalk.tpm.buildserver@sioux.eu"
 EmailRecepients = ["andrei.korostelev@sioux.eu", "tim.de.haas@sioux.eu"]
 
 #SUPPORT

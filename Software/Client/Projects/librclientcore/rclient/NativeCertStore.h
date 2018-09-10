@@ -52,16 +52,6 @@ namespace rclient
         */
         unsigned int deleteAllReseptUserCerts();
 
-        /**
-          Delete invalid certificates form the personal store associated with the current KeyTalk service
-
-          Certificate validity is determined by the 'CertValidPercent' value associated with the current service
-          and, of course, the validity of the certificate itself
-
-          @return  a number of removed certificates
-          @throw NativeCertStoreDeleteError
-        */
-        unsigned int deleteInvalidReseptUserCerts();
 
         /**
           Delete non-CA certificates from the personal store issued by the given CN, tolerating when cert deletion fails.

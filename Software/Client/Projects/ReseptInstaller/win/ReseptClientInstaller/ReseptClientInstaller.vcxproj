@@ -107,14 +107,6 @@
       <Project>{9700af3c-3e24-4d44-916b-eb53c1df28ca}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\ReseptIeBroker\ReseptIeBroker.vcxproj">
-      <Project>{aa0197ce-c982-4361-84d9-c62201fe5955}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\ReseptIeClient\ReseptIeClient.vcxproj">
-      <Project>{ffdc753e-619d-4baf-b797-96ffd9c24b42}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\ReseptPrGenerator\ReseptPrGenerator.vcxproj">
       <Project>{7634333c-b888-400a-a9eb-a42b247381b0}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -129,14 +121,6 @@
     </ProjectReference>
     <ProjectReference Include="..\..\ConfigUpdater\ConfigUpdater.vcxproj">
       <Project>{2422aed4-6323-4a46-9697-3666e64f3fc3}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\IeUserExeRestarter\IeUserExeRestarter.vcxproj">
-      <Project>{3dc14fd2-07e6-4222-a308-598c96ad0d90}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\MessageBoxManager\MessageBoxManager.vcxproj">
-      <Project>{c07f9b7f-7c77-47d4-af80-e54d8cf03d16}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\Sweeper\Sweeper.vcxproj">

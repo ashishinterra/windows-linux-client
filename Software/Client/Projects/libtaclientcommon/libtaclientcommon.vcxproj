@@ -54,18 +54,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ta\Browser.cpp" />
     <ClCompile Include="ta\ExceptionDumper.cpp" />
     <ClCompile Include="ta\FileVersionInfo.cpp" />
-    <ClCompile Include="ta\InternetExplorer.cpp" />
     <ClCompile Include="ta\WinSmartCardUtil.cpp" />
     <ClCompile Include="ta\Zip.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ta\Browser.h" />
     <ClInclude Include="ta\ExceptionDumper.h" />
     <ClInclude Include="ta\FileVersionInfo.h" />
-    <ClInclude Include="ta\InternetExplorer.h" />
     <ClInclude Include="ta\WinSmartCardUtil.h" />
     <ClInclude Include="ta\Zip.h" />
   </ItemGroup>

@@ -453,18 +453,6 @@ public:
 #endif
     }
 
-    void testLocalAppDataLowDir()
-    {
-#ifdef _WIN32
-            string myDir = Process::getLocalAppDataLowDir();
-            TS_ASSERT(!myDir.empty());
-            TS_ASSERT(ta::isDirExist(myDir));
-# ifdef PROCESS_TEST_CONSOLE_OUTPUT
-            TS_TRACE("Low Integrity Mode Application Data directory: " + myDir);
-# endif
-#endif
-    }
-
    void testExpandEnvVars()
    {
        TS_ASSERT(Process::expandEnvVars("").empty());

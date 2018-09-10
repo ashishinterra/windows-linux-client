@@ -7,7 +7,6 @@
 #include "rclient/Common.h"
 #include "rclient/WaitDialog.h"
 #include "resept/util.h"
-#include "ta/InternetExplorer.h"
 #include "ta/process.h"
 #include "ta/strings.h"
 #include "ta/logappender.h"
@@ -925,7 +924,7 @@ IISUpdateTaskSettingDialog::IISUpdateTaskSettingDialog(const string& aTask)
     {
         myIisSites = getIisSites();
     }
-    catch (std::exception ex)
+    catch (std::exception& ex)
     {
         // Ignore the failure, but report it
         WARNDEVLOG(boost::format("getIisSites failed with error: %s") % ex.what());

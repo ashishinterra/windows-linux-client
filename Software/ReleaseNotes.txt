@@ -3,11 +3,17 @@ Release Notes of KeyTalk
 
 server-5.3.3, in development
 ----------------------------
+Support upgrades from v5.2.1 and higher
+Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
+Support import of settings created in v5.2.0-v5.3.3, v4.6.0 and v4.6.2
+    - ADDED: Support for Kerberos (Windows domain) authentication
 
 
 client-5.2.3, in development
 ------------------------
     - CHANGED Always use system (IE) HTTP proxy settings for Windows Client connections
+    - CHANGED: Removed KeyTalk Internet Explorer add-on on Windows systems
+    - ADDED: Support for Kerberos (Windows domain) authentication
 
 
 server-5.3.p2, 17 August 2018, bugfixing patch 2 for 5.3.2

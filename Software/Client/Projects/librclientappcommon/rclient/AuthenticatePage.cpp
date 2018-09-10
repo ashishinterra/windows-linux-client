@@ -26,6 +26,7 @@
 #include "ta/WinSmartCardUtil.h"
 
 #include "boost/bind.hpp"
+#include "boost/format.hpp"
 #include <vector>
 #include <QtWidgets>
 #include <Qtimer>
@@ -41,15 +42,6 @@ namespace
     static const QWizard::WizardOption HaveAboutBtn = QWizard::HaveCustomButton1;
     static const QWizard::WizardButton ServiceUriBtn = QWizard::CustomButton2;
     static const QWizard::WizardOption HaveServiceUriBtn = QWizard::HaveCustomButton2;
-
-    //@nothrow
-    string calcHwsig(const string& aFormula)
-    {
-        string myParsedFormula;
-        const string myHwSig = resept::ComputerUuid::calcCs(aFormula, &myParsedFormula);
-        DEBUGLOG(boost::format("Calculated HWSIG: %s (parsed formula: %s)") % myHwSig % myParsedFormula);
-        return myHwSig;
-    }
 
     bool promptForChangePassword(const string& aUsername, string& aPasswd, string& aNewPasswd, QWidget* parent)
     {
@@ -243,6 +235,15 @@ namespace rclient
                 }
                 continue;
             }
+            else if (pwdChangeResult.auth_result.type == resept::AuthResult::Locked && pwdChangeResult.auth_result.delay > 0)
+            {
+                const string msg = str(boost::format("This account is locked for %d seconds.") % pwdChangeResult.auth_result.delay);
+                if (!AuthDelayedMessageBox::show(this, msg, true, pwdChangeResult.auth_result.delay))
+                {
+                    throw AuthCancelledException();
+                }
+                continue;
+            }
             else if (pwdChangeResult.auth_result.type == resept::AuthResult::Locked)
             {
                 const string msg = "This account is locked. Please contact " + resept::ProductName + " administrator.";
@@ -283,8 +284,8 @@ namespace rclient
 
             const string myProvider = rclient::Settings::getLatestProvider();
             const string myService = rclient::Settings::getLatestService();
-            const ta::StringArrayDict myResolvedURIs = resolveURIs();
-            const ta::StringDict myCalculatedDigests = calcDigests();
+            const ta::StringArrayDict myResolvedURIs = resolveURIs(theAuthReqs);
+            const ta::StringDict myCalculatedDigests = calcDigests(theAuthReqs);
             string myUserId;
             if (!findCredential(myCreds, resept::credUserId, myUserId))
             {
@@ -301,7 +302,23 @@ namespace rclient
             }
             case resept::AuthResult::Locked:
             {
-                throw UserLockedError();
+                if (theAuthResponse.auth_result.delay > 0)
+                {
+                    WARNLOG(boost::format("User %s is locked for %d seconds during phase 1 CR authentication for provider %s, service %s") % myUserId % theAuthResponse.auth_result.delay % myProvider % myService);
+                    if (AuthDelayedMessageBox::show(this, theAuthResponse.auth_result.delay))
+                    {
+                        selectUser();
+                        continue;
+                    }
+                    else
+                    {
+                        throw AuthCancelledException();
+                    }
+                }
+                else
+                {
+                    throw UserLockedError();
+                }
             }
             case resept::AuthResult::Delay:
             {
@@ -762,7 +779,6 @@ namespace rclient
         return true;
     }
 
-
     //@return whether authentication is successful so we can go further and request cert
     bool AuthenticatePage::authenticate(const resept::Credentials& aCreds)
     {
@@ -776,8 +792,8 @@ namespace rclient
 
         {
             WaitDialog myWaitDialog("Authenticating against " + resept::ProductName + " server...", this);
-            const ta::StringArrayDict myResolvedURIs = resolveURIs();
-            const ta::StringDict myCalculatedDigests = calcDigests();
+            const ta::StringArrayDict myResolvedURIs = resolveURIs(theAuthReqs);
+            const ta::StringDict myCalculatedDigests = calcDigests(theAuthReqs);
             theAuthResponse = theRcdpClient->authenticate(myService, aCreds, myResolvedURIs, myCalculatedDigests);
         }
 
@@ -789,8 +805,22 @@ namespace rclient
         }
         case resept::AuthResult::Locked:
         {
-            WARNLOG(boost::format("User %s is locked trying to authenticate against provider %s, service %s") % myUserId % myProvider % myService);
-            throw UserLockedError();
+            if (theAuthResponse.auth_result.delay > 0)
+            {
+                WARNLOG(boost::format("User %s is locked for %d seconds because of invalid credentials provided for provider %s, service %s") % myUserId % theAuthResponse.auth_result.delay % myProvider % myService);
+                if (!AuthDelayedMessageBox::show(this, theAuthResponse.auth_result.delay))
+                {
+                    throw AuthCancelledException();
+                }
+                // try again
+                buildCredentialsPromptUi(requestAuthRequirementsFromSvr);
+                return false;
+            }
+            else
+            {
+                WARNLOG(boost::format("User %s is locked trying to authenticate against provider %s, service %s") % myUserId % myProvider % myService);
+                throw UserLockedError();
+            }
         }
         case resept::AuthResult::Delay:
         {
@@ -893,51 +923,4 @@ namespace rclient
         const string myCert = ta::vec2Str(theRcdpClient->signCSR(myCsr, myWithChain).cert);
         NativeCertStore::installCert(myCert);
     }
-
-    ta::StringArrayDict AuthenticatePage::resolveURIs() const
-    {
-        ta::StringArrayDict myResolvedURIs;
-        if (theAuthReqs.resolve_service_uris)
-        {
-            foreach(const string& uri, theAuthReqs.service_uris)
-            {
-                const string myHost = ta::url::parse(uri).authority_parts.host;
-                DEBUGLOG("Resolving " + myHost);
-                ta::StringArray myIps;
-                foreach(const ta::NetUtils::IP& ip, ta::DnsUtils::resolveIpsByName(myHost))
-                {
-                    if (!ip.ipv4.empty())
-                    {
-                        myIps.push_back(ip.ipv4);
-                    }
-                    if (!ip.ipv6.empty())
-                    {
-                        myIps.push_back(ip.ipv6);
-                    }
-                }
-                DEBUGLOG("Resolved IPs of " + myHost + ": " + ta::Strings::join(myIps, ","));
-                myResolvedURIs[uri] = myIps;
-            }
-        }
-        return myResolvedURIs;
-    }
-
-    ta::StringDict AuthenticatePage::calcDigests() const
-    {
-        ta::StringDict myCalculatedDigests;
-        if (theAuthReqs.calc_service_uris_digest)
-        {
-            foreach(const string& uri, theAuthReqs.service_uris)
-            {
-                const string myExecutableNativePath = ta::Process::expandEnvVars(ta::url::makeNativePath(uri));
-                const string myDigest = ta::HashUtils::getSha256HexFile(myExecutableNativePath);
-                DEBUGLOG("Digest of " + myExecutableNativePath + "  is " + myDigest);
-                myCalculatedDigests[uri] = myDigest;
-            }
-        }
-        return myCalculatedDigests;
-    }
-
-
-
 } // namespace rclient

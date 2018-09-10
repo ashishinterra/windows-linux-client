@@ -57,12 +57,6 @@
     <!--Disable 'change' button on the installed product because we don't implement correct 'change' behavior -->
     <Property Id="ARPNOMODIFY">1</Property>
 
-
-    <Property Id="IEINSTALLED">
-      <DirectorySearch Id="IeDirSearch" Path="[ProgramFilesFolder]\Internet Explorer\" Depth="3">
-        <FileSearch Name="iexplore.exe" />
-      </DirectorySearch>
-    </Property>
     <WixVariable Id="WixUIBannerBmp" Value="Bitmaps\banner.bmp" Overridable="no"/>
     <WixVariable Id="WixUIDialogBmp" Value="Bitmaps\dialog.bmp" Overridable="no"/>
 
@@ -100,8 +94,6 @@
         <File Id="LOGGING"            Source="$(var.ReseptSourceDir)\libtalogger.dll" Vital="yes" Checksum="yes"/>
         <File Id="SWEEPER"            Source="$(var.ReseptSourceDir)\Sweeper.exe" Vital="yes" Checksum="yes"/>
         <File Id="CONFIGUPDATER"      Source="$(var.ReseptSourceDir)\ConfigUpdater.exe"  Vital="yes" Checksum="yes"/>
-        <File Id="IEUSEREXERESTARTER" Source="$(var.ReseptSourceDir)\IeUserExeRestarter.exe"  Vital="yes" Checksum="yes"/>
-        <File Id="MESSAGEBOXMANAGER"  Source="$(var.ReseptSourceDir)\MessageBoxManager.exe"  Vital="yes" Checksum="yes"/>
       </Component>
       <Component Id="ReseptConfigToolComp" Guid="{D36FCAA1-2F71-4BC1-B514-477551D0A212}">
         <File Id="RESEPTCONFIGTOOL"  Source="$(var.ReseptSourceDir)\ReseptConfigTool.exe" Vital="yes" Checksum="yes"/>
@@ -120,30 +112,7 @@
         </ServiceInstall>
         <ServiceControl Id="StartReseptBrokerService" Start="install" Stop="both" Remove="uninstall" Name="ReseptBrokerService" Wait="yes" />
       </Component>
-      <!-- @note all changes to BHO names below must be in sync with ReseptIeClient sources -->
-      <Component Id="IeBhoComp" Guid="{310B3105-DE78-4B32-AB3A-2C8268E947CF}">
-        <AppId Description="$(var.ProductName)IeClient" Id="{1A8DF225-9750-4637-A78D-26FE8DACD0AE}" />
-        <File Id="fil6C24120C4CCD9C7847F2A08ABCB2D115" KeyPath="yes" Source="$(var.ReseptSourceDir)\ReseptIeClient.dll" Checksum="yes">
-
-          <TypeLib Id="{1A8DF225-9750-4637-A78D-26FE8DACD0AE}" Description="$(var.ProductName)IeBHO 1.0 Type Library" HelpDirectory="RESEPTINSTALLDIR" Language="0" MajorVersion="1" MinorVersion="0">
-            <Class Id="{B40D0B13-9A70-4394-8F21-E2E4AE3A9BC4}" Context="InprocServer32" Description="$(var.ProductName)IeClient Object" ThreadingModel="apartment" Programmable="yes">
-              <ProgId Id="$(var.ProductName)IeClient.$(var.ProductName)IeClient.1.0" Description="$(var.ProductName)IeClient Object">
-                <ProgId Id="$(var.ProductName)IeClient.$(var.ProductName)IeClient" Description="$(var.ProductName)IeClient Object" />
-              </ProgId>
-            </Class>
-            <Interface Id="{8907D20B-6A91-48EA-A6DE-8076B2ACB313}" Name="IReseptLoader" ProxyStubClassId="{00020424-0000-0000-C000-000000000046}" ProxyStubClassId32="{00020424-0000-0000-C000-000000000046}" />
-          </TypeLib>
-        </File>
-        <File Id="IEBROKER" Source="$(var.ReseptSourceDir)\ReseptIeBroker.exe" Vital="yes" Checksum="yes"/>
-        <RegistryValue Root="HKCR" Key="AppID\ReseptLoader.DLL" Name="AppID" Value="" Type="string" Action="write" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Internet Explorer\Low Rights\ElevationPolicy\{3F940677-A702-47b2-88EE-9FDB95019B96}" Value="" Type="string" Action="write" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Internet Explorer\Low Rights\ElevationPolicy\{3F940677-A702-47b2-88EE-9FDB95019B96}" Name="AppName" Value="ReseptIeBroker.exe" Type="string" Action="write" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Internet Explorer\Low Rights\ElevationPolicy\{3F940677-A702-47b2-88EE-9FDB95019B96}" Name="AppPath" Value="[RESEPTINSTALLDIR]" Type="string" Action="write" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Internet Explorer\Low Rights\ElevationPolicy\{3F940677-A702-47b2-88EE-9FDB95019B96}" Name="Policy" Value="3" Type="integer" Action="write" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{B40D0B13-9A70-4394-8F21-E2E4AE3A9BC4}" Value="$(var.ProductName) IE BHO" Type="string" Action="write" />
-        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{B40D0B13-9A70-4394-8F21-E2E4AE3A9BC4}" Name="NoExplorer" Value="1" Type="integer" Action="write" />
-      </Component>
-      <Component Id="VcRuntimeLibsComp" Guid="EA2843F4-1950-4BD6-9BF8-3C9810289CD2" DiskId="1">
+       <Component Id="VcRuntimeLibsComp" Guid="EA2843F4-1950-4BD6-9BF8-3C9810289CD2" DiskId="1">
         <File Id="MSVCM120DLL" Source="$(var.ReseptSourceDir)\msvcp120.dll"  Vital="yes" Checksum="yes"/>
         <File Id="MSVCP120DLL" Source="$(var.ReseptSourceDir)\msvcr120.dll"  Vital="yes" Checksum="yes"/>
         <File Id="VCCORLIB120DLL" Source="$(var.ReseptSourceDir)\vccorlib120.dll"  Vital="yes" Checksum="yes"/>
@@ -241,7 +210,7 @@
     <Feature Id="Complete" Title="$(var.ProductName) $(var.MajorVersion).$(var.MinorVersion)" Description="The complete package." Level="1" Absent="disallow" ConfigurableDirectory="RESEPTINSTALLDIR" Display="expand" InstallDefault="local" AllowAdvertise="no">
       <!--By adding empty component below to the parent feature we workaround Windows Installer bug when 'install from the network' menu is displayed irrespective on the attributes we specified for the feature -->
       <ComponentRef Id="EmptyComp" />
-      <Feature Id="CoreFeature" Title="$(var.ProductName) Core" Description="$(var.ProductName) UI and Console clients, no browser add-ons." Level="1" Absent="disallow" InstallDefault="local" AllowAdvertise="no">
+      <Feature Id="CoreFeature" Title="$(var.ProductName) Core" Description="$(var.ProductName) UI and Console clients." Level="1" Absent="disallow" InstallDefault="local" AllowAdvertise="no">
         <ComponentRef Id="VcRuntimeLibsComp" />
         <ComponentRef Id="EnvVariablesComp" />
         <ComponentRef Id="QtLibComp" />
@@ -264,10 +233,6 @@
         <ComponentRef Id="ReseptConfigToolComp" />
         <ComponentRef Id="SilentRunnerAsyncComp" />
       </Feature>
-      <Feature Id="IeFeature" Title="$(var.ProductName) IE add-on" Description="$(var.ProductName) Microsoft Internet Explorer add-on." Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
-        <Condition Level="0">NOT IEINSTALLED AND NOT REMOVE</Condition>
-        <ComponentRef Id="IeBhoComp" />
-      </Feature>
       <Feature Id="IISCertificateUpdateScript" Title="IIS HTTPS certificate renewal" Description="Installs scheduled task to automatically renew an IIS HTTPS binding certificate using $(var.ProductName) SSL certificates. Note: This feature requires Powershell 3 or higher." Level="101" Absent="allow" InstallDefault="local" AllowAdvertise="no">
         <ComponentRef Id="IISCertificateUpdateScriptComp" />
         <ComponentRef Id="ScheduledScriptsRunnerComp" />
@@ -289,8 +254,6 @@
     <!-- @note immediate CA impersonates the invoking user (i.e. is executed in the user context) ignoring 'Impersonate' flag -->
     <CustomAction Id="UpdateReseptConfig"    Execute="commit"    Return="check"       Impersonate="no"  FileKey="CONFIGUPDATER"      ExeCommand='--set-install-dir "[RESEPTINSTALLDIR]"' />
     <CustomAction Id="RestoreData"           Execute="commit"    Return="check"       Impersonate="no"  FileKey="CONFIGUPDATER"      ExeCommand='--restore-data' />
-    <CustomAction Id="RemindToCloseIE"       Execute="commit"    Return="check"       Impersonate="no"  FileKey="MESSAGEBOXMANAGER"  ExeCommand='iexplore.exe "Installation succeeded" "$(var.ProductName) has been successfully installed. You should restart Internet Explorer to make use of $(var.ProductName) secure connections"' />
-    <CustomAction Id="RestartIeUserExe"      Execute="commit"    Return="check"       Impersonate="no"  FileKey="IEUSEREXERESTARTER" ExeCommand='' />
     <CustomAction Id="UninstallUserData"     Execute="immediate" Return="check"       Impersonate="yes" FileKey="SWEEPER"            ExeCommand='--remove-userdata' />
     <CustomAction Id="UninstallCommonData"   Execute="deferred"  Return="check"       Impersonate="no"  FileKey="SWEEPER"            ExeCommand='--remove-commondata' />
     <CustomAction Id="BackupData"            Execute="deferred"  Return="check"       Impersonate="no"  FileKey="SWEEPER"            ExeCommand='--backup-data' />
@@ -309,8 +272,6 @@
       <!-- Actions performed during installation -->
       <Custom Action="UpdateReseptConfig" After="InstallFiles">NOT Installed</Custom>
       <Custom Action="ScheduleScriptsRunner" After="InstallFiles">NOT Installed AND <![CDATA[&IISCertificateUpdateScript=INSTALLSTATE_LOCAL]]></Custom>
-      <Custom Action="RestartIeUserExe"   After="WriteRegistryValues">NOT Installed</Custom>
-      <Custom Action="RemindToCloseIE"    After="RestartIeUserExe">NOT Installed AND NOT RCCDPATH</Custom>
       <Custom Action="LaunchConfigManNoUi" Before="InstallFinalize">NOT Installed AND RCCDPATH</Custom>
       <Custom Action="ScheduleValidateCertificateScript" After="UpdateReseptConfig">NOT Installed AND <![CDATA[&ValidateCertificateFeature=INSTALLSTATE_LOCAL]]></Custom>
 

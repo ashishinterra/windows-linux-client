@@ -1172,47 +1172,6 @@ namespace ta
             return szWinDir;
         }
 
-        string getLocalAppDataLowDir()
-        {
-#if 0 // Commented because the folder returned  does not exist, while e.g. boost::filesystem says it is... lets avoid magic...
-            typedef HRESULT (APIENTRY *LPFN_IEGETWRITEABLEFOLDERPATH) (REFGUID clsidFolderID, LPWSTR *lppwstrPath);
-            ta::DynLibLoader myIeFrameDll("ieframe.dll");
-            LPFN_IEGETWRITEABLEFOLDERPATH fnIEGetWriteableFolderPath = (LPFN_IEGETWRITEABLEFOLDERPATH)myIeFrameDll.getFuncPtr("IEGetWriteableFolderPath");
-            LPWSTR lwszDir = NULL;
-# ifndef DEFINE_KNOWN_FOLDER
-# define DEFINE_KNOWN_FOLDER(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-    const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-            DEFINE_KNOWN_FOLDER(FOLDERID_InternetCache, 0x352481E8, 0x33BE, 0x4251, 0xBA, 0x85, 0x60, 0x07, 0xCA, 0xED, 0xCF, 0x9D);
-# endif
-            HRESULT hr = fnIEGetWriteableFolderPath (FOLDERID_InternetCache, &lwszDir);
-            if (FAILED(hr))
-                TA_THROW_MSG(std::runtime_error, boost::format("IEGetWriteableFolderPath failed. Hresult: %ld") % hr);
-            if (!lwszDir)
-                TA_THROW_MSG(std::runtime_error, "IEGetWriteableFolderPath succeeded but lwszDir is NULL");
-            const string myRetVal = Strings::toMbyte(wszDir);
-            CoTaskMemFree(wszDir);
-            return myRetVal;
-#else
-            typedef HRESULT (APIENTRY *LPFN_SHGETKNOWNFOLDERPATH) (REFGUID, DWORD, HANDLE, PWSTR*);
-            ta::DynLibLoader myShell32Dll("shell32.dll");
-            LPFN_SHGETKNOWNFOLDERPATH fnSHGetKnownFolderPath = (LPFN_SHGETKNOWNFOLDERPATH)myShell32Dll.getFuncPtr("SHGetKnownFolderPath");
-            PWSTR wszDir = NULL;
-# ifndef DEFINE_KNOWN_FOLDER
-# define DEFINE_KNOWN_FOLDER(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
-    const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-            DEFINE_KNOWN_FOLDER(FOLDERID_LocalAppDataLow, 0xA520A1A4, 0x1780, 0x4FF6, 0xBD, 0x18, 0x16, 0x73, 0x43, 0xC5, 0xAF, 0x16);
-# endif
-            HRESULT hr = fnSHGetKnownFolderPath (FOLDERID_LocalAppDataLow, 0, NULL, &wszDir);
-            if (FAILED(hr))
-                TA_THROW_MSG(std::runtime_error, boost::format("SHGetKnownFolderPath failed. Hresult: %ld") % hr);
-            if (!wszDir)
-                TA_THROW_MSG(std::runtime_error, "SHGetKnownFolderPath succeeded but wszDir is NULL");
-            const string myRetVal = Strings::toMbyte(wszDir);
-            CoTaskMemFree(wszDir);
-            return myRetVal;
-#endif
-        }
-
 #endif
 
         vector<string> getEnvVars()

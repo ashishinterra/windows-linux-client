@@ -111,7 +111,7 @@ class BadRequestError(Exception):
 class CertRetrievalApi(object):
 
     def __init__(self):
-        self.version = conf.RCDP_VERSION_2_2
+        self.version = conf.RCDP_VERSION_2_3
         self.conn = None
         self.cookie = None
 
@@ -492,7 +492,7 @@ class CertRetrievalApi(object):
 
         debug("Sending authentication request: " + pprint.pformat(request_params))
 
-        self._request(conf.RCDPV2_REQUEST_AUTHENTICATION, request_params)
+        self._request(conf.RCDPV2_REQUEST_AUTHENTICATION, request_params, method='POST')
         response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_AUTHENTICATION, conf.RCDPV2_RESPONSE_AUTH_RESULT)
         auth_status = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_AUTH_STATUS]
@@ -526,7 +526,7 @@ class CertRetrievalApi(object):
             conf.RCDPV2_REQUEST_PARAM_NAME_NEW_PASSWORD: new_password
         }
         debug("Changing user password")
-        self._request(conf.RCDPV2_REQUEST_CHANGE_PASSWORD, request_params)
+        self._request(conf.RCDPV2_REQUEST_CHANGE_PASSWORD, request_params, method='POST')
         response_payload, _ = CertRetrievalApi._parse_rcdp_response(
             self.conn, conf.RCDPV2_REQUEST_CHANGE_PASSWORD, conf.RCDPV2_RESPONSE_AUTH_RESULT)
         auth_status = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_AUTH_STATUS]

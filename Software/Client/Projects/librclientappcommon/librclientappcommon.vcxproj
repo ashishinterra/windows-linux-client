@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
@@ -58,13 +58,13 @@
     <ClCompile Include="rclient\AuthDelayedMessageBox.cpp" />
     <ClCompile Include="rclient\AuthenticatePage.cpp" />
     <ClCompile Include="rclient\AuthenticationWizard.cpp" />
-    <ClCompile Include="rclient\Bbp.cpp" />
     <ClCompile Include="rclient\ChangePasswordDialog.cpp" />
     <ClCompile Include="rclient\ChooseProviderServicePage.cpp" />
     <ClCompile Include="rclient\CommonUtils.cpp" />
     <ClCompile Include="rclient\ConfigUsersDialog.cpp" />
     <ClCompile Include="rclient\ContentConfig.cpp" />
     <ClCompile Include="rclient\CRFile.cpp" />
+    <ClCompile Include="rclient\KerberosAuthenticator.cpp" />
     <ClCompile Include="rclient\QtAppSingleton.cpp" />
     <ClCompile Include="rclient\QtExclusiveApp.cpp" />
     <ClCompile Include="rclient\ReseptClientApp.cpp" />
@@ -102,7 +102,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath);%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">rclient\moc_%(Filename).cpp;%(Outputs)</Outputs>
     </CustomBuild>
-    <ClInclude Include="rclient\Bbp.h" />
     <CustomBuild Include="rclient\ChangePasswordDialog.h">
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Moc%27ing %(Filename)%(Extension)...</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o "rclient\moc_%(Filename).cpp" -DQT_CORE_LIB -DQT_GUI_LIB -DQT_THREAD_SUPPORT -DUNICODE -DWIN32 -I"$(QTDIR)\include\." -I"$(QTDIR)\include\QtCore\." -I"$(QTDIR)\include\QtGui;$(QTDIR)\include\QtWidgets\."
@@ -127,9 +126,10 @@
     </CustomBuild>
     <ClInclude Include="rclient\ContentConfig.h" />
     <ClInclude Include="rclient\CRFile.h" />
+    <ClInclude Include="rclient\KerberosAuthenticator.h" />
     <ClInclude Include="rclient\QtAppSingleton.h" />
     <ClInclude Include="rclient\QtExclusiveApp.h" />
-    <ClInclude Include="rclient\RClientAppCommon.h" />
+    <ClInclude Include="rclient\IReseptBrokerService.h" />
     <ClInclude Include="rclient\ReseptClientApp.h" />
     <ClInclude Include="rclient\TimedNotificationBox.h" />
     <ClInclude Include="rclient\WaitDialog.h" />

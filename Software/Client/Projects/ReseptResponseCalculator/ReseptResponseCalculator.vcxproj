@@ -36,7 +36,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;.\GeneratedFiles;$(QTDIR)\include;.\GeneratedFiles\$(Configuration);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtWidgets;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;.\GeneratedFiles;$(QTDIR)\include;.\GeneratedFiles\$(Configuration);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtWidgets;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>UNICODE;WIN32;QT_THREAD_SUPPORT;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;QT_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
@@ -48,9 +48,9 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/SAFESEH /NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>qtmain.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;libreseptcommon.lib;libtacommon.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;libcurl.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>qtmain.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;libreseptcommon.lib;libtacommon.lib;libtalogger.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;libcurl.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName).exe</OutputFile>
-      <AdditionalLibraryDirectories>$(QTDIR)\lib;..\..\..\Common\Projects\export;..\..\..\SysInfra\Projects\export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(QTDIR)\lib;..\..\..\Common\Projects\export;..\..\..\SysInfra\Projects\libtalogger;..\..\..\SysInfra\Projects\export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
     </Link>

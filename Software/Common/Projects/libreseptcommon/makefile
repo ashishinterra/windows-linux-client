@@ -13,6 +13,12 @@ INCLUDES = -I../../../SysInfra/Projects/libtacommon -I../../../SysInfra/Projects
 INCLUDES += -isystem $(EXT_LIBS_DIR)/$(BOOST_INCLUDE_DIR)
 INCLUDES += -I$(EXT_LIBS_DIR)/$(UTF8CPP_INCLUDE_DIR)
 
+LBITS:=$(shell getconf LONG_BIT)
+ifeq ($(LBITS),64)
+# make our static lib suitable for inclusion in a shared library
+EXTRA_CFLAGS+=-fPIC
+endif
+
 STATIC_LIB=libreseptcommon.a
 
 POST_CLEAN=post_clean

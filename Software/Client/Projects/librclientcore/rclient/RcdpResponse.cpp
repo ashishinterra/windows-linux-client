@@ -14,6 +14,7 @@
 using std::string;
 using std::vector;
 using boost::property_tree::ptree;
+using namespace ta::EncodingUtils;
 
 namespace rclient
 {
@@ -22,39 +23,6 @@ namespace rclient
         // internal API
         namespace
         {
-
-            string parseStringVal(const ptree& aResponseTree, const string& aParamName)
-            {
-                if (boost::optional<string> myVal = aResponseTree.get_optional<string>(aParamName))
-                {
-                    return *myVal;
-                }
-                TA_THROW_MSG(std::invalid_argument, "No string parameter " + aParamName + " found in RCDP response");
-            }
-            int parseIntVal(const ptree& aResponseTree, const string& aParamName)
-            {
-                if (boost::optional<int> myVal = aResponseTree.get_optional<int>(aParamName))
-                {
-                    return *myVal;
-                }
-                TA_THROW_MSG(std::invalid_argument, "No integer parameter " + aParamName + " found in RCDP response");
-            }
-            bool parseBoolVal(const ptree& aResponseTree, const string& aParamName)
-            {
-                if (boost::optional<bool> myVal = aResponseTree.get_optional<bool>(aParamName))
-                {
-                    return *myVal;
-                }
-                TA_THROW_MSG(std::invalid_argument, "No boolean parameter " + aParamName + " found in RCDP response");
-            }
-            ta::StringArray parseStringArray(const ptree& aResponseTree, const string& aParamName)
-            {
-                return ta::EncodingUtils::toStringArray(aResponseTree.get_child(aParamName));
-            }
-            static ta::StringDictArray parseStringDictArray(const ptree& aResponse, const std::string& aParamName)
-            {
-                return ta::EncodingUtils::toStringDictArray(aResponse.get_child(aParamName));
-            }
 
             resept::CredentialTypes parseCredentialTypes(const std::vector<string>& aCredTypes)
             {
@@ -251,6 +219,10 @@ namespace rclient
             {
                 myAuthRequirements.use_tpm_vsc = parseBoolVal(myResponseTree, responseParamNameUseTpmVscAuthentication);
             }
+            if (isScalarParamExist<bool>(myResponseTree, responseParamNameUseKerberosAuthentication))
+            {
+                myAuthRequirements.use_kerberos_authentication = parseBoolVal(myResponseTree, responseParamNameUseKerberosAuthentication);
+            }
 
             return myAuthRequirements;
         }
@@ -305,12 +277,25 @@ namespace rclient
             }
             case resept::AuthResult::Locked:
             {
+                if (myResponseTree.count(responseParamNameDelay) > 0)
+                {
+
+                    int myDelay = parseIntVal(myResponseTree, responseParamNameDelay);
+                    if (myDelay > 0)
+                    {
+                        return AuthResponse(resept::AuthResult(resept::AuthResult::Locked, myDelay));
+                    }
+                }
                 return AuthResponse(resept::AuthResult(resept::AuthResult::Locked));
             }
             case resept::AuthResult::Expired:
             {
                 return AuthResponse(resept::AuthResult(resept::AuthResult::Expired,
                                                        PasswordValidity(PasswordValidity::expired)));
+            }
+            case resept::AuthResult::KerberosAuthNok:
+            {
+                return AuthResponse(resept::AuthResult(resept::AuthResult::KerberosAuthNok));
             }
             case resept::AuthResult::Challenge:
             {

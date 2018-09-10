@@ -43,7 +43,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\ReseptClientAppTestConfig;..\..\Projects\librclientappcommon;..\..\Projects\librclientcore;..\..\Projects\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\cxxtest;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(LIBCONFIG_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CONSOLE;WIN32;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;LIBCONFIG_STATIC;LIBCONFIGXX_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CONSOLE;WIN32;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;LIBCONFIG_STATIC;LIBCONFIGXX_STATIC;TEST_KERBEROS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -78,10 +78,10 @@ IF %25ERRORLEVEL%25 NEQ 0 exit 1
     <ClCompile Include="testlibrclientappcommon.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BbpTest.h" />
     <ClInclude Include="CommonUtilsTest.h" />
     <ClInclude Include="ContentConfigInstallationTest.h" />
     <ClInclude Include="GlobFixture.h" />
+    <ClInclude Include="KerberosTest.h" />
     <ClInclude Include="QtExclusiveAppTest.h" />
     <ClInclude Include="ReseptClientApiTest.h" />
     <ClInclude Include="..\ReseptClientAppTestConfig\ReseptClientAppTestConfig.h" />

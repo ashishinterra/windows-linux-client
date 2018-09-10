@@ -1,10 +1,12 @@
 #pragma once
 
-#include "ta/common.h"
 #include "ta/strings.h"
 #include "ta/signutils.h"
 #include "ta/certutils.h"
+#include "ta/timeutils.h"
 #include "ta/version.h"
+#include "ta/logger.h"
+#include "ta/common.h"
 
 #include <cstddef>
 #include <string>
@@ -73,16 +75,16 @@ namespace resept
             Delay,
             Locked,
             Expired,
-            _NOT_USED_, // kept in enum for backward compatibility of enum values
+            KerberosAuthNok,
             Challenge,
             LastAuthResult = Challenge
         } type;
-        size_t delay; // delay in seconds, makes sense for Delay and Expired only
-        PasswordValidity passwordValidity; // makes sense for Ok only
+        size_t delay; // delay in seconds, used for Delay, Expired and temporary Locked only
+        PasswordValidity passwordValidity; // for Ok only
 
-        // c'tor for ok, locked and challenge
+        // c'tor for ok, permanently locked and challenge
         AuthResult(Type aType = Ok, const PasswordValidity& aPasswordValidity = PasswordValidity()) : type(aType), delay(0), passwordValidity(aPasswordValidity) {}
-        // c'tor for delay and expired
+        // c'tor for delay, temporary locked and expired
         AuthResult(Type aType, const size_t aDelay) : type(aType), delay(aDelay) {}
     };
     const std::string AuthResultStrings[] = ${AUTH_RESULT_STRINGS};
@@ -337,6 +339,72 @@ namespace resept
     };
     typedef std::vector<AddressBook> AddressBooks;
 
+    struct KerberosTicket
+    {
+        KerberosTicket() {}
+        KerberosTicket(const std::string& aClientPrincipal,
+                       const std::vector<unsigned char>& aSessionKey,
+                       const int aSessionKeyEncoding,
+                       const std::vector<unsigned char>& aTgt,
+                       const int aTgtFlags,
+                       const time_t aStartTime,
+                       const time_t aEndTime,
+                       const time_t aRenewTill)
+        : client_principal(aClientPrincipal)
+        , session_key(aSessionKey)
+        , session_key_encoding(aSessionKeyEncoding)
+        , tgt(aTgt)
+        , tgt_flags(aTgtFlags)
+        , start_time(aStartTime)
+        , end_time(aEndTime)
+        , renew_till(aRenewTill)
+        {}
+
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive& ar, const unsigned int UNUSED(version))
+        {
+            ar & client_principal;
+            ar & session_key;
+            ar & session_key_encoding;
+            ar & tgt;
+            ar & tgt_flags;
+            ar & start_time;
+            ar & end_time;
+            ar & renew_till;
+        }
+
+        //@nothrow
+        inline std::string str() const // pretty-printing
+        {
+            using ta::TimeUtils::timestampToUtcStr;
+            try {
+                return (boost::format("client principal %s, valid from %s to %s, renewal due %s, skey encoding %d, TGT flags: 0x%x")
+                % client_principal
+                % timestampToUtcStr(start_time)
+                % timestampToUtcStr(end_time)
+                % timestampToUtcStr(renew_till)
+                % session_key_encoding
+                % tgt_flags
+                ).str();
+            } catch (std::exception& e) {
+                ERRORDEVLOG("Failed to stringify Kerberos ticket for " + client_principal + ". " + std::string(e.what()));
+                return "";
+            }
+        }
+
+        std::string client_principal;
+        std::vector<unsigned char> session_key;
+        int session_key_encoding;
+        std::vector<unsigned char> tgt;
+        int tgt_flags;
+        time_t start_time;
+        time_t end_time;
+        time_t renew_till;
+    };
+
+    //@nothrow
+    inline std::string str(const KerberosTicket& aTicket) { return aTicket.str(); } // pretty-printing
+
     namespace rcdp
     {
         const int PasswordNeverExpires = ${RCDP_PASSWORD_NEVER_EXPIRES};
@@ -568,6 +636,7 @@ namespace resept
         const std::string V_2_0 = ${RCDP_VERSION_2_0};
         const std::string V_2_1 = ${RCDP_VERSION_2_1};
         const std::string V_2_2 = ${RCDP_VERSION_2_2};
+        const std::string V_2_3 = ${RCDP_VERSION_2_3};
 
         const std::string ServerSupportedRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
 
@@ -611,6 +680,7 @@ namespace resept
         const std::string requestParamNameCertFormat = ${RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT};
         const std::string requestParamNameCertIncludeChain = ${RCDPV2_REQUEST_PARAM_NAME_CERT_INCLUDE_CHAIN};
         const std::string requestParamNameCertOutOfBand = ${RCDPV2_REQUEST_PARAM_NAME_CERT_OUT_OF_BAND};
+        const std::string requestParamNameCSR = ${RCDPV2_REQUEST_PARAM_NAME_CSR};
         const std::string requestParamNameResolved = ${RCDPV2_REQUEST_PARAM_NAME_RESOLVED};
         const std::string requestParamNameDigests = ${RCDPV2_REQUEST_PARAM_NAME_DIGESTS};
         const std::string requestParamNameUri = ${RCDPV2_REQUEST_PARAM_NAME_URI};
@@ -621,7 +691,15 @@ namespace resept
         const std::string requestParamNameResponses = ${RCDPV2_REQUEST_PARAM_NAME_RESPONSES};
         const std::string requestParamNameOldPassword = ${RCDPV2_REQUEST_PARAM_NAME_OLD_PASSWORD};
         const std::string requestParamNameNewPassword = ${RCDPV2_REQUEST_PARAM_NAME_NEW_PASSWORD};
-        const std::string requestParamNameCSR = ${RCDPV2_REQUEST_PARAM_NAME_CSR};
+        const std::string requestParamNameKerberosTicket = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET};
+        const std::string requestParamNameKerberosTicketClientPrincipal = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_CLIENT_PRINCIPAL};
+        const std::string requestParamNameKerberosTicketSessionKey = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_SESSION_KEY};
+        const std::string requestParamNameKerberosTicketSessionKeyEncoding = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_SESSION_KEY_ENCODING};
+        const std::string requestParamNameKerberosTicketTgt = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_TGT};
+        const std::string requestParamNameKerberosTicketTgtFlags = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_TGT_FLAGS};
+        const std::string requestParamNameKerberosTicketStartTime = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_START_TIME};
+        const std::string requestParamNameKerberosTicketEndTime = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_END_TIME};
+        const std::string requestParamNameKerberosTicketRenewTill = ${RCDPV2_REQUEST_PARAM_NAME_KERBEROS_TICKET_RENEW_TILL};
 
 
         const std::string RequestStrings[] = ${RCDPV2_REQUEST_STRINGS};
@@ -690,6 +768,7 @@ namespace resept
         const std::string responseParamNameResolveServiceUris = ${RCDPV2_RESPONSE_PARAM_NAME_RESOLVE_SERVICE_URIS};
         const std::string responseParamNameCalcServiceUrisDigest = ${RCDPV2_RESPONSE_PARAM_NAME_CALC_SERVICE_URIS_DIGEST};
         const std::string responseParamNameUseTpmVscAuthentication = ${RCDPV2_RESPONSE_PARAM_NAME_USE_TPM_VSC_AUTHENTICATION};
+        const std::string responseParamNameUseKerberosAuthentication = ${RCDPV2_RESPONSE_PARAM_NAME_USE_KERBEROS_AUTHENTICATION};
         const std::string responseParamNameExecuteSync = ${RCDPV2_RESPONSE_PARAM_NAME_EXECUTE_SYNC};
         const std::string responseParamNameKeySize = ${RCDPV2_RESPONSE_PARAM_NAME_KEY_SIZE};
         const std::string responseParamNameSigningAlgo = ${RCDPV2_RESPONSE_PARAM_NAME_SIGNING_ALGO};

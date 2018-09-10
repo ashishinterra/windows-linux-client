@@ -77,14 +77,7 @@ public:
         TS_ASSERT_EQUALS(myNumValidCerts, 1);
 
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteInvalidReseptUserCerts();
-        // then
-        TS_ASSERT_EQUALS(myNumOfDeleted, 0);
-        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
-        TS_ASSERT_EQUALS(myNumValidCerts, 1);
-
-        // when
-        myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
+        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
         myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
@@ -101,16 +94,9 @@ public:
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
 
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteInvalidReseptUserCerts();
+        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
-        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
-        TS_ASSERT_EQUALS(myNumValidCerts, 0);
-
-        // when
-        myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
-        // then
-        TS_ASSERT_EQUALS(myNumOfDeleted, 0);
         myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
     }

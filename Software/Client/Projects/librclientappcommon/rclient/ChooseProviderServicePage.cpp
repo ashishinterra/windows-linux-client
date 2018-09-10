@@ -1,10 +1,14 @@
 #include "ChooseProviderServicePage.h"
 #include "AuthenticationWizard.h"
+#include "TimedNotificationBox.h"
 #include "AboutDialog.h"
 #include "ConfigUsersDialog.h"
 #include "CommonUtils.h"
+#include "AuthDelayedMessageBox.h"
 #include "rclient/Settings.h"
 #include "rclient/NativeCertStore.h"
+#include "rclient/KerberosAuthenticator.h"
+#include "rclient/RcdpHandler.h"
 #include "ta/logger.h"
 #include "ta/common.h"
 
@@ -14,10 +18,9 @@ using std::string;
 
 namespace rclient
 {
-    ChooseProviderServicePage::ChooseProviderServicePage(CurrentUser* aCurrentUser, ClientType aClientType, AuthenticationWizard* anAuthenticationWizard)
+    ChooseProviderServicePage::ChooseProviderServicePage(CurrentUser* aCurrentUser, AuthenticationWizard* anAuthenticationWizard)
         : QWizardPage(NULL)
         , theCurrentUser(aCurrentUser)
-        , theClientType(aClientType)
         , theAuthenticationWizard(anAuthenticationWizard)
     {
         if (!aCurrentUser)
@@ -43,25 +46,80 @@ namespace rclient
     {
         const string mySelectedProvider = theProvidersCombo->currentText().toUtf8();
         const string mySelectedService = theServicesCombo->currentText().toUtf8();
-        rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
 
-        if (theClientType == clientStandalone)
+        rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
+        rclient::NativeCertStore::deleteAllReseptUserCerts();
+
+        // Before we select a user, we may want to start Kerberos if required.
+        try
         {
-            rclient::NativeCertStore::deleteAllReseptUserCerts();
-        }
-        else if (theClientType == clientBrowser)
-        {
-            rclient::NativeCertStore::deleteInvalidReseptUserCerts();
-            if (rclient::NativeCertStore::validateReseptUserCert() > 0)
+            const ta::NetUtils::RemoteAddress mySvr = rclient::Settings::getReseptSvrAddress(mySelectedProvider);
+            std::auto_ptr<rclient::RcdpHandler> myRcdpClient(new rclient::RcdpHandler(mySvr));
+            myRcdpClient->hello();
+            myRcdpClient->handshake();
+            const rclient::AuthRequirements myAuthReqs = myRcdpClient->getAuthRequirements(mySelectedService);
+            myRcdpClient->eoc();
+
+            if (myAuthReqs.use_kerberos_authentication)
             {
-                DEBUGLOG("Certificate is still valid.");
-                throw CertStillValidException();
+                int myDelay = 0;
+                const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelay);
+                // Only fallback to normal flow when authentication fails because of Kerberos. Exit if it fails for other reasons
+                // And of course allow the user to retry when account is Locked with a set delay
+                switch (myAuthResult)
+                {
+                case rclient::KerberosAuthenticator::Result::success:
+                {
+                    DEBUGLOG("Got TGT alright, skipping the rest of the app");
+                    throw KerberosAuthSuccessException(this);
+                }
+                case rclient::KerberosAuthenticator::kerberosFailure:
+                    // Failure related to Kerberos. Fall back to normal use flow
+                {
+                    const string msg = "Kerberos automatic authentication failed. Continue to enter credentials.";
+                    QMessageBox::warning(this, "Continue", msg.c_str(), QMessageBox::Ok);
+                    break;
+                }
+                case rclient::KerberosAuthenticator::authDelay:
+                // Exit because Delay is caused (only when using Kerberos) by incorrect Hwsig
+                case rclient::KerberosAuthenticator::defaultFailure:
+                {
+                    const string msg = "Kerberos authentication unsuccessful.";
+                    QMessageBox::warning(this, "Authentication failed", msg.c_str(), QMessageBox::Ok);
+                    throw AuthCancelledException();
+                }
+                case rclient::KerberosAuthenticator::Result::authPermanentlyLocked:
+                {
+                    const string msg = "Your account is locked. Please contact " + resept::ProductName + " administrator.";
+                    QMessageBox::warning(this, "Account locked", msg.c_str(), QMessageBox::Ok);
+                    throw AuthCancelledException();
+                }
+                case rclient::KerberosAuthenticator::Result::authLockedWithDelay:
+                {
+                    if (!AuthDelayedMessageBox::show(this, "The account is still locked. Please try again later.", true, myDelay))
+                    {
+                        throw AuthCancelledException();
+                    }
+                    updateUi(mySelectedProvider, mySelectedService);
+                    return false;
+                }
+                default:
+                    // Otherwise unknown result, throw exception
+                    TA_THROW_MSG(std::exception, boost::format("Unknown Kerberos authentication result with result: %i") % myAuthResult);
+                }
             }
-            DEBUGLOG("No valid certificate found (browser), proceeding with authentication");
         }
-        else
+        catch (AuthCancelledException&)
         {
-            TA_THROW_MSG(std::invalid_argument, boost::format("Unsupported client type %d") % theClientType);
+            throw AuthCancelledException();
+        }
+        catch (KerberosAuthSuccessException&)
+        {
+            throw KerberosAuthSuccessException(this);
+        }
+        catch (std::exception& ex)
+        {
+            WARNLOG(boost::format("Skipping Kerberos authentication because if failed with error: %s") % ex.what());
         }
 
         //select user

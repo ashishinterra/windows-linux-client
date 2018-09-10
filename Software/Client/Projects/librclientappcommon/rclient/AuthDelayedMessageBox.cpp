@@ -4,12 +4,13 @@
 #include "ta/assert.h"
 #include "ta/common.h"
 
+using std::string;
 namespace AuthDelayedMessageBox
 {
     class QAuthDelayedMessageBox: public QMessageBox
     {
     public:
-        QAuthDelayedMessageBox(QWidget* aParent, size_t aDelay)
+        QAuthDelayedMessageBox(QWidget* aParent, const size_t aDelay)
             : QMessageBox(aParent)
         {
             QTimer* timer = new QTimer(this);
@@ -26,7 +27,7 @@ namespace AuthDelayedMessageBox
             retryButtonEnabled = true;
         }
 
-        QAuthDelayedMessageBox(QWidget* aParent, std::string msgText, bool retryButton, size_t aDelay)
+        QAuthDelayedMessageBox(QWidget* aParent, const string& aMsgText, const bool aShowRetryBtn, const size_t aDelay)
             : QMessageBox(aParent)
         {
             QTimer* timer = new QTimer(this);
@@ -37,9 +38,9 @@ namespace AuthDelayedMessageBox
 
             setWindowTitle("Unable to authenticate");
             setIcon(Warning);
-            setText(msgText.c_str());
-            retryButtonEnabled = retryButton;
-            if (retryButton)
+            setText(aMsgText.c_str());
+            retryButtonEnabled = aShowRetryBtn;
+            if (aShowRetryBtn)
             {
                 setStandardButtons(QMessageBox::Retry|QMessageBox::Cancel);
                 setDefaultButton(QMessageBox::Retry);
@@ -103,17 +104,27 @@ namespace AuthDelayedMessageBox
         }
     };
 
-    bool show(QWidget* aParent, size_t aDelay)
+    bool show(QWidget* aParent, const size_t aDelay)
     {
         if (aDelay > 0)
+        {
             return QAuthDelayedMessageBox(aParent, aDelay).exec() == QMessageBox::Retry;
-        return QAuthFailedMessageBox(aParent).exec() == QMessageBox::Retry;
+        }
+        else
+        {
+            return QAuthFailedMessageBox(aParent).exec() == QMessageBox::Retry;
+        }
     }
 
-    bool show(QWidget* aParent, std::string msgText, bool retryButton, size_t aDelay)
+    bool show(QWidget* aParent, const string& aMsgText, const bool aShowRetryBtn, const size_t aDelay)
     {
         if (aDelay > 0)
-            return QAuthDelayedMessageBox(aParent, msgText, retryButton, aDelay).exec() == QMessageBox::Retry;
-        return QAuthFailedMessageBox(aParent).exec() == QMessageBox::Retry;
+        {
+            return QAuthDelayedMessageBox(aParent, aMsgText, aShowRetryBtn, aDelay).exec() == QMessageBox::Retry;
+        }
+        else
+        {
+            return QAuthFailedMessageBox(aParent).exec() == QMessageBox::Retry;
+        }
     }
 }

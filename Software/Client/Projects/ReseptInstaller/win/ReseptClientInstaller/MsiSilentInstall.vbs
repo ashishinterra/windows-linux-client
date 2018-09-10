@@ -169,9 +169,6 @@ Function installKeyTalk()
     retval = sho.Run(CmdLine, , true)
     If retval = 0 Then
         WScript.StdOut.WriteLine "done"
-        If isIeRunning() Then
-            WScript.StdOut.WriteLine "You should restart Internet Explorer to make use of KeyTalk secure connections"
-        End If
     Else
         WScript.StdOut.WriteLine "error (code " & retval & ")"
         WScript.StdOut.Write "For more info please consult Event Viewer Application logs"
@@ -253,14 +250,6 @@ End Function
 
 Function quote(anStr)
     quote = Chr(34) & anStr & Chr(34)
-End Function
-
-Function isIeRunning()
-    isIeRunning = False
-    Set processList = GetObject("Winmgmts:").ExecQuery ("Select * from Win32_Process Where name=" & Chr(34) & "iexplore.exe" & Chr(34))
-    For Each objProcess in processList
-        isIeRunning = True
-    Next
 End Function
 
 Function isOption(anArg)

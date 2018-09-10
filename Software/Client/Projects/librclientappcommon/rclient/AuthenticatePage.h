@@ -61,8 +61,6 @@ namespace rclient
         virtual bool isComplete () const;// precondition for user to be able to click 'next'
 
         bool canGoNext() const;
-        ta::StringArrayDict resolveURIs() const;
-        ta::StringDict calcDigests() const;
     private slots:
         void customButtonClicked(int button);
 

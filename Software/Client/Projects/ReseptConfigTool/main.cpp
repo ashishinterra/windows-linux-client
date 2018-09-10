@@ -2,6 +2,9 @@
 #ifdef _WIN32
 #include "rclient/TaskSettings.h"
 #include "rclient/NativeCertStore.h"
+#include "rclient/KerberosAuthenticator.h"
+#include "rclient/RcdpHandler.h"
+#include <windows.h>
 #endif
 #include "rclient/CommonUtils.h"
 #include "rclient/Common.h"
@@ -10,6 +13,7 @@
 #include "ta/logconfiguration.h"
 #include "ta/logger.h"
 #include "ta/utils.h"
+#include "ta/timeutils.h"
 #include "ta/logger.h"
 #include "ta/common.h"
 
@@ -138,6 +142,20 @@ void printLn()
     cout << endl;
 }
 
+#ifdef _WIN32
+rclient::AuthRequirements requestAuthRequirements()
+{
+    const ta::NetUtils::RemoteAddress mySvr = rclient::Settings::getReseptSvrAddress();
+    std::auto_ptr<rclient::RcdpHandler> myRcdpClient(new rclient::RcdpHandler(mySvr));
+    myRcdpClient->hello();
+    myRcdpClient->handshake();
+    const rclient::AuthRequirements myAuthReqs = myRcdpClient->getAuthRequirements(rclient::Settings::getLatestService());
+    myRcdpClient->eoc();
+    return myAuthReqs;
+}
+#endif
+
+
 int main(int argc, char *argv[])
 {
     LogInitializer myLogInitializer;
@@ -192,6 +210,39 @@ int main(int argc, char *argv[])
                 DEBUGLOG("Validate Certificate ignored because KeyTalk Desktop Client is already running");
                 return exitSuccess;
             }
+
+            try
+            {
+                if (requestAuthRequirements().use_kerberos_authentication)
+                {
+                    int myDelaySec = 0;
+                    const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelaySec);
+                    switch (myAuthResult)
+                    {
+                    // Stop and exit on success, (re)new(ed) certificate has been installed
+                    case rclient::KerberosAuthenticator::Result::success:
+                        DEBUGLOG("Successfully authenticated with Kerberos");
+                        return exitSuccess;
+                    case rclient::KerberosAuthenticator::Result::kerberosFailure:
+                        // Authentication failed due to Kerberos-related issue, fallback to Desktop Client
+                        WARNLOG("Kerberos authentication failed, falling back to Desktop Client");
+                        break;
+                    default:
+                        // Most cases like LOCK / DELAY, exit with error because fallback will likely not help
+                        ::MessageBox(NULL, "Authentication failed.", resept::ProductName.c_str(), MB_ICONWARNING);
+                        WARNLOG("Kerberos authentication failed, exiting with error. Possible causes: bad HWSIG, user is Locked");
+                        return exitError;
+                    }
+                }
+            }
+            catch (std::exception& ex)
+            {
+                // See switch (myAuthResult) default case. Fallback will likely not help
+                ::MessageBox(NULL, "Authentication failed.", resept::ProductName.c_str(), MB_ICONWARNING);
+                WARNLOG2("Kerberos Authentication failed", ex.what());
+                return exitError;
+            }
+
             const string desktopClientPath = str(boost::format("\"%s%s%s.exe\"") % rclient::Settings::getReseptInstallDir() % ta::getDirSep() % rclient::ReseptDesktopClient);
             DEBUGLOG("Validate Certificate, renewal required, running: " + desktopClientPath);
             ta::Process::shellExecSync(desktopClientPath);
@@ -298,7 +349,7 @@ int main(int argc, char *argv[])
                 return exitInvalidTask;
             }
         }
-#endif
+#endif // _WIN32
         else if (myNumArgs == 2 && equal(argvec[1], "provider") && equal(argvec[2], "list"))
         {
             foreach (const string& providerName, rclient::Settings::getInstalledProviders())

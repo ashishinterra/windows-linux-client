@@ -36,6 +36,8 @@ namespace ta
         */
         bool isIisSniSupported();
 
+        std::string getLastErrorStr();
+
         /**
           Scoped class initialize COM using CoInitialize()
         */

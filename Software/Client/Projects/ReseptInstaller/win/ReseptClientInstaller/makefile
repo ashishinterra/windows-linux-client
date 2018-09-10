@@ -36,7 +36,7 @@ ReseptClientInstaller.wxi: VersionGen.pl ReseptClientInstaller.wxi.templ ..\..\.
   @DEL $@.tmp
 
 SignBinaries: $(SIGNTOOL_PATH)
-	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\ReseptDesktopClient.exe $(OUT_DIR)\ReseptConsoleClient.exe $(OUT_DIR)\ReseptConfigManager.exe $(OUT_DIR)\ReseptIeClient.dll $(OUT_DIR)\ReseptIeBroker.exe $(OUT_DIR)\ReseptBrokerService.exe $(OUT_DIR)\libtalogger.dll $(OUT_DIR)\ConfigUpdater.exe $(OUT_DIR)\MessageBoxManager.exe $(OUT_DIR)\Sweeper.exe $(OUT_DIR)\IeUserExeRestarter.exe $(OUT_DIR)\ReseptPrGenerator.exe
+	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\ReseptDesktopClient.exe $(OUT_DIR)\ReseptConsoleClient.exe $(OUT_DIR)\ReseptConfigManager.exe $(OUT_DIR)\ReseptBrokerService.exe $(OUT_DIR)\libtalogger.dll $(OUT_DIR)\ConfigUpdater.exe $(OUT_DIR)\Sweeper.exe $(OUT_DIR)\ReseptPrGenerator.exe
 
 SignMsi: $(SIGNTOOL_PATH)
 	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\$(OUT_FILE)

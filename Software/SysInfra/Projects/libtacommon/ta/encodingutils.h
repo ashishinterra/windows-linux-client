@@ -107,5 +107,12 @@ namespace ta
         ta::StringDict jsonToStringDict(const std::string& aJson);
         ta::StringDictArray jsonToStringDictArray(const std::string& aJson);
         boost::property_tree::ptree jsonToTree(const std::string& aJson);
+
+        // Convenience functions to parse tree[key]
+        std::string parseStringVal(const boost::property_tree::ptree& aTree, const std::string& aKey);
+        int parseIntVal(const boost::property_tree::ptree& aTree, const std::string& aKey);
+        bool parseBoolVal(const boost::property_tree::ptree& aTree, const std::string& aKey);
+        ta::StringArray parseStringArray(const boost::property_tree::ptree& aTree, const std::string& aKey);
+        ta::StringDictArray parseStringDictArray(const boost::property_tree::ptree& aResponse, const std::string& aKey);
     }
 }

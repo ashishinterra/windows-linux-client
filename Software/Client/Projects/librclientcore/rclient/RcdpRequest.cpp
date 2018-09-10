@@ -19,7 +19,8 @@ namespace rclient
         ta::StringDict makeAuthenticateRequestParams(const string& aServiceName,
                 const resept::Credentials& aCredentials,
                 const ta::StringArrayDict& aResolvedURIs,
-                const ta::StringDict& aCalculatedDigests)
+                const ta::StringDict& aCalculatedDigests,
+                const boost::optional<string>& aKerberosTicket)
         {
             ta::StringDict myParams = map_list_of(requestParamNameService, aServiceName)
                                       (requestParamNameCallerHwDescription, ta::SysInfo::getHardwareDescription());
@@ -65,6 +66,11 @@ namespace rclient
                                             (requestParamNameDigest, uri2digest.second));
                 }
                 myParams[requestParamNameDigests] = toJson(myUrisDigests);
+            }
+
+            if (aKerberosTicket != boost::none)
+            {
+                myParams[requestParamNameKerberosTicket] = aKerberosTicket.get();
             }
 
             return myParams;

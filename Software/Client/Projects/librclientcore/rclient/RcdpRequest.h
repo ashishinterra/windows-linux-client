@@ -11,7 +11,8 @@ namespace rclient
         ta::StringDict makeAuthenticateRequestParams(const std::string& aServiceName,
                 const resept::Credentials& aCredentials,
                 const ta::StringArrayDict& aResolvedURIs,
-                const ta::StringDict& aCalculatedDigests);
+                const ta::StringDict& aCalculatedDigests,
+                const boost::optional<std::string>& aKerberosTicket = boost::none);
 
         ta::StringDict makeCertRequestParams(const resept::CertFormat aCertFormat,
                                              const bool anIncludeChain);

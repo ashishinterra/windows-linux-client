@@ -1,9 +1,7 @@
 #include "LogInitializer.h"
 #include "rclient/Common.h"
 #include "rclient/CommonUtils.h"
-#ifdef _WIN32
-#include "ta/InternetExplorer.h"
-#endif
+
 #include "ta/process.h"
 #include "ta/version.h"
 #include "ta/logconfiguration.h"
@@ -20,23 +18,6 @@ LogInitializer::LogInitializer()
 
     const string myLogFilePath = ta::Process::getTempDir() + rclient::PrGeneratorLogName;
     string myEnvInfo = str(boost::format("%s Client-%s Problem Report Generator") % resept::ProductName % toStr(rclient::ClientVersion));
-
-#ifdef _WIN32
-    string myIeInfo  = "IE not installed";
-    try
-    {
-        if (ta::InternetExplorer::isInstalled())
-        {
-            const ta::InternetExplorer::Version myVer = ta::InternetExplorer::getVersion();
-            myIeInfo = str(boost::format("IE-%u.%u.%u") % myVer.major % myVer.minor % myVer.subminor);
-        }
-    }
-    catch (std::exception& e)
-    {
-        myIeInfo = str(boost::format("Failed to retrieve IE version info. %s") % e.what());
-    }
-    myEnvInfo += " " + myIeInfo;
-#endif
 
     ta::LogConfiguration::Config myMemConfig;
     myMemConfig.fileAppender = true;
@@ -60,10 +41,6 @@ void LogInitializer::logOsInfo()
         {
             DEBUGLOG(myEnvVar);
         }
-#ifdef _WIN32
-        DEBUGLOG(boost::format("IE %sinstalled") % (ta::InternetExplorer::isInstalled() ? "" : "not "));
-        DEBUGLOG(boost::format(resept::ProductName + " IE add-on %sinstalled") % (rclient::isReseptIeAddonInstalled() ? "" : "not "));
-#endif
     }
     catch (std::exception& e)
     {

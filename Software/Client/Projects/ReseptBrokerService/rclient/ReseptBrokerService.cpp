@@ -1,10 +1,12 @@
-#include "ReseptBrokerService.h"
+#include "rclient/IReseptBrokerService.h"
 #include "rclient/ContentConfig.h"
 #include "rclient/Settings.h"
 #include "rclient/Common.h"
 #include "resept/util.h"
 #include "ta/utils.h"
+#include "ta/timeutils.h"
 #include "ta/process.h"
+#include "ta/scopedresource.hpp"
 #include "ta/logappender.h"
 #include "ta/logconfiguration.h"
 #include "ta/logger.h"
@@ -14,6 +16,7 @@
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/convenience.hpp"
 #include <windows.h>
+#include <ntsecapi.h>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -338,9 +341,192 @@ namespace rclient
             //@note we do not remove CAs because they can be used by other users. They will be removed during uninstall anyway.
         }
 
+#ifdef _WIN32
+        time_t FileTimeToUnixTime(const LARGE_INTEGER &ltime)
+        {
+            FILETIME filetime, localfiletime;
+            SYSTEMTIME systime;
+            struct tm utime;
+            filetime.dwLowDateTime = ltime.LowPart;
+            filetime.dwHighDateTime = ltime.HighPart;
+            FileTimeToLocalFileTime(&filetime, &localfiletime);
+            FileTimeToSystemTime(&localfiletime, &systime);
+            utime.tm_sec = systime.wSecond;
+            utime.tm_min = systime.wMinute;
+            utime.tm_hour = systime.wHour;
+            utime.tm_mday = systime.wDay;
+            utime.tm_mon = systime.wMonth - 1;
+            utime.tm_year = systime.wYear - 1900;
+            utime.tm_isdst = -1;
+            return(mktime(&utime));
+        }
+
+        std::string toMbyte(const UNICODE_STRING& aWstr)
+        {
+            const std::wstring wstr(aWstr.Buffer, aWstr.Length / sizeof(WCHAR));
+            return ta::Strings::toMbyte(wstr);
+        }
+
+        KerberosExternalTicket::KerberosExternalName makeKerberosExternalName(const PKERB_EXTERNAL_NAME anExternalName)
+        {
+            if (!anExternalName)
+            {
+                TA_THROW_MSG(std::invalid_argument, "KERB_EXTERNAL_NAME is NULL");
+            }
+            KerberosExternalTicket::KerberosExternalName myExternalNameStruct;
+            myExternalNameStruct.nameType = anExternalName->NameType;
+            myExternalNameStruct.nameCount = anExternalName->NameCount;
+            for (int iName = 0; iName < anExternalName->NameCount; ++iName)
+            {
+                myExternalNameStruct.names.push_back(toMbyte(anExternalName->Names[iName]));
+            }
+            return myExternalNameStruct;
+        }
+
+        void validateKerberosExternalTicket(const KERB_EXTERNAL_TICKET& aTicket)
+        {
+            if (!aTicket.ServiceName)
+            {
+                TA_THROW_MSG(std::runtime_error, " Mandatory ServiceName is missing in Kerberos External Ticket");
+            }
+            if (!aTicket.ClientName)
+            {
+                TA_THROW_MSG(std::runtime_error, "Mandatory ClientName is missing in Kerberos External Ticket");
+            }
+            if (aTicket.SessionKey.Length == 0)
+            {
+                TA_THROW_MSG(std::runtime_error, "Kerberos External Ticket Session Key is empty");
+            }
+            else
+            {
+                bool myAllZeroSessionKey = true;
+                for (size_t i = 0; i < aTicket.SessionKey.Length; ++i)
+                {
+                    if (aTicket.SessionKey.Value[i] != '\x0')
+                    {
+                        myAllZeroSessionKey = false;
+                        break;
+                    }
+                }
+                if (myAllZeroSessionKey)
+                {
+                    TA_THROW_MSG(std::runtime_error, "Kerberos External Ticket Session key is all-zero. Possible cause: TGT was retrieved without SSPI permissions");
+                }
+            }
+        }
+
+        KerberosExternalTicket makeKerberosExternalTicket(const KERB_EXTERNAL_TICKET& aTicket)
+        {
+            KerberosExternalTicket myTicket;
+            myTicket.serviceNames = makeKerberosExternalName(aTicket.ServiceName);
+            myTicket.clientNames = makeKerberosExternalName(aTicket.ClientName);
+            if (aTicket.TargetName)
+                myTicket.targetNames = makeKerberosExternalName(aTicket.TargetName);
+
+            myTicket.domainName = toMbyte(aTicket.DomainName);
+            myTicket.targetDomainName = toMbyte(aTicket.TargetDomainName);
+            myTicket.altTargetDomainName = toMbyte(aTicket.AltTargetDomainName);
+
+            KerberosExternalTicket::KerberosCryptoKey myCryptoKey;
+            myCryptoKey.keyType = aTicket.SessionKey.KeyType;
+            myCryptoKey.length = aTicket.SessionKey.Length;
+            myCryptoKey.value = std::vector<unsigned char>(aTicket.SessionKey.Value, aTicket.SessionKey.Value + aTicket.SessionKey.Length);
+            myTicket.sessionKey = myCryptoKey;
+
+            myTicket.ticketFlags = aTicket.TicketFlags;
+            myTicket.flags = aTicket.Flags;
+            myTicket.keyExpirationTime = FileTimeToUnixTime(aTicket.KeyExpirationTime);
+            myTicket.startTime = FileTimeToUnixTime(aTicket.StartTime);
+            myTicket.endTime = FileTimeToUnixTime(aTicket.EndTime);
+            myTicket.renewUntil = FileTimeToUnixTime(aTicket.RenewUntil);
+            myTicket.timeSkew = FileTimeToUnixTime(aTicket.TimeSkew);
+            myTicket.encodedTicketSize = aTicket.EncodedTicketSize;
+            if (aTicket.EncodedTicket)
+                myTicket.encodedTicket = std::vector<unsigned char>(aTicket.EncodedTicket, aTicket.EncodedTicket + aTicket.EncodedTicketSize);
+
+            return myTicket;
+        }
+
+        PKERB_RETRIEVE_TKT_RESPONSE requestKerberosTkt(const LUID& aLogonId)
+        {
+            HANDLE logon_handle = NULL;
+            NTSTATUS status = LsaConnectUntrusted(&logon_handle);
+            if (FAILED(status)) {
+                TA_THROW_MSG(std::runtime_error, boost::format("LsaConnectUntrusted failed with %d") % status);
+            }
+
+            LSA_STRING lsa_name;
+            lsa_name.Buffer = MICROSOFT_KERBEROS_NAME_A;
+            lsa_name.Length = (unsigned short)strlen(lsa_name.Buffer);
+            lsa_name.MaximumLength = lsa_name.Length + 1;
+
+            ULONG package_id = 0;
+            status = LsaLookupAuthenticationPackage(
+                         logon_handle,
+                         &lsa_name,
+                         &package_id
+                     );
+            if (FAILED(status)) {
+                TA_THROW_MSG(std::runtime_error, boost::format("LsaLookupAuthenticationPackage failed with %d") % status);
+            }
+
+            NTSTATUS sub_status = 0;
+            KERB_RETRIEVE_TKT_REQUEST req = {};
+            PKERB_RETRIEVE_TKT_RESPONSE pTicketResponse = NULL;
+            req.MessageType = KerbRetrieveTicketMessage;
+            req.LogonId = aLogonId;
+            req.TargetName.Buffer = L"";
+            req.TargetName.Length = 0;
+            req.TargetName.MaximumLength = req.TargetName.Length;
+            req.TicketFlags = 0;
+            req.CacheOptions = 0;
+            req.EncryptionType = KERB_ETYPE_NULL;
+            ULONG ReturnBufferLength = 0;
+
+            status = LsaCallAuthenticationPackage(
+                         logon_handle,
+                         package_id,
+                         &req,
+                         sizeof(req),
+                         (PVOID*)&pTicketResponse,
+                         &ReturnBufferLength,
+                         &sub_status
+                     );
+
+            if (FAILED(status) || FAILED(sub_status))
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("LsaCallAuthenticationPackage failed with status %d and substatus: 0x%x") % status % sub_status);
+            }
+            return pTicketResponse;
+        }
+
+        KerberosExternalTicket getKerberosTgt(const KerberosTgtRequest& aRequest)
+        {
+            LUID myLogonId = { 0 };
+            myLogonId.HighPart = aRequest.logonIdHighPart;
+            myLogonId.LowPart = aRequest.logonIdLowPart;
+
+            PKERB_RETRIEVE_TKT_RESPONSE myTicketResponse = requestKerberosTkt(myLogonId);
+            if (!myTicketResponse)
+            {
+                TA_THROW_MSG(std::runtime_error, "Failed to get Ticket Response from requestKerberosTkt, reason: Ticket Response is NULL");
+            }
+            ta::ScopedResource<PKERB_RETRIEVE_TKT_RESPONSE> myScopedTicketResponse(myTicketResponse, LsaFreeReturnBuffer);
+
+            const KERB_EXTERNAL_TICKET ticket = myTicketResponse->Ticket;
+            validateKerberosExternalTicket(ticket);
+            return makeKerberosExternalTicket(ticket);
+        }
+#else
+        KerberosExternalTicket getKerberosTgt(const KerberosTgtRequest& aRequest)
+        {
+            TA_THROW_MSG(std::runtime_error, "getKerberosTgt is not supported on Linux");
+        }
+#endif
+
         void doServiceMain(int UNUSED(argc), char** UNUSED(argv))
         {
-            theServiceStatusHandle = ::RegisterServiceCtrlHandler(BrokerServiceName, (LPHANDLER_FUNCTION)ControlHandler);
+            theServiceStatusHandle = ::RegisterServiceCtrlHandler(BrokerServiceName.c_str(), (LPHANDLER_FUNCTION)ControlHandler);
             if (theServiceStatusHandle == (SERVICE_STATUS_HANDLE)0)
             {
                 ERRORLOG2("Error registering service", boost::format("RegisterServiceCtrlHandler failed. LastError: %d") % ::GetLastError());
@@ -388,6 +574,24 @@ namespace rclient
                             uninstallUserSettings(myRequest);
                             ta::proto::send(*myConnection, Response(responseStatusOk));
                             break;
+                        }
+                        case requestKerberosTgt:
+                        {
+                            DEBUGLOG("Incoming request to get Kerberos Ticket Granting Ticket (TGT)");
+                            const KerberosTgtRequest myRequest = ta::proto::receive<KerberosTgtRequest>(*myConnection);
+                            try
+                            {
+                                const KerberosExternalTicket tgt = getKerberosTgt(myRequest);
+                                DEBUGLOG(boost::format("Got Kerberos TGT with tgt %s") % str(tgt));
+                                ta::proto::send(*myConnection, KerberosTgtResponse(responseStatusOk, tgt));
+                                break;
+                            }
+                            catch (std::exception& ex)
+                            {
+                                DEBUGLOG(boost::format("Unable to get Kerberos TGT with exception: %s") % ex.what());
+                                ta::proto::send(*myConnection, KerberosTgtResponse(responseStatusError, KerberosExternalTicket()));
+                                break;
+                            }
                         }
                         default:
                             WARNLOG(boost::format("Unsupported request %d") % myReqType);
@@ -437,11 +641,11 @@ namespace rclient
 
 void main()
 {
-    static char myReseptBrokerServiceName[sizeof(rclient::BrokerServiceName) + 1];
-    strcpy(myReseptBrokerServiceName, rclient::BrokerServiceName);
+    static std::vector<char> myReseptBrokerServiceName(rclient::BrokerServiceName.length()+ 1);
+    strcpy(&myReseptBrokerServiceName[0], rclient::BrokerServiceName.c_str());
     SERVICE_TABLE_ENTRY DispatchTable[] =
     {
-        { myReseptBrokerServiceName, (LPSERVICE_MAIN_FUNCTION)rclient::ReseptBrokerService::ServiceMain },
+        { &myReseptBrokerServiceName[0], (LPSERVICE_MAIN_FUNCTION)rclient::ReseptBrokerService::ServiceMain },
         { NULL, NULL }
     };
     StartServiceCtrlDispatcher(DispatchTable);

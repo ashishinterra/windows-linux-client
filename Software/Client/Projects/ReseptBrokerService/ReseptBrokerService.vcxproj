@@ -51,7 +51,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/SAFESEH /NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>libreseptcommon.lib;librclientcore.lib;libyaml-cppmd.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;winhttp.lib;libeay32.lib;ssleay32.lib;crypt32.lib;libconfig++.lib;ws2_32.lib;Iphlpapi.lib;Dbghelp.lib;Psapi.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libreseptcommon.lib;librclientcore.lib;libyaml-cppmd.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;winhttp.lib;libeay32.lib;ssleay32.lib;crypt32.lib;secur32.lib;libconfig++.lib;ws2_32.lib;Iphlpapi.lib;Dbghelp.lib;Psapi.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\Common\Projects\export;..\export;..\..\..\SysInfra\Projects\export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_SERIALIZE_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -69,9 +69,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="rclient\ReseptBrokerService.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="rclient\ReseptBrokerService.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="install_service.cmd" />

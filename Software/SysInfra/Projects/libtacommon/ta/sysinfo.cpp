@@ -247,6 +247,32 @@ namespace ta
             return (ta::version::parse(ta::OsInfoUtils::getVersion().ver) >= ta::version::Version(6, 2));
         }
 
+        std::string getLastErrorStr()
+        {
+#ifdef _WIN32
+            const DWORD myLastError = ::GetLastError();
+            LPSTR lpMsgBuf = NULL;
+            const int ok = FormatMessage(
+                               FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                               NULL,
+                               myLastError,
+                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+                               (LPSTR)&lpMsgBuf,
+                               0,
+                               NULL);
+
+            if (ok && lpMsgBuf)
+            {
+                const string myRetVal(lpMsgBuf);
+                LocalFree(lpMsgBuf);
+                return myRetVal;
+            }
+            return str(boost::format("Unknown error occurred. Last error is %d") % myLastError);
+#else
+            return strerror(errno);
+#endif
+        }
+
         string getBIOSSerialNumber()
         {
             // First try retrieving serial from WMIC API. This is way faster than retrieving it from WMIC shell.

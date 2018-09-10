@@ -61,7 +61,7 @@ endif
 
 LBITS:=$(shell getconf LONG_BIT)
 ifeq ($(LBITS),64)
-# please libtalogger.so
+# make our static lib suitable for inclusion in a shared library
 EXTRA_CFLAGS+=-fPIC
 endif
 

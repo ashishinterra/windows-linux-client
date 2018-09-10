@@ -12,7 +12,7 @@
 //                The rationale for choosing non-blocking behavior is that RESEPT client usage is is not supposed to be multitasking (i.e. running more than one RESEPT browser client at once) thus the inability to acquire the lock is considered as an error.
 //
 //                A typical usage of QtExclusiveApp is to initialize Qt library in multi-threaded applications, where Qt GUI operations can be performed by any thread.
-//                Within RESEPT such an applications is ReseptIeClient (IE creates a separate thread for each tab)
+
 //                Usage:
 //                {
 //                   QtExclusiveApp myQtExclusiveApp;
@@ -33,8 +33,7 @@
 //
 //
 //----------------------------------------------------------------------------
-#ifndef RCLIENT_QTEXCLUSIVEAPP_H
-#define RCLIENT_QTEXCLUSIVEAPP_H
+#pragma once
 
 #include "boost/thread/recursive_mutex.hpp"
 #include "boost/thread/tss.hpp"
@@ -83,5 +82,3 @@ namespace rclient
         std::auto_ptr<boost::recursive_mutex::scoped_try_lock> theLock;
     };
 }
-
-#endif

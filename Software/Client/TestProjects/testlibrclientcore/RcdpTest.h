@@ -202,6 +202,7 @@ public:
             TS_ASSERT(myAuthReqs.resolve_service_uris);
             TS_ASSERT(!myAuthReqs.calc_service_uris_digest);
             TS_ASSERT(!myAuthReqs.use_tpm_vsc);
+            TS_ASSERT(!myAuthReqs.use_kerberos_authentication);
 
             // given
             TS_TRACE("Authenticating with invalid credentials");
