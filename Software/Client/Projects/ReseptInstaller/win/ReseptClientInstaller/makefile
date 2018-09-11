@@ -20,26 +20,29 @@ SIGNTOOL_PATH = ..\..\..\..\..\Import\win32_utils\signtool.exe
 SIGNCERT_PATH = ..\..\..\..\..\CertKeys\CodeSigning\CodesigningWindows.pfx
 !INCLUDE ..\..\..\..\..\CertKeys\CodeSigning\CodesigningWindows.pfx.passwd
 SIGNCERT_PASSWD = $(PASSWORD)
-MakeInstaller: SignBinaries $(OUT_FILE) SignMsi CopyMsiHelperScripts
+MakeInstaller: CheckBinaries SignBinaries $(OUT_FILE) SignMsi CopyMsiHelperScripts
 !ENDIF
 
 
 $(OUT_FILE): ReseptClientInstaller.wixobj
-  $(light) $(LIGHT_ARGS) -ext WixUIExtension -ext WixUtilExtension -cultures:en-us  $** /nologo /out $(OUT_DIR)\$@
+    $(light) $(LIGHT_ARGS) -ext WixUIExtension -ext WixUtilExtension -cultures:en-us  $** /nologo /out $(OUT_DIR)\$@
 
 ReseptClientInstaller.wixobj: ReseptClientInstaller.wxs ReseptClientInstaller.wxi
-  $(candle) $(CANDLE_ARGS) ReseptClientInstaller.wxs /nologo
+    $(candle) $(CANDLE_ARGS) ReseptClientInstaller.wxs /nologo
 
 ReseptClientInstaller.wxi: VersionGen.pl ReseptClientInstaller.wxi.templ ..\..\..\..\version
-  $(PERL_BIN) VersionGen.pl ReseptClientInstaller.wxi.templ ..\..\..\..\version > $@.tmp
-  $(PYTHON_BIN) ..\..\..\..\..\Tools\codegen\gen.py --raw $@.tmp ..\..\..\..\..\Common\common_config.py > $@
-  @DEL $@.tmp
+    $(PERL_BIN) VersionGen.pl ReseptClientInstaller.wxi.templ ..\..\..\..\version > $@.tmp
+    $(PYTHON_BIN) ..\..\..\..\..\Tools\codegen\gen.py --raw $@.tmp ..\..\..\..\..\Common\common_config.py > $@
+    @DEL $@.tmp
+
+CheckBinaries: VerifyLibVersions.vbs
+    @cscript /nologo VerifyLibVersions.vbs
 
 SignBinaries: $(SIGNTOOL_PATH)
-	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\ReseptDesktopClient.exe $(OUT_DIR)\ReseptConsoleClient.exe $(OUT_DIR)\ReseptConfigManager.exe $(OUT_DIR)\ReseptBrokerService.exe $(OUT_DIR)\libtalogger.dll $(OUT_DIR)\ConfigUpdater.exe $(OUT_DIR)\Sweeper.exe $(OUT_DIR)\ReseptPrGenerator.exe
+    @$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\ReseptDesktopClient.exe $(OUT_DIR)\ReseptConsoleClient.exe $(OUT_DIR)\ReseptConfigManager.exe $(OUT_DIR)\ReseptBrokerService.exe $(OUT_DIR)\libtalogger.dll $(OUT_DIR)\ConfigUpdater.exe $(OUT_DIR)\Sweeper.exe $(OUT_DIR)\ReseptPrGenerator.exe
 
 SignMsi: $(SIGNTOOL_PATH)
-	@$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\$(OUT_FILE)
+    @$(SIGNTOOL_PATH) sign /f $(SIGNCERT_PATH) /p $(SIGNCERT_PASSWD) $(OUT_DIR)\$(OUT_FILE)
 
 CopyMsiHelperScripts: MsiSilentInstall.vbs
     @copy /Y MsiSilentInstall.vbs $(OUT_DIR)\
@@ -47,10 +50,10 @@ CopyMsiHelperScripts: MsiSilentInstall.vbs
 rebuild: clean MakeInstaller
 
 clean:
-  @echo Cleaning...
-  del *.wixobj >NUL 2>&1
-  del ReseptClientInstaller.wxi >NUL 2>&1
-  del $(OUT_DIR)\$(OUT_FILE) >NUL 2>&1
+    @echo Cleaning...
+    del *.wixobj >NUL 2>&1
+    del ReseptClientInstaller.wxi >NUL 2>&1
+    del $(OUT_DIR)\$(OUT_FILE) >NUL 2>&1
 
 
 

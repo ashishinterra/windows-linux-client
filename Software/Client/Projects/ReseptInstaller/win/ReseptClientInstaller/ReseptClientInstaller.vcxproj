@@ -73,6 +73,7 @@
     <None Include="ReseptClientInstaller.wxs">
       <SubType>Designer</SubType>
     </None>
+    <None Include="VerifyLibVersions.vbs" />
     <None Include="VersionGen.pl" />
     <None Include="WixUI_FeatureTree_NoLic.wxi" />
   </ItemGroup>

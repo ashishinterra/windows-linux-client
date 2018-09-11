@@ -201,10 +201,10 @@ Install MSVS 2013 Professional with Update 4
 
 Install Qt-5.5 community edition from the [Qt download page](http://www.qt.io/download-open-source)
 
- - example [download link](http://ftp1.nluug.nl/languages/qt/archive/qt/5.5/5.5.0/qt-opensource-windows-x86-msvc2013-5.5.0.exe)
+ - example [download link](http://ftp1.nluug.nl/languages/qt/archive/qt/5.5/5.5.1/qt-opensource-windows-x86-msvc2013-5.5.1.exe)
  - installing community edition suffices since Qt usage in KeyTalk conforms LGPL terms
 
-Add environment variable QTDIR pointing to the QT installation directory (e.g. `D:\Qt\Qt5.5.0\5.5\msvc2013`).
+Add environment variable QTDIR pointing to the QT installation directory (e.g. `D:\Qt\5.5\msvc2013`).
 
 
 ### Install the client
