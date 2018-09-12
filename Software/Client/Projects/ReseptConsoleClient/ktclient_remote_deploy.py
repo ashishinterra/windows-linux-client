@@ -153,24 +153,38 @@ def parse_args():
         raise Exception('Unknown command: "{}".'.format(command))
 
 
-def validate_sites(sites, util):
+def validate_sites(sites, util, tomcat_util, config_path):
     """:returns: A list of error messages found during validation."""
-    known_settings = copy.deepcopy(util.APACHE_RENEWAL_SETTINGS)
-    known_settings['RemoteHost'] = {'required': True,
-                                    'dependencies': []}
     error_messages = []
-    for site_index, site in enumerate(sites):
-        _, errors = util.parse_settings(site, known_settings)
-        vhost = site.get('VHost', 'VHost number {}'.format(site_index + 1))
-        server_name = site.get('ServerName', '')
-        if errors:
-            error_messages.append('Errors in VHost {} {}:'.format(vhost, server_name))
-            for error in errors:
-                error_messages.append('    ' + error)
+    if (os.path.basename(config_path) == "tomcat.ini"):
+        known_settings = copy.deepcopy(tomcat_util.TOMCAT_RENEWAL_SETTINGS)
+        known_settings['RemoteHost'] = {'required': True,
+                                        'dependencies': []}
+        for site_index, site in enumerate(sites):
+            _, errors = util.parse_settings(site, known_settings)
+            vhost = site.get('Host', 'Host number {}'.format(site_index + 1))
+            server_name = site.get('ServerName', '')
+            if errors:
+                error_messages.append('Errors in Host {} {}:'.format(vhost, server_name))
+                for error in errors:
+                    error_messages.append('    ' + error)
+    elif (os.path.basename(config_path) == "apache.ini"):
+        known_settings = copy.deepcopy(util.APACHE_RENEWAL_SETTINGS)
+        known_settings['RemoteHost'] = {'required': True,
+                                        'dependencies': []}
+        for site_index, site in enumerate(sites):
+            _, errors = util.parse_settings(site, known_settings)
+            vhost = site.get('VHost', 'VHost number {}'.format(site_index + 1))
+            server_name = site.get('ServerName', '')
+            if errors:
+                error_messages.append('Errors in Host {} {}:'.format(vhost, server_name))
+                for error in errors:
+                    error_messages.append('    ' + error)
+
     return error_messages
 
 
-def deploy_site_config(ssh_host, site_config_path, installer_path, rccd_path):
+def deploy_site_config(ssh_host, site_config_path, installer_path, rccd_path, configfile_path):
     """:returns: An error message upon failure or None on success."""
     try:
         remote_temp_dir = run_remote_cmd(ssh_host, 'mktemp -d')
@@ -182,28 +196,55 @@ def deploy_site_config(ssh_host, site_config_path, installer_path, rccd_path):
                 ssh_host=quote(ssh_host),
                 temp_dir=quote(remote_temp_dir)))
 
-        run_remote_cmd(
-            ssh_host, """set -e;
-                     set -x;
-                     echo "Checking if apache2 is installed"
-                     which apache2 || which httpd
-                     (
-                         cd {temp_dir} &&
-                         tar xfz {installer_filename} &&
+        if (os.path.basename(configfile_path) == "apache.ini"):
+            run_remote_cmd(
+                ssh_host, """set -e;
+                         set -x;
+                         echo "Checking if apache2 or httpd is installed"
+                         which apache2 || which httpd
                          (
-                           cd keytalkclient-* &&
-                            ./install.sh
+                             cd {temp_dir} &&
+                             tar xfz {installer_filename} &&
+                             (
+                               cd keytalkclient-* &&
+                                ./install.sh
+                             ) &&
+                             /usr/local/bin/keytalk/ktconfig --rccd-path {rccd_filename} &&
+                             cp {config_filename} /etc/keytalk/apache.ini &&
+                             /usr/local/bin/keytalk/renew_apache_ssl_cert --force &&
+                             echo "PATH=/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" > /etc/cron.d/keytalk.apache
+                             echo "*  *  *  *  *   root    /usr/local/bin/keytalk/renew_apache_ssl_cert > $HOME/tmp/cron.ktapachecertrenewal.log 2>&1" >> /etc/cron.d/keytalk.apache
                          ) &&
-                         /usr/local/bin/keytalk/ktconfig --rccd-path {rccd_filename} &&
-                         cp {config_filename} /etc/keytalk/apache.ini &&
-                         /usr/local/bin/keytalk/renew_apache_ssl_cert --force &&
-                         echo "*  *  *  *  *   root    /usr/local/bin/keytalk/renew_apache_ssl_cert > $HOME/tmp/cron.ktapachecertrenewal.log 2>&1" > /etc/cron.d/keytalk
-                     ) &&
-                     rm -rf {temp_dir}""".format(
-                temp_dir=quote(remote_temp_dir), installer_filename=quote(
-                    os.path.basename(installer_path)), rccd_filename=quote(
-                    os.path.basename(rccd_path)), config_filename=quote(
-                        os.path.basename(site_config_path))), only_stdout=True)
+                         rm -rf {temp_dir}""".format(
+                    temp_dir=quote(remote_temp_dir), installer_filename=quote(
+                        os.path.basename(installer_path)), rccd_filename=quote(
+                        os.path.basename(rccd_path)), config_filename=quote(
+                            os.path.basename(configfile_path))), only_stdout=True)
+
+        elif (os.path.basename(configfile_path) == "tomcat.ini"):
+            run_remote_cmd(
+                ssh_host, """set -e;
+                         set -x;
+                         echo "Checking if tomcat is installed and active"
+                         test -e /usr/sbin/tomcat || test -e /etc/init.d/tomcat || test -e /etc/init.d/tomcat6  || test -e /etc/init.d/tomcat7  || test -e /etc/init.d/tomcat8  || test -e /etc/init.d/tomcat9
+                         (
+                             cd {temp_dir} &&
+                             tar xfz {installer_filename} &&
+                             (
+                               cd keytalkclient-* &&
+                                ./install.sh
+                             ) &&
+                             /usr/local/bin/keytalk/ktconfig --rccd-path {rccd_filename} &&
+                             cp {config_filename} /etc/keytalk/tomcat.ini &&
+                             /usr/local/bin/keytalk/renew_tomcat_ssl_cert --force &&
+                             echo "PATH=/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" > /etc/cron.d/keytalk.tomcat
+                             echo "*  *  *  *  *   root    /usr/local/bin/keytalk/renew_tomcat_ssl_cert > $HOME/tmp/cron.kttomcatcertrenewal.log 2>&1" >> /etc/cron.d/keytalk.tomcat
+                         ) &&
+                         rm -rf {temp_dir}""".format(
+                    temp_dir=quote(remote_temp_dir), installer_filename=quote(
+                        os.path.basename(installer_path)), rccd_filename=quote(
+                        os.path.basename(rccd_path)), config_filename=quote(
+                            os.path.basename(configfile_path))), only_stdout=True)
 
     except CmdFailedException as ex:
         return ex.format_indented_message('Could not deploy to {}:'.format(ssh_host))
@@ -252,7 +293,7 @@ def strip_json_comments(s):
     return re.sub(r"(?m)^\s*(#|//).*$", "", s)
 
 
-def parse_sites_per_remote_host(config_path, util):
+def parse_sites_per_remote_host(config_path, util, tomcat_util):
     """:returns: Dict containing remote hosts and a list of VHosts to be deployed to this remote host."""
     # Parse and validate sites
     with open(config_path) as f:
@@ -264,7 +305,7 @@ def parse_sites_per_remote_host(config_path, util):
                 'Could not parse configuration template "{}": {}'.format(
                     config_path, ex))
 
-    errors = validate_sites(sites, util)
+    errors = validate_sites(sites, util, tomcat_util, config_path)
     print_errors(errors)
     if errors:
         sys.exit(1)
@@ -288,11 +329,14 @@ def remote_deploy(config_path, installer_path, rccd_path):
         run_cmd('tar xfv {} -C {}'.format(quote(installer_path), quote(temp_dir)))
         installer_dir = glob.glob('{}/{}*'.format(temp_dir, INSTALLER_DIR_PREFIX))[0]
         util = imp.load_source('ktinstaller_util', '{}/util.py'.format(installer_dir))
+        tomcat_util = imp.load_source(
+            'ktinstaller_util',
+            '{}/tomcat_util.py'.format(installer_dir))
     finally:
         shutil.rmtree(temp_dir)
 
     # Validate sites using imported util module
-    remote_host_sites = parse_sites_per_remote_host(config_path, util)
+    remote_host_sites = parse_sites_per_remote_host(config_path, util, tomcat_util)
 
     # deploy sites per remote host
     for remote_host, host_sites in remote_host_sites.iteritems():
@@ -302,7 +346,7 @@ def remote_deploy(config_path, installer_path, rccd_path):
         # Reason: prevent introduction of null values in the JSON file
         site_temp_config = create_temp_config_file(host_sites)
         error_message = deploy_site_config(
-            remote_host, site_temp_config, installer_path, rccd_path)
+            remote_host, site_temp_config, installer_path, rccd_path, config_path)
         if error_message:
             print('ERROR')
             errors.append(error_message)

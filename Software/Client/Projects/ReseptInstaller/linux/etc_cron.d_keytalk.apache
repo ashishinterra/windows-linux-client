@@ -1,12 +1,14 @@
 SHELL=/bin/bash
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
+PATH=/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 MAILTO=root
 
 # For details see man 4 crontabs
 
-# After configuring apache certificate renewal in /etc/keytalk/apache.ini,
-# please uncomment the line with the renew_apache_ssl_cert script to
-# automatically renew your apache certificates.
+################## For Apache cert renewal ################################
+# After configuring apache certificate renewal in /etc/keytalk/apache.ini,#
+# please uncomment the line with the renew_apache_ssl_cert script to      #
+# automatically renew your apache certificates.                           #
+###########################################################################
 
 # Example of job definition:
 # .---------------- minute (0 - 59)

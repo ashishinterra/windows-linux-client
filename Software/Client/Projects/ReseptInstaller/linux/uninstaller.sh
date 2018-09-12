@@ -66,7 +66,7 @@ function remove_keytalk_common_settings()
     rm -rf /etc/keytalk/
     rm -rf /usr/share/doc/keytalk/
 
-    rm -f /etc/cron.d/keytalk
+    rm -f /etc/cron.d/keytalk*
 
     if [ -f /etc/debian_version ]; then
       rm -f /usr/local/share/ca-certificates/keytalk_*.crt

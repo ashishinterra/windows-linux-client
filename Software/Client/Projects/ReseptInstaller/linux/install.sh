@@ -9,6 +9,7 @@ set -o nounset
 
 VERBOSE=true
 IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK=false
+IS_TOMCAT_CERT_RENEWAL_PREREQUISITES_OK=false
 
 function usage()
 {
@@ -83,8 +84,8 @@ function install_keytalk()
     if ${IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK} ; then
         echo "    Installing KeyTalk Apache certificate renewal..."
         cp renew_apache_ssl_cert util.py apache_util.py /usr/local/bin/keytalk/
-        cp etc_cron.d_keytalk /etc/cron.d/keytalk
-        chmod 644 /etc/cron.d/keytalk
+        cp etc_cron.d_keytalk.apache /etc/cron.d/keytalk.apache
+        chmod 644 /etc/cron.d/keytalk.apache
 
         mkdir -p /etc/keytalk
         cp apache.ini /etc/keytalk/
@@ -92,8 +93,32 @@ function install_keytalk()
         mkdir -p /usr/share/doc/keytalk/
         cp KeyTalk_LinuxClient_for_Apache.txt /usr/share/doc/keytalk/
         cp KeyTalk_LinuxClient_for_Apache.pdf /usr/share/doc/keytalk/
+	
+        if [ -f /etc/redhat-release ]; then
+        
+            [ ! -f /etc/httpd/conf.d/ssl.conf ] && yum install -y -q mod_ssl
+        fi
+
+        if [ -f /etc/httpd/conf.d/ssl.conf ] ; then
+            # Remove spaces between the last 2 lines of "CustomLog" make it a single line command.
+            # Without this fix our parser can't handle this file correctly
+            sed -i -e '{N; s/.*CustomLog.*\n.*"%t.*/CustomLog logs\/ssl_request_log "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \\"%r\\" %b"/g}' /etc/httpd/conf.d/ssl.conf
+        fi
     fi
 
+    if ${IS_TOMCAT_CERT_RENEWAL_PREREQUISITES_OK} ; then
+        echo "    Installing KeyTalk Tomcat certificate renewal..."
+        cp renew_tomcat_ssl_cert util.py tomcat_util.py tomcat.sh /usr/local/bin/keytalk/
+        cp etc_cron.d_keytalk.tomcat /etc/cron.d/keytalk.tomcat
+        chmod 644 /etc/cron.d/keytalk.tomcat
+
+        mkdir -p /etc/keytalk
+        cp tomcat.ini /etc/keytalk/
+
+        mkdir -p /usr/share/doc/keytalk/
+        cp KeyTalk_LinuxClient_for_Tomcat.txt /usr/share/doc/keytalk/
+        cp KeyTalk_LinuxClient_for_Tomcat.pdf /usr/share/doc/keytalk/
+    fi
 
     echo "Installation complete. Please customize KeyTalk by calling /usr/local/bin/keytalk/ktconfig --rccd-path <rccd-url>"
 }
@@ -106,6 +131,20 @@ function has_executable()
     else
         return 1
     fi
+}
+
+function check_tomcat_installed()
+{
+  if [ -f /usr/sbin/tomcat ] ||
+     [ -f /etc/init.d/tomcat ] ||
+     [ -f /etc/init.d/tomcat6 ] ||
+     [ -f /etc/init.d/tomcat7 ] ||
+     [ -f /etc/init.d/tomcat8 ] ||
+     [ -f /etc/init.d/tomcat9 ] ; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 function check_platform_compatibility()
@@ -126,7 +165,7 @@ function check_platform_compatibility()
 
     if ! has_executable lsb_release ; then
         if [ -f /etc/debian_version ]; then
-	    apt-get -qq -y update
+            apt-get -qq -y update
             apt-get -y install lsb-release
             apt-get -y install libnss3-tools
         elif [ -f /etc/redhat-release ]; then
@@ -161,7 +200,7 @@ function check_platform_compatibility()
 
     # Check the platform the client is built on is supported
     if [ x"${build_distro_name}" == x"Debian" -a ${build_distro_version_major} -eq 8 ] ; then
-            return 0 # ok
+        return 0 # ok
     elif [ x"${build_distro_name}" == x"Debian" -a ${build_distro_version_major} -eq 9 ] ; then
         return 0 # ok
     elif [ x"${build_distro_name}" == x"Ubuntu" -a ${build_distro_version_major} -eq 16 ]; then
@@ -189,7 +228,7 @@ function install_apache_cert_renewal_prerequisities()
     # Apache version should be 2.2 - 2.4
     if [ -f /etc/debian_version ]; then
         if ! has_executable apache2 ; then
-            echo "WARNING: KeyTalk Apache SSL certificate renewal feature will not be installed because Apache 2 is required by KeyTalk client certificate renewal."
+            echo "NOTICE: KeyTalk Apache SSL certificate renewal feature will not be installed because no Apache 2 installation detected."
             return 0
         fi
 
@@ -236,6 +275,27 @@ function install_apache_cert_renewal_prerequisities()
 
 }
 
+function install_tomcat_cert_renewal_prerequisities()
+{
+
+    if ! check_tomcat_installed ; then
+        echo "NOTICE: KeyTalk Tomcat SSL certificate renewal will not be installed because no Tomcat installation detected."
+        return 0
+    fi
+
+
+    if [ -f /etc/debian_version ]; then
+        apt-get -qq -y install cron python-lxml python-openssl
+        IS_TOMCAT_CERT_RENEWAL_PREREQUISITES_OK=true
+        return 0
+    elif [ -f /etc/redhat-release ]; then
+        yum -y install cronie python-lxml pyOpenSSL
+        IS_TOMCAT_CERT_RENEWAL_PREREQUISITES_OK=true
+        return 0
+    fi
+
+}
+
 function get_platform_info()
 {
     local platform_hw_name=$(uname -m)
@@ -253,9 +313,11 @@ function install_prerequisites()
         apt-get -qq -y update
         apt-get -y install ca-certificates hdparm psmisc
         install_apache_cert_renewal_prerequisities
+        install_tomcat_cert_renewal_prerequisities
     elif  [ -f /etc/redhat-release ]; then
         yum -y update
         yum -y install ca-certificates hdparm psmisc
+        install_tomcat_cert_renewal_prerequisities
         install_apache_cert_renewal_prerequisities
     fi
 }

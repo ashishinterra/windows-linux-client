@@ -2,7 +2,7 @@ include ../mk/keytalk.common.mk
 
 ifdef RESEPT_LINUX_CLIENT
 
-GENERATED_DOCUMENTS=KeyTalk_LinuxClient_for_Apache.pdf KeyTalk_LinuxClient_for_Apache_remote_deployment.pdf
+GENERATED_DOCUMENTS=KeyTalk_LinuxClient_for_Apache.pdf KeyTalk_LinuxClient_for_Apache_remote_deployment.pdf KeyTalk_LinuxClient_for_Tomcat.pdf KeyTalk_LinuxClient_for_Tomcat_remote_deployment.pdf
 
 release debug: $(GENERATED_DOCUMENTS)
 

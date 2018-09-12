@@ -13,7 +13,7 @@ Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 
 ### Setup base system
 Install Linux distribution (minimal installation) matching the system the KeyTalk Linux client is supposed to run on.
-- 10 GB disk space
+- 15 GB disk space
 - 512 MB RAM
 
 
@@ -35,7 +35,8 @@ Install packages
     Make sure 'universe' repository is listed in /etc/apt/sources.list, add it if not
 
     # apt-get update
-    # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python-pip pylint hdparm zip clang lsb-release
+    # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python3 python3-pip python-pip pylint hdparm zip clang lsb-release
+    # pip3 install --upgrade setuptools pip
     # a2enmod ssl
     # pip install lxml pyopenssl
 

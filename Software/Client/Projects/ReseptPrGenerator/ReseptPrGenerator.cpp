@@ -290,10 +290,10 @@ namespace PrGenerator
             // Apache cron job
             try
             {
-                const string mySrcPath = "/etc/cron.d/" + boost::to_lower_copy(resept::ProductName);
+                const string mySrcPath = "/etc/cron.d/keytalk.apache";
                 if (ta::isFileExist(mySrcPath))
                 {
-                    const string myDestPath = aDir + ta::getDirSep() + "etc_cron_d_" + boost::to_lower_copy(resept::ProductName);
+                    const string myDestPath = aDir + ta::getDirSep() + "etc_cron_d_keytalk_apache";
                     copyFile(mySrcPath, myDestPath);
                     myRetVal.push_back(myDestPath);
                 }

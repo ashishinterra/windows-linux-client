@@ -140,9 +140,6 @@ Example fully customized notifications:
     "EmailSubject" : "Apache certificate update"
 
 
-Note: For RHEL/CentOS
-      Edit the /etc/httpd/conf.d/ssl.conf file, at the end above </VirtualHost> to remove spaces between the last 2 lines for CustomLog and convert it into a single line command.
-
 
 
 Do a test run by calling (Make sure your default Python version is 2.7.x) :
@@ -152,7 +149,8 @@ Do a test run by calling (Make sure your default Python version is 2.7.x) :
 In your browser, navigate to the virtual hosts you configured.
 
 Once everything works as expected, enable certificate renewal cron job by
-uncommenting the relevant line in `/etc/cron.d/keytalk`
+uncommenting the relevant line in `/etc/cron.d/keytalk.apache`
+
 
 Enjoy!
 
@@ -160,10 +158,20 @@ Enjoy!
 Troubleshooting
 ===================================
 
+### Error in apache certificate renewal for RHEL/CentOS
+
+If there occurs an error in certificate renewal, refer to the error log.
+
+Please check your apache.ini and ssl.conf are correct.
+
+If multiple ssl.conf files are present, move the other ssl.conf.* files to a different location if they are of use to you, and if they aren't of use, remove the rest of them using the following command:
+
+    sudo rm -f /etc/conf.d/ssl.conf.*
+
 ### My current certificate won't renew
 
 By default, the renewal script will only refresh the certificate if the
-currently installed certificate for this VHost has left than 25% of it's
+currently installed certificate for this VHost has left than 10% of it's
 validity duration left.  In some cases, such as first-time installation of a
 certificate, a changed apache.ini (VHost configuration), or changed KeyTalk
 service configuration, you may want to force a refresh sooner.
@@ -244,6 +252,6 @@ Possible reasons are:
 
 Please create a problem report with
 
-   sudo /usr/local/bin/keytalk/ktprgen
+    sudo /usr/local/bin/keytalk/ktprgen
 
 and send it to support@keytalk.com

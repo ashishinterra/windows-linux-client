@@ -1,4 +1,4 @@
-PRJS=ReseptConsoleClient ReseptConfigManager ReseptConfigTool ReseptPrGenerator ReseptHwsigDump ReseptPythonClient ReseptInstaller/ConfigUpdater ReseptInstaller/linux/bin ReseptInstaller/linux/apache_remote_deployment
+PRJS=ReseptConsoleClient ReseptConfigManager ReseptConfigTool ReseptPrGenerator ReseptHwsigDump ReseptPythonClient ReseptInstaller/ConfigUpdater ReseptInstaller/linux/bin ReseptInstaller/linux/apache_remote_deployment ReseptInstaller/linux/tomcat_remote_deployment
 MAKE_FLAGS=-s
 
 # use bash i.o. default sh shell to make use of some nifty features which are not present in sh on some platforms

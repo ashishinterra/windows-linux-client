@@ -1,0 +1,156 @@
+KeyTalk automated Tomcat certificate renewal remote deployment instructions
+===========================================================================
+
+Introduction
+------------
+KeyTalk provides automatic Tomcat certificate renewal functionality. To update
+and reconfigure a server farm with many servers however is tedious work.
+To automate deployments to many servers, the remote deployment tool allows you to:
+* Configure all hosts of your server farm in one place
+* Install KeyTalk Tomcat certificate updater to each remote machine of your server farm, which includes:
+    - Customizing your KeyTalk client with an RCCD file
+    - Customizing your certificate renewal script configuration (`tomcat.ini`)
+    - Enabling periodic certificate renewal (by default checking every 10 minutes)
+* Remotely uninstall the KeyTalk client from a server
+
+The following sections explain how to:
+* Prepare web servers
+* Configure Hosts
+* Deploy Remotely
+* Uninstall Remotely
+
+Prepare web servers
+-------------------------------------------
+First of all, make sure that all the servers you want to deploy to have the
+following software installed:
+
+- RHEL 6/7 x64 or CentOS 6/7 x64
+- Debian 8 x64, Debian 9 x64 or Ubuntu 16.04 LTS x64
+- Python 2.7.x
+- Tomcat version 6 and above 
+
+This deployment script requires password-less SSH access to the machines
+you want to deploy to.
+
+Setting up password-less SSH logins requires the following steps:
+
+1. Generate an SSH key pair (one-time, only if you don't have one yet)
+2. Copy your identity (public key) to all remote servers
+3. Cache your key passphrase using ssh agent (only if you have a passphrase)
+
+
+For example:
+
+    $ ssh-keygen  # only if there is no ssh key pair yet
+
+    $ ssh-copy-id root@10.0.0.1
+    root@10.0.0.1's password: ****
+    Number of key(s) added: 1
+
+    $ ssh-copy-id root@10.0.0.2
+    root@10.0.0.1's password: ****
+    Number of key(s) added: 1
+
+    ...
+
+    $ ssh-add
+    Enter passphrase for /home/me/.ssh/id_rsa: ****
+    Identity added: /home/me/.ssh/id_rsa (/home/me/.ssh/id_rsa)
+
+You can check that you can log in without a password:
+
+    $ ssh root@10.0.0.1
+    (no password should be asked)
+
+
+More information on how to use ssh-copy-id:
+http://www.lindonslog.com/linux-unix/ssh-keygen-keys/
+
+More information on how to manually copy SSH keys:
+http://mah.everybody.org/docs/ssh
+
+4. Configure tomcat's server.xml on each Web server for enabling SSL on tomcat, as described in the
+[KeyTalk automated Tomcat certificate renewal installation instructions](KeyTalk_LinuxClient_for_Tomcat.txt).
+
+Configure Hosts
+------------------------------
+The configuration format of the deployment script is the same as the
+configuration described in the
+[KeyTalk automated Tomcat certificate renewal installation instructions](KeyTalk_LinuxClient_for_Tomcat.txt) with
+addition of the `RemoteHost` property to each host.
+
+The `RemoteHost` should contain `<user>@<host>` (e.g. `root@10.0.0.1`). The
+value should be a user/host combination to which password-less ssh logins are
+enabled.
+
+For instance, the following configuration shows three hosts, distributed
+over two servers (`a.example.com` and `b.example.com` on `root@10.0.0.1` and `c.example.com` on `root@10.0.0.2`):
+
+```json
+[
+  {
+    "RemoteHost" : "root@10.0.0.1",
+    "Host" : "localhost:8443",
+    "ServerName" : "localhost",
+    "Port" : "8443",
+    "KeystorePassword" : "changeit",
+    "KeystoreLocation" : "/var/lib/keytalk",
+    "KeyTalkProvider" : "MyProvider",
+    "KeyTalkService" : "MY_SERVICE",
+    "KeyTalkUser" : "a.example.com"
+  },
+  {
+    "RemoteHost" : "root@10.0.0.1",
+    "Host" : "localhost:8443",
+    "ServerName" : "localhost",
+    "Port" : "8443",
+    "KeystoreLocation" : "/var/lib/keytalk2",
+    "KeystorePassword" : "changeit",
+    "KeyTalkProvider" : "MyProvider",
+    "KeyTalkService" : "MY_SERVICE",
+    "KeyTalkUser" : "b.example.com"
+  },
+  {
+    "RemoteHost" : "root@10.0.0.2",
+    "Host" : "localhost:8443",
+    "ServerName" : "localhost",
+    "Port" : "8443",
+    "KeystoreLocation" : "/var/lib/keytalk3",
+    "KeystorePassword" : "changeit",
+    "KeyTalkProvider" : "MyProvider",
+    "KeyTalkService" : "MY_SERVICE",
+    "KeyTalkUser" : "c.example.com"
+  }
+]
+```
+
+Deploy Remotely
+----------------------------
+After preparing your servers for password-less SSH login and configuring your
+Hosts you can use the following command to start deployment:
+
+    $ ./ktclient_remote_deploy.py install <PATH_TO_tomcat.ini>
+          <KeyTalk installer.tgz> <service_configuration.rccd> | tee <logfile>
+
+For example:
+
+    $ ./ktclient_remote_deploy.py install tomcat.ini
+          KeyTalkClient-5.Y.Z.linux.tgz my_services.rccd | tee log.txt
+
+**NOTE: Name of the host_configurations file should be tomcat.ini.**
+ 
+If deployment on one of the hosts fails, the deployment script will attempt
+to uninstall the failed installation and continue with the next host.
+
+Uninstall Remotely
+----------------------------
+To uninstall an installed KeyTalk linux client remotely you also need to have
+password-less SSH access to the system.
+
+To uninstall remotely, you can use the following command:
+
+    $ ./ktclient_remote_deploy remove <user>@<host>
+
+For example:
+
+    $ ./ktclient_remote_deploy remove root@10.0.0.1

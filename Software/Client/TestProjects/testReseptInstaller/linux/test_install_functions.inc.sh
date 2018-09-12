@@ -21,7 +21,7 @@ INSTALLATION_FILES_REQUIRED="\
 /etc/keytalk/version \
 /etc/keytalk/devstage \
 /etc/keytalk/cr.conf \
-/etc/cron.d/keytalk \
+/etc/cron.d/keytalk.apache \
 /usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Apache.txt \
 /usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Apache.pdf"
 
@@ -37,7 +37,7 @@ devstage \
 user\.ini \
 resept\.ini \
 apache\.ini \
-etc_cron_d_keytalk \
+etc_cron_d_keytalk_apache \
 apache_ports\.conf \
 ktclient\.log \
 ktconfig\.log \
@@ -69,14 +69,29 @@ function get_client_platform_file_suffix()
     local distro_version_major=$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')
     local arch=$(uname -m)
     local test_platform="${distro_name}-${distro_version_major}-${arch}"
-    if [ "${test_platform}" == "Debian-8-x86_64" -o "${test_platform}" == "Ubuntu-16-x86_64" ]; then
-      echo "debian8_ubuntu16.04-x64"
+    if [ "${test_platform}" == "Debian-8-x86_64" ]; then
+      echo "debian8-x64"
       return 0
     elif [ "${test_platform}" == "Debian-9-x86_64" ]; then
       echo "debian9-x64"
       return 0
+    elif [ "${test_platform}" == "Ubuntu-16-x86_64" ]; then
+      echo "ubuntu16-x64"
+      return 0
+    elif [ "${test_platform}" == "Ubuntu-18-x86_64" ]; then
+      echo "ubuntu18-x64"
+      return 0
+    elif [ "${test_platform}" == "CentOS-6-x86_64" ]; then
+        echo "centos6-x64"
+        return 0
     elif [ "${test_platform}" == "CentOS-7-x86_64" ]; then
         echo "centos7-x64"
+        return 0
+    elif [ "${test_platform}" == "RedHatEnterpriseServer-6-x86_64" ]; then
+        echo "rhel6-x64"
+        return 0
+    elif [ "${test_platform}" == "RedHatEnterpriseServer-7-x86_64" ]; then
+        echo "rhel7-x64"
         return 0
     else
       echo "ERROR: ${test_platform} platform is not supported" >&2
@@ -100,7 +115,7 @@ function cleanup_keytalk_installation()
 
   rm -rf ~/.keytalk/
   rm -rf ${INSTALLATION_DIRS_REQUIRED}
-  rm -f /etc/cron.d/keytalk
+  rm -f /etc/cron.d/keytalk*
   rm -f $(trusted_ca_store_path)/keytalk_*.crt
   if [ -f /etc/debian_version ]; then
     update-ca-certificates --fresh || true

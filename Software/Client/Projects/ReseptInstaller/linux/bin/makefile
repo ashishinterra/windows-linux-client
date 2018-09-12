@@ -5,17 +5,21 @@ DISTRO_VERSION_MAJOR:=$(shell lsb_release --release --short | egrep -o [0-9]+ | 
 ARCH:=$(shell uname -m)
 BUILD_PLATFORM:=$(DISTRO_NAME)-$(DISTRO_VERSION_MAJOR)-$(ARCH)
 ifeq ($(BUILD_PLATFORM),Debian-8-x86_64)
-  OUT_FILE_PLATFORM:=debian8_ubuntu16.04-x64
+  OUT_FILE_PLATFORM:=debian8-x64
 else ifeq ($(BUILD_PLATFORM),Debian-9-x86_64)
   OUT_FILE_PLATFORM:=debian9-x64
-else ifeq ($(BUILD_PLATFORM),CentOS-7-x86_64)
-  OUT_FILE_PLATFORM:=centos7-x64
-else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-7-x86_64)
-  OUT_FILE_PLATFORM:=rhel7-x64
-else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-6-x86_64)
-  OUT_FILE_PLATFORM:=rhel6-x64
+else ifeq ($(BUILD_PLATFORM),Ubuntu-16-x86_64)
+  OUT_FILE_PLATFORM:=ubuntu16-x64
+else ifeq ($(BUILD_PLATFORM),Ubuntu-18-x86_64)
+  OUT_FILE_PLATFORM:=ubuntu18-x64
 else ifeq ($(BUILD_PLATFORM),CentOS-6-x86_64)
   OUT_FILE_PLATFORM:=centos6-x64
+else ifeq ($(BUILD_PLATFORM),CentOS-7-x86_64)
+  OUT_FILE_PLATFORM:=centos7-x64
+else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-6-x86_64)
+  OUT_FILE_PLATFORM:=rhel6-x64
+else ifeq ($(BUILD_PLATFORM),RedHatEnterpriseServer-7-x86_64)
+  OUT_FILE_PLATFORM:=rhel7-x64
 else
   $(error $(BUILD_PLATFORM) platform is not supported)
 endif
@@ -29,11 +33,11 @@ OUT_DIR=../../../Export/installer.bin/$(PACKAGE_DIR_NAME)
 release debug: hwutils ReseptConsoleClient ReseptConfigManager ReseptConfigTool ReseptPrGenerator Documentation
 	mkdir -p $(OUT_DIR)/
 
-	cp -f ../install.sh ../apache.ini ../etc_cron.d_keytalk ../../resept.ini $(OUT_DIR)/
+	cp -f ../install.sh ../apache.ini ../tomcat.ini ../tomcat.sh ../etc_cron.d_keytalk.apache ../etc_cron.d_keytalk.tomcat ../../resept.ini $(OUT_DIR)/
 	echo $(BUILD_PLATFORM) > $(OUT_DIR)/build-platform
 
 	cp -f ../../../Export/ktclient ../../../Export/ktconfig ../../../Export/ktconfupdater ../../../Export/ktconfigtool ../../../Export/ktprgen $(OUT_DIR)/
-	cp -f ../../../ReseptConsoleClient/util.py ../../../ReseptConsoleClient/apache_util.py ../../../ReseptConsoleClient/cr.conf $(OUT_DIR)/
+	cp -f ../../../ReseptConsoleClient/util.py ../../../ReseptConsoleClient/apache_util.py ../../../ReseptConsoleClient/tomcat_util.py ../../../ReseptConsoleClient/cr.conf $(OUT_DIR)/
 
 	cp -f ../../../../../SysInfra/Projects/Export/libtalogger.so ../../../../../SysInfra/Projects/Export/hwutils $(OUT_DIR)/
 	cp -f ../../../../version ../../../../devstage  $(OUT_DIR)/
@@ -42,9 +46,11 @@ release debug: hwutils ReseptConsoleClient ReseptConfigManager ReseptConfigTool 
 	# drop file extensions to not advertise implementation details
 	cp -f ../uninstaller.sh $(OUT_DIR)/.uninstaller
 	cp -f ../../../ReseptConsoleClient/renew_apache_ssl_cert.py $(OUT_DIR)/renew_apache_ssl_cert
-
+	cp -f ../../../ReseptConsoleClient/renew_tomcat_ssl_cert.py $(OUT_DIR)/renew_tomcat_ssl_cert
 	cp -f ../../../../../Documentation/KeyTalk_LinuxClient_for_Apache.txt $(OUT_DIR)/
 	cp -f ../../../../../Documentation/KeyTalk_LinuxClient_for_Apache.pdf $(OUT_DIR)/
+	cp -f ../../../../../Documentation/KeyTalk_LinuxClient_for_Tomcat.txt $(OUT_DIR)/
+	cp -f ../../../../../Documentation/KeyTalk_LinuxClient_for_Tomcat.pdf $(OUT_DIR)/
 
 	@echo "Packaging KeyTalk client to $(OUT_FILE_PATH)"
 	cd $(OUT_DIR)/.. && tar -czf $(OUT_FILE_PATH) $(PACKAGE_DIR_NAME)
