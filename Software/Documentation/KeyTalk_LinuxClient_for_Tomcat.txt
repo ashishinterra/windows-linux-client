@@ -172,7 +172,7 @@ where - KeystoreFile and KeystorePass have values mentioned in tomcat.ini file.
 
 NOTE : To change port number to a privileged port (<1023) you have to grant
        special permissions to Tomcat. Please follow
-       https://github.com/KeyTalk/windows-linux-client/tree/master/Software/Documentation/Tomcat_over_privileged_ports
+       https://github.com/KeyTalk/windows-linux-client/tree/master/Software/Documentation/Tomcat_over_privileged_ports.md
        to enable Tomcat to use the privileged ports. Do not forget to update the required port
        in the above connector.
 
