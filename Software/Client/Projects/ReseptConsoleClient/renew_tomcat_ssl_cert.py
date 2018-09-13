@@ -47,11 +47,18 @@ def is_cert_renewal_needed(site):
         'echo $(lsb_release --release --short | egrep -o [0-9]+ | sed -n \'1p\')')
 
     Host, port = tomcat_util.parse_connection_address_from_host(host)
-    try:
-        pem_cert = ssl.get_server_certificate((Host, port))
-    except socket.error as e:
-        raise Exception(
-            'Could not retrieve server certificate from "{}:{}": {}'.format(Host, port, e))
+    if (os == 'CentOS' or os == 'RedHatEnterpriseServer') and os_major == '6':
+        try:
+            pem_cert = ssl.get_server_certificate((Host, port), ssl_version=ssl.PROTOCOL_TLSv1)
+        except socket.error as e:
+            raise Exception(
+                'Could not retrieve server certificate from "{}:{}": {}'.format(Host, port, e))
+    else:
+        try:
+            pem_cert = ssl.get_server_certificate((Host, port))
+        except socket.error as e:
+            raise Exception(
+                'Could not retrieve server certificate from "{}:{}": {}'.format(Host, port, e))
 
     # Check whether the cert is expired
     cert_expired, cert_expiration_utc = util.is_cert_expired(
