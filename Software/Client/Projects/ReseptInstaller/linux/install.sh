@@ -178,12 +178,11 @@ function check_platform_compatibility()
     fi
 
     local distro_name=$(lsb_release --id --short)
-    local distro_version=$(lsb_release --release --short)
+    local distro_version_major=$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')
     # 'build-platform' file contains <distro-name>-<distro-version-major>-<distro-arch>
     local build_distro_name=$(cat ./build-platform | cut -d '-' -f 1)
     local build_distro_version_major=$(cat ./build-platform | cut -d '-' -f 2)
     local build_arch=$(cat ./build-platform | cut -d '-' -f 3)
-    local distro_version_major=$(echo ${distro_version} | egrep -o [0-9]+ | sed -n '1p')
 
     if [ x"${distro_name}" != x"${build_distro_name}" ]; then
         echo "KeyTalk Linux client requires Linux ${build_distro_name} to install"
@@ -218,7 +217,7 @@ function check_platform_compatibility()
         update-ca-trust enable
         return 0 # ok
     else
-        echo "KeyTalk client is built on unsupported version ${build_distro_version_major} of ${build_distro_name}"
+        echo "KeyTalk client is built on Linux ${build_distro_name} ${build_distro_version_major} which is not supported"
         return 1
     fi
 }
