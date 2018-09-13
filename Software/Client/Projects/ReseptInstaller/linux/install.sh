@@ -93,9 +93,9 @@ function install_keytalk()
         mkdir -p /usr/share/doc/keytalk/
         cp KeyTalk_LinuxClient_for_Apache.txt /usr/share/doc/keytalk/
         cp KeyTalk_LinuxClient_for_Apache.pdf /usr/share/doc/keytalk/
-	
+
         if [ -f /etc/redhat-release ]; then
-        
+
             [ ! -f /etc/httpd/conf.d/ssl.conf ] && yum install -y -q mod_ssl
         fi
 
@@ -186,11 +186,11 @@ function check_platform_compatibility()
     local distro_version_major=$(echo ${distro_version} | egrep -o [0-9]+ | sed -n '1p')
 
     if [ x"${distro_name}" != x"${build_distro_name}" ]; then
-        echo "KeyTalk Linux client requires Linux ${distro_name} to install"
+        echo "KeyTalk Linux client requires Linux ${build_distro_name} to install"
         return 1
     fi
     if [ x"${distro_version_major}" != x"${build_distro_version_major}" ]; then
-        echo "KeyTalk Linux client requires Linux ${distro_name} ${distro_version_major} to install"
+        echo "KeyTalk Linux client requires Linux ${build_distro_name} ${build_distro_version_major} to install"
         return 1
     fi
     if [ x"${arch}" != x"${build_arch}" ]; then
