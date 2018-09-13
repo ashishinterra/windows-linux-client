@@ -1,18 +1,20 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
-server-5.3.3, in development
+server-5.3.3, 14 September 2018
 ----------------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.3.3, v4.6.0 and v4.6.2
     - ADDED: Support for Kerberos (Windows domain) authentication (KEYTALK-466)
+    - FIXED: User enrollment now respects certificate mappings defined for LDAP and MySQL Db (KEYTALK-466)
+    - FIXED: User enrollment now stores the generated (SMIME) cert to the LDAP
 
       CHANGED shared Db schema:
         - version 3.1-> 3.2
 
 
-client-5.2.3, in development
+client-5.2.3, 14 September 2018
 ------------------------
     - CHANGED Always use system (IE) HTTP proxy settings for Windows Client connections (KEYTALK-467)
     - CHANGED: Removed KeyTalk Internet Explorer add-on on Windows systems
@@ -21,7 +23,7 @@ client-5.2.3, in development
     - ADDED: Support for Ubuntu 18, CentOS 6, CentOS 7, RHL 6, RHL 7 for Linux client
 
 
-server-5.3.p2, 17 August 2018, bugfixing patch 2 for 5.3.2
+server-5.3.2.p2, 17 August 2018, bugfixing patch 2 for 5.3.2
 ----------------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.2.0, 2.1.0 and 2.0.0
