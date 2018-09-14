@@ -29,7 +29,7 @@ Before installing the KeyTalk client with Apache certificate renewal script
 please make sure that your server meets the following requirements:
 
 - RHEL 6/7 x64 or CentOS 6/7 x64
-- Debian 8 x64, Debian 9 x64, Ubuntu 16.04 LTS x64 and Ubuntu 18.04 LTS x64
+- Debian 8 x64, Debian 9 x64, Ubuntu 16.04 LTS x64 or Ubuntu 18.04 LTS x64
 - Python 2.7.x
 - Apache 2.2 - 2.4 installed with SSL module enabled
 
@@ -38,7 +38,7 @@ please make sure that your server meets the following requirements:
     For RHEL/CentOS:
 
     sudo httpd -v
-    sudo rpm -qa | grep mod_ssl (Check whether ssl module is enabled or intalled)
+    sudo rpm -qa | grep mod_ssl (Check whether ssl module is enabled or installed)
     sudo mod_ssl (if it does not exist install using this command)
     sudo service httpd restart
 
@@ -71,8 +71,8 @@ for server certificate distribution must be configured:
    You may choose to use your SSL domain name (e.g. `example.com`) for user name.
    This user name will be appear as X.509 `Common Name` in the generated SSL certificate
 6. Configure `Subject Alternative Name` either on per-service or on per-user basis.
-   Notice that most modern browsers check `Subject Alternative Name` certificate extension when matching SSL domain name,
-   hence partially or totally ignoring the value written in the `Common Name`
+   Notice that most modern browsers check `Subject Alternative Name` certificate extension when matching
+   SSL domain name, hence partially or totally ignoring the value written in the `Common Name`
 
 
 KeyTalk client configuration
@@ -80,7 +80,7 @@ KeyTalk client configuration
 ### Install and customize KeyTalk client
 
 *Before installing* the KeyTalk client, make sure you have Apache installed,
-otherwise the Apache certificate renewal script will not be installed.
+ otherwise the Apache certificate renewal script will not be installed.
 
 To install and customize the KeyTalk client, run the following commands (ignore sudo if you are root):
 
@@ -89,8 +89,9 @@ To install and customize the KeyTalk client, run the following commands (ignore 
     sudo ./install.sh
     sudo /usr/local/bin/keytalk/ktconfig --rccd-path <path-to-rccd>
 
-Notice: RCCD installation for Apache integration must be done as root because the Apache certificate renewal script invoked by cron
-is also run as root and therefore will expect the KeyTalk configuration under '/root/.keytalk'
+Notice: RCCD installation for Apache integration must be done as root because the Apache certificate
+        renewal script invoked by cron is also run as root and therefore will expect the KeyTalk
+        configuration under '/root/.keytalk'
 
 Test your installation is correct:
 
@@ -101,7 +102,7 @@ Test your installation is correct:
 Update the apache certificate renewal configuration found at `/etc/keytalk/apache.ini`:
 
 1: Specify Apache virtual host(s) for which you want KeyTalk to automatically
-renew SSL certificates
+   renew SSL certificates
 
 Example IP-based VHost:
 
@@ -140,8 +141,6 @@ Example fully customized notifications:
     "EmailSubject" : "Apache certificate update"
 
 
-
-
 Do a test run by calling (Make sure your default Python version is 2.7.x) :
 
     sudo /usr/local/bin/keytalk/renew_apache_ssl_cert
@@ -164,7 +163,8 @@ If there occurs an error in certificate renewal, refer to the error log.
 
 Please check your apache.ini and ssl.conf are correct.
 
-If multiple ssl.conf files are present, move the other ssl.conf.* files to a different location if they are of use to you, and if they aren't of use, remove the rest of them using the following command:
+If multiple ssl.conf files are present, move the other ssl.conf.* files to a different location if they
+are of use to you, and if they aren't of use, remove the rest of them using the following command:
 
     sudo rm -f /etc/conf.d/ssl.conf.*
 
