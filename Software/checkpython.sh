@@ -8,7 +8,11 @@ MSG_TEMPLATE='{abspath}:{line:3d},{column}: {obj}: [{msg_id}] {msg}'
 function check_python_scripts()
 {
     local filelist="$1"
-    pylint --msg-template="${MSG_TEMPLATE}" ${filelist}
+    local extra_options
+    if [ $# -eq 2 ]; then
+        extra_options+=" --disable=$2"
+    fi
+    pylint --msg-template="${MSG_TEMPLATE}" ${extra_options} ${filelist}
     if [ $? -ne 0 ]; then
         let "FAILCOUNT=FAILCOUNT+1"
     fi
@@ -39,7 +43,8 @@ if [ -f /resept_server_dev ]; then
     check_python_scripts "WebUI.Server/TestProjects/webuitests/*.py"
 fi
 if [ -f /resept_linux_client_dev ]; then
-    check_python_scripts "Client/Projects/ReseptConsoleClient/*.py"
+    # workaround pylint's false-positive "[E1101] Module 'ssl' has no 'PROTOCOL_TLSv1' member"
+    check_python_scripts "Client/Projects/ReseptConsoleClient/*.py" "E1101"
     check_python_scripts "Client/TestProjects/testReseptInstaller/linux/apache/*.py"
 fi
 
