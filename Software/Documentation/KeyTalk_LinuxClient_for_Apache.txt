@@ -14,7 +14,7 @@ When set up, KeyTalk will periodically perform the following actions for each
 configured Apache SSL virtual host:
 
 1. Check the lifetime of the currently installed certificate
-2. If the certificate is about to expire (typically less than 25% lifetime):
+2. If the certificate is about to expire (typically less than 10% lifetime):
     a. Retrieve a new SSL certificate from your KeyTalk server
     b. Install and effectuate the retrieved certificate to the configured Apache
        SSL virtual host

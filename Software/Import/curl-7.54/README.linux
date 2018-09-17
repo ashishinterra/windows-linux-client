@@ -12,7 +12,7 @@ make
 
 2. Install
 
-OSSPEC="linux-$(uname -r | cut -d '-' -f 1)-$(uname -m | cut -d '-' -f 1)"
+OSSPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(uname -m | cut -d '-' -f 1)
 rm -rf /keytalk/Software/Import/curl-7.54/include/${OSSPEC}
 mkdir -p /keytalk/Software/Import/curl-7.54/include/${OSSPEC}/curl/
 cp -rf include/curl/*.h /keytalk/Software/Import/curl-7.54/include/${OSSPEC}/curl/

@@ -18,7 +18,7 @@ cd -
 ar rs libz.a contrib/minizip/zip.o contrib/minizip/unzip.o contrib/minizip/ioapi.o
 mv libz.a libzwapi.a
 
-OSSPEC=$(uname -s | tr "[:upper:]" "[:lower:]")-$(uname -r | cut -d '-' -f 1)-$(uname -m | cut -d '-' -f 1)
+OSSPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(uname -m | cut -d '-' -f 1)
 rm -rf /keytalk/Software/Import/zlib-1.2.8/zlib/
 mkdir -p /keytalk/Software/Import/zlib-1.2.8/zlib/
 cp zlib.h ./zconf.h ./contrib/minizip/ioapi.h ./contrib/minizip/iowin32.h contrib/minizip/zip.h ./contrib/minizip/unzip.h /keytalk/Software/Import/zlib-1.2.8/zlib

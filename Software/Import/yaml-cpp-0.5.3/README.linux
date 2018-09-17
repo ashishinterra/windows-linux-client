@@ -20,7 +20,7 @@ Build
 
 Install:
 
-    OSSPEC=$(uname -s | tr "[:upper:]" "[:lower:]")-$(uname -r | cut -d '-' -f 1)-$(uname -m | cut -d '-' -f 1)
+    OSSPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(uname -m | cut -d '-' -f 1)
     rm -rf /keytalk/Software/Import/yaml-cpp-0.5.3/include /keytalk/Software/Import/yaml-cpp-0.5.3/lib/${OSSPEC}
     cp -R include/ /keytalk/Software/Import/yaml-cpp-0.5.3
     mkdir -p /keytalk/Software/Import/yaml-cpp-0.5.3/lib/${OSSPEC}

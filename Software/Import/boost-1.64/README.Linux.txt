@@ -32,7 +32,7 @@ Another alternative would be to build boost as a shared library.
 
 4. Install
 
-OS_SPEC=$(uname -s | tr "[:upper:]" "[:lower:]")-$(uname -r | cut -d '-' -f 1)-$(uname -m | cut -d '-' -f 1)
+OS_SPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(uname -m | cut -d '-' -f 1)
 
 pushd ../../
 cp -Rf boost/ /keytalk/Software/Import/boost-1.64

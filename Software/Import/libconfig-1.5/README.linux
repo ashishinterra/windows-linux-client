@@ -23,7 +23,7 @@ CPPFLAGS+=-fPIC
 endif
 
 make
-OSSPEC=$(uname -s | tr "[:upper:]" "[:lower:]")-$(uname -r | cut -d '-' -f 1)-$(uname -m | cut -d '-' -f 1)
+OSSPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(uname -m | cut -d '-' -f 1)
 cp ./lib/libconfig.h++ /keytalk/Software/Import/libconfig-1.5/
 mkdir /keytalk/Software/Import/libconfig-1.5/lib/${OSSPEC}/
 cp ./lib/.libs/libconfig++.a /keytalk/Software/Import/libconfig-1.5/lib/${OSSPEC}/

@@ -1,5 +1,4 @@
-OSNAME := $(shell uname -s | tr "[:upper:]" "[:lower:]")
-OSSPEC := $(shell uname -s | tr "[:upper:]" "[:lower:]")-$(shell uname -r | cut -d '-' -f 1)-$(shell uname -m | cut -d '-' -f 1)
+OSSPEC := $(shell lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(shell lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(shell uname -m | cut -d '-' -f 1)
 
 
 # We build KeyTalk Server if /resept_server_dev exists
