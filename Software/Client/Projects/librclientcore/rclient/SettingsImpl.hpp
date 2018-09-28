@@ -176,6 +176,10 @@ namespace rclient
                 {
                     return str(boost::format("%s.%s") % getServicePath(aProviderIdx, aServiceIdx) % aSettingName);
                 }
+                string getServiceSettingPath(const string& aServicePath, const string& aSettingName)
+                {
+                    return str(boost::format("%s.%s") % aServicePath % aSettingName);
+                }
 
                 string getUserPath(unsigned int aProviderIdx, unsigned int aServiceIdx, unsigned int aUserIdx)
                 {
@@ -1052,6 +1056,54 @@ namespace rclient
                     TA_THROW_MSG(SettingsError, boost::format("%s setting not found for provider %s, service %s in the %s config")  % aServiceKey % aProviderName % aServiceName % (aConfigType==userConfig?"user":"master"));
                 }
 
+
+                //
+                // T is needed to specify expected value type
+                //
+                // Exceptions : throw SettingsError, SettingsOpenError
+                //
+                template <class T>
+                bool isServiceValExist(const libconfig::Config& aConfig, const string& aServiceKey, const string& aProviderName, const string& aServiceName)
+                {
+                    const unsigned int myNumProviders = getListSize(aConfig, ProviderList);
+
+                    for (unsigned int iProvider=0; iProvider < myNumProviders; ++iProvider)
+                    {
+                        const string myProviderNamePath = getProviderSettingPath(iProvider, ProviderName);
+                        string myProviderName;
+                        if (!aConfig.lookupValue(myProviderNamePath, myProviderName))
+                            TA_THROW_MSG(SettingsError, boost::format("%s setting not found in the config or it is not a string") % myProviderNamePath);
+
+                        if (myProviderName == aProviderName)
+                        {
+                            const unsigned int myNumServices = getListSize(aConfig, getProviderSettingPath(iProvider, ServiceList));
+                            if (myNumServices == 0)
+                                return false;
+                            for (unsigned int iService=0; iService < myNumServices; ++iService)
+                            {
+                                const string myServiceNamePath = getServiceSettingPath(iProvider, iService, ServiceName);
+                                string myServiceName;
+                                if (!aConfig.lookupValue(myServiceNamePath, myServiceName))
+                                    TA_THROW_MSG(SettingsError, boost::format("%s setting not found in the config or it is not a string") % myServiceNamePath);
+                                if (myServiceName == aServiceName)
+                                {
+                                    const string myKeyPath = getServiceSettingPath(iProvider, iService, aServiceKey);
+                                    if (!aConfig.exists(myKeyPath))
+                                        return false;
+                                    string myFriendlyTypeName;
+                                    if (aConfig.lookup(myKeyPath).getType() != getLibconfigType(T(), myFriendlyTypeName))
+                                    {
+                                        TA_THROW_MSG(SettingsError, boost::format("%s setting in the config has invalid type. %s expected") %
+                                                     myKeyPath % myFriendlyTypeName);
+                                    }
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                }
+
                 //
                 // T is needed to specify expected value type
                 //
@@ -1068,43 +1120,7 @@ namespace rclient
                         return false;
 
                     auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
-                    const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
-
-                    for (unsigned int iProvider=0; iProvider < myNumProviders; ++iProvider)
-                    {
-                        const string myProviderNamePath = getProviderSettingPath(iProvider, ProviderName);
-                        string myProviderName;
-                        if (!myConfigPtr->lookupValue(myProviderNamePath, myProviderName))
-                            TA_THROW_MSG(SettingsError, boost::format("%s setting not found in the %s config or it is not a string") % myProviderNamePath % (aConfigType==userConfig?"user":"master"));
-
-                        if (myProviderName == aProviderName)
-                        {
-                            const unsigned int myNumServices = getListSize(*myConfigPtr, getProviderSettingPath(iProvider, ServiceList));
-                            if (myNumServices == 0)
-                                return false;
-                            for (unsigned int iService=0; iService < myNumServices; ++iService)
-                            {
-                                const string myServiceNamePath = getServiceSettingPath(iProvider, iService, ServiceName);
-                                string myServiceName;
-                                if (!myConfigPtr->lookupValue(myServiceNamePath, myServiceName))
-                                    TA_THROW_MSG(SettingsError, boost::format("%s setting not found in the %s config or it is not a string") % myServiceNamePath % (aConfigType==userConfig?"user":"master"));
-                                if (myServiceName == aServiceName)
-                                {
-                                    const string myKeyPath = getServiceSettingPath(iProvider, iService, aServiceKey);
-                                    if (!myConfigPtr->exists(myKeyPath))
-                                        return false;
-                                    string myFriendlyTypeName;
-                                    if (myConfigPtr->lookup(myKeyPath).getType() != getLibconfigType(T(), myFriendlyTypeName))
-                                    {
-                                        TA_THROW_MSG(SettingsError, boost::format("%s setting in the %s config has invalid type. %s expected") %
-                                                     myKeyPath % (aConfigType==userConfig?"user":"master") % myFriendlyTypeName);
-                                    }
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                    return false;
+                    return isServiceValExist<T>(*myConfigPtr.get(), aServiceKey, aProviderName, aServiceName);
                 }
 
                 //

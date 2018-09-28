@@ -16,7 +16,7 @@ from email import encoders
 LoggerName = os.path.splitext(os.path.basename(__file__))[0]
 Now = datetime.datetime.now().strftime("%Y%m%d")
 TestName = "Windows 10 Smart Card Test"
-HostLogFilename = r"..\{}_{}.log".format(LoggerName, Now)
+HostLogFilename = r"d:\builds\keytalk\Software\Client\TestProjects\Export\{}_{}.log".format(LoggerName, Now)
 
 #Server
 # WinClientBsvrMountPoint = "Z:"
@@ -110,11 +110,27 @@ def _run_cmd(cmd, logger=None, timeout=None):
         logger.error("{0} finished with code {1}. Stdout: {2}. Stderr: {3}".format(
             cmd, retval, p.stdout.read().decode('utf-8'), p.stderr.read().decode('utf-8')))
     return False
-	
+
 def _send_email(caption):
     Logger.debug("Mailing " + caption + " results to " + ", ".join(EmailRecepients))
 
+    attachments = {HostLogFilename: 'text'}
     msg = MIMEText(caption)
+    if attachments:
+        msg = MIMEMultipart()
+        for attachment, type in attachments.items():
+            if type == 'text':
+                part = MIMEText(open(attachment).read(), 'plain', 'utf-8')
+            elif type == 'binary':
+                part = MIMEBase('application', "octet-stream")
+                part.set_payload(open(attachment, "rb").read())
+                encoders.encode_base64(part)
+            else:
+                Logger.warning('Unknown attachment type ' + type)
+                continue
+            part.add_header(
+                'Content-Disposition', 'attachment', filename=os.path.basename(attachment))
+            msg.attach(part)
 
     msg['Subject'] = "[KeyTalk Smart Card Test Result] " + caption
     msg['From'] = EmailSender
@@ -126,9 +142,9 @@ def _send_email(caption):
     mySmtpSvr.quit()
 	
 def _mail_results(success):
-	result_str = "Succeeded" if success else "Failed"
-	caption = TestName + " " + result_str
-	_send_email(caption)
+    result_str = "Succeeded" if success else "Failed"
+    caption = TestName + " " + result_str
+    _send_email(caption)
 	
 
 # step 1
@@ -138,22 +154,22 @@ def _mail_results(success):
 	
 # step 2
 def copy_built_test_files():
-	for filename in os.listdir(WinClientBsvrMountedFilesLocation):
-		from_path = os.path.join(WinClientBsvrMountedFilesLocation, filename)
-		if os.path.isdir(from_path):
-			continue
-		to_path = os.path.join(TestFileDestinationDir, filename)
-		_logged_copy_file(from_path, to_path, Logger)
+    for filename in os.listdir(WinClientBsvrMountedFilesLocation):
+        from_path = os.path.join(WinClientBsvrMountedFilesLocation, filename)
+        if os.path.isdir(from_path):
+            continue
+        to_path = os.path.join(TestFileDestinationDir, filename)
+        _logged_copy_file(from_path, to_path, Logger)
 		
 # step 3
 def run_test():
-	command = r"d:\builds\keytalk\Software\Client\TestProjects\Export\testlibtaclientcommon.exe -v WinSmartCardUtilTest"
-	success = _run_cmd(command, Logger, 300)
-	_mail_results(success)
+    command = r"d:\builds\keytalk\Software\Client\TestProjects\Export\testlibtaclientcommon.exe -v WinSmartCardUtilTest"
+    success = _run_cmd(command, Logger, 300)
+    _mail_results(success)
 	
 #Do it
 # mount_bsvr_drive()
+Logger.info("Start testing")
 copy_built_test_files()
 run_test()
-	
 	

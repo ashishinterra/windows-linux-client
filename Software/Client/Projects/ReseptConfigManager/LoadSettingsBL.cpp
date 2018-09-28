@@ -110,7 +110,7 @@ namespace
         DEBUGLOG("Connected");
         const string myUserConfigPath = rclient::Settings::getUserConfigPath();
         ta::proto::send(myBrokerServiceConnection, requestInstallSettings);
-        ta::proto::send(myBrokerServiceConnection, InstallSettingsRequest(aContentConfig, myUserConfigPath));
+        ta::proto::send(myBrokerServiceConnection, InstallSettingsRequest(aContentConfig, myUserConfigPath, ta::getUserName()));
         DEBUGLOG("Installation request sent");
 
         Response myResponse = ta::proto::receive<Response>(myBrokerServiceConnection);
@@ -228,7 +228,7 @@ namespace
             }
         }
 
-        rclient::ContentConfig::install(aContentConfig);
+        rclient::ContentConfig::install(aContentConfig, ta::getUserName());
 
         // It is likely that a just created KeyTalk user profile directory maybe along with user home directory use effective uid (root), so they do not belong to a real user.
         // Make sure these directories belong to the real owner.

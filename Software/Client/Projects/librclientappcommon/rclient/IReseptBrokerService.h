@@ -141,9 +141,11 @@ namespace rclient
         struct InstallSettingsRequest
         {
             InstallSettingsRequest() {}
-            InstallSettingsRequest(const rclient::ContentConfig::Config& aContentConfig, const std::string& aUserConfigPath): contentConfig(aContentConfig), userConfigPath(aUserConfigPath) {};
+            InstallSettingsRequest(const rclient::ContentConfig::Config& aContentConfig, const std::string& aUserConfigPath, const std::string& aUsername):
+                contentConfig(aContentConfig), userConfigPath(aUserConfigPath), username(aUsername) {};
             rclient::ContentConfig::Config contentConfig;
             std::string userConfigPath;
+            std::string username;
         };
 
         struct UninstallSettingsRequest
@@ -234,6 +236,7 @@ namespace boost
         {
             ar & aRequest.contentConfig;
             ar & aRequest.userConfigPath;
+            ar & aRequest.username;
         }
 
         template<class Archive>

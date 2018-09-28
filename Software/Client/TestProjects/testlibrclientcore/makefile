@@ -82,6 +82,7 @@ post_build:
 	cp -f user.ini $(OUT_DIR)/user.ini.orig
 	cp -f master.ini $(OUT_DIR)/master.ini.orig
 	cp -f resept.ini.linux $(OUT_DIR)/resept.ini
+	cp -f master.ini.from_rccdv2_0_1 $(OUT_DIR)/master.ini.from_rccdv2_0_1
 ifdef RESEPT_LINUX_CLIENT
 	cp -f ../../../SysInfra/Projects/Export/hwutils $(OUT_DIR)/
 	@echo " Creating minimal KeyTalk client installation..."

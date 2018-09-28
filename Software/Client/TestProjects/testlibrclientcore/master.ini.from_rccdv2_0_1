@@ -1,0 +1,29 @@
+ConfigVersion = "1.0";
+Providers : (
+	{
+		Name = "Provider1";
+		ContentVersion = 2010080401;
+		LogLevel = "DEBUG";
+        Server = "test.keytalk.com";
+        DefaultCAs = [ "KeyTalk Demo Signing CA", "KeyTalk Demo Communication CA", "KeyTalk Demo Primary CA" ];
+        DefaultServer = "test.keytalk.com";
+		Services :
+		(
+			{
+				Name = "Service1";
+				DefaultUri = "https://default-service1-uri.com/";
+				Users = [ "DemoUser2", "DemoUser3" ];
+			},
+			{
+				Name = "Service2";
+				DefaultUri = "https://default-service1-uri.com/";
+				CleanupUserCert = true;
+			},
+			{
+				Name = "Service3";
+				DefaultUri = "https://default-service1-uri.com/";
+				Users = [];
+			}
+		);
+	}
+);

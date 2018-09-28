@@ -390,7 +390,7 @@ public:
 
         TS_TRACE("--- Testing service list");
         Settings::setLatestProviderService("Provider1", "Service1");
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of("Service1")("Service2")("Service3")("Service4")("Service5")("Service6")("Service7")("Service8"));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of("Service1")("Service2")("Service3")("Service4")("Service5")("Service6")("Service7")("Service9")("Service8"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider1"), Settings::getServices());
         TS_ASSERT_EQUALS(Settings::getServices("Provider2"), list_of("Service1"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider3"), list_of("Service1"));
@@ -656,7 +656,7 @@ public:
         TS_ASSERT(ta::isFileExist("user.ini"));
         TS_ASSERT(ta::isFileExist("master.ini"));
         TS_ASSERT_EQUALS(Settings::getProviders(), list_of("Provider1")("Provider2")("Provider4")("Provider3"));
-        TS_ASSERT_EQUALS(Settings::getServices("Provider1"), list_of("Service1")("Service2")("Service3")("Service4")("Service5")("Service6")("Service7")("Service8"));
+        TS_ASSERT_EQUALS(Settings::getServices("Provider1"), list_of("Service1")("Service2")("Service3")("Service4")("Service5")("Service6")("Service7")("Service9")("Service8"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider2"), list_of("Service1"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider3"), list_of("Service1"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider4"), list_of("Service1"));
@@ -683,7 +683,7 @@ public:
         TS_TRACE("--- Test that missing user config is recovered from the master");
         TS_ASSERT(ta::isFileExist("user.ini"));
         TS_ASSERT_EQUALS(Settings::getProviders(), list_of("Provider1")("Provider2")("Provider4")("Provider3"));
-        TS_ASSERT_EQUALS(Settings::getServices("Provider1"), list_of("Service1")("Service2")("Service3")("Service4")("Service5")("Service6")("Service7")("Service8"));
+        TS_ASSERT_EQUALS(Settings::getServices("Provider1"), list_of("Service1")("Service2")("Service3")("Service4")("Service5")("Service6")("Service7")("Service9")("Service8"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider2"), list_of("Service1"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider3"), list_of("Service1"));
         TS_ASSERT_EQUALS(Settings::getServices("Provider4"), list_of("Service1"));
@@ -755,7 +755,9 @@ public:
 
         // given
         static const bool AllowOverwriteYes = true;
-        static const bool AllowOverwriteNo  = false;
+        static const bool AllowOverwriteNo = false;
+        static const bool DoUseClientOsLogonUser = true;
+        static const bool DontUseClientOsLogonUser = false;
 
         Settings::RccdRequestData myReq;
         myReq.providerName = "p1";
@@ -768,12 +770,18 @@ public:
         const Settings::RccdRequestData::Service service1("s1",
                                                                 "https://s1.com", // uri
                                                                  11, AllowOverwriteNo, // cert validity percentage
-                                                                 list_of("s1u1")("s1u2"), AllowOverwriteNo);
+                                                                 DontUseClientOsLogonUser,
+                                                                 list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                                 "https://s2.com", // uri
                                                                  12, AllowOverwriteYes, // cert validity percentage
-                                                                 list_of("s2u1"), AllowOverwriteYes);
-        myReq.services = list_of(service1)(service2);
+                                                                 DontUseClientOsLogonUser,
+                                                                 list_of("s2u1"));
+        const Settings::RccdRequestData::Service service3("s3",
+                                                                "https://s3.com", // uri
+                                                                 12, AllowOverwriteYes, // cert validity percentage
+                                                                 DoUseClientOsLogonUser);
+        myReq.services = list_of(service1)(service2)(service3);
 
         // when
         bool myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml", "master.ini", "master.yaml");
@@ -797,7 +805,7 @@ public:
         TS_ASSERT_EQUALS(Settings::getLogLevel(), Settings::DefLogLevel);
         TS_ASSERT_EQUALS(Settings::getReseptSvrAddress(), myReq.svrAddress);
 
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name)(service3.name));
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
@@ -806,14 +814,6 @@ public:
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
         }
-
-        // test that master config does enforce settings
-        bool myIsFromMasterConfig = false;
-        // when
-        Settings::addUser(myReq.providerName, service1.name, "s1u_new");
-        // then users stay intact because they are marked as 'not-overwrite'
-        TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service1.name, myIsFromMasterConfig), service1.users);
-        TS_ASSERT(myIsFromMasterConfig);
 
         // test that master config is capable of recovering of user settings giving defaults for the settings we did not define above
         // when
@@ -831,7 +831,7 @@ public:
         TS_ASSERT_EQUALS(Settings::isDisplayServiceName(), Settings::DefServiceDisplayName); // default
         TS_ASSERT_EQUALS(Settings::isCleanupUserCert(), Settings::DefServiceCleanupUserCert); // default
 
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name)(service3.name));
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri); // restored from the default URI we supplied
@@ -844,11 +844,7 @@ public:
                 TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidityPercentage);
             }
 
-            if (service.allowOverwriteUsers) {
-                TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name).size(), 0U); // default
-            } else {
-                TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
-            }
+            TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name).size(), 0U);
         }
     }
 
@@ -859,7 +855,9 @@ public:
 
         // given
         static const bool AllowOverwriteYes = true;
-        static const bool AllowOverwriteNo  = false;
+        static const bool AllowOverwriteNo = false;
+        static const bool DoUseClientOsLogonUser = true;
+        static const bool DontUseClientOsLogonUser = false;
 
         TS_TRACE("--- Test generate admin configs (with RCA)");
 
@@ -876,8 +874,13 @@ public:
         const Settings::RccdRequestData::Service service("s3",
                                                         "https://s3.com",
                                                         13, AllowOverwriteYes,
-                                                        list_of("s3u1")("s3u2"), AllowOverwriteNo);
-        myReq.services = list_of(service);
+                                                        DontUseClientOsLogonUser,
+                                                        list_of("s3u1")("s3u2"));
+        const Settings::RccdRequestData::Service service2("s4",
+                                                        "https://s3.com",
+                                                        13, AllowOverwriteYes,
+                                                        DoUseClientOsLogonUser);
+        myReq.services = list_of(service)(service2);
 
         // when
         const bool myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml", "master.ini", "master.yaml");
@@ -902,7 +905,7 @@ public:
         TS_ASSERT_EQUALS(Settings::getLogLevel(), "DEBUG");
         TS_ASSERT_EQUALS(Settings::getReseptSvrAddress(), myReq.svrAddress);
 
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service.name));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service.name)(service2.name));
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
@@ -911,13 +914,6 @@ public:
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
         }
-
-        // when, test that master config does enforce settings
-        Settings::removeUsers();
-        bool myIsFromMasterConfig = false;
-        // then
-        TS_ASSERT_EQUALS(Settings::getUsers(myIsFromMasterConfig), service.users);
-        TS_ASSERT(myIsFromMasterConfig);
     }
 
     void testGenerateAdminConfigsInvalidUsage()
@@ -927,7 +923,9 @@ public:
 
         // given
         static const bool AllowOverwriteYes = true;
-        static const bool AllowOverwriteNo  = false;
+        static const bool AllowOverwriteNo = false;
+        static const bool DoUseClientOsLogonUser = true;
+        static const bool DontUseClientOsLogonUser = false;
 
         TS_TRACE("--- Test generate admin configs (with RCA)");
 
@@ -943,9 +941,14 @@ public:
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
         const Settings::RccdRequestData::Service service("s3",
                                                          "https://s3.com",
-                                                          13, AllowOverwriteYes,
-                                                          list_of("s3u1")("s3u2"), AllowOverwriteNo);
-        myReq.services = list_of(service);
+                                                          13, AllowOverwriteNo,
+                                                          DontUseClientOsLogonUser,
+                                                          list_of("s3u1")("s3u2"));
+        const Settings::RccdRequestData::Service service2("s4",
+                                                         "https://s4.com",
+                                                          13, AllowOverwriteNo,
+                                                          DoUseClientOsLogonUser);
+        myReq.services = list_of(service)(service2);
 
          // given (no services)
         Settings::RccdRequestData myBadReq = myReq;
@@ -976,6 +979,8 @@ public:
 
         // given
         static const bool AllowOverwriteYes = true;
+        static const bool DoUseClientOsLogonUser = true;
+        static const bool DontUseClientOsLogonUser = false;
         Settings::RccdRequestData myReq;
         myReq.providerName = "p1";
         myReq.contentVersion = 2010080401;
@@ -986,12 +991,18 @@ public:
         const Settings::RccdRequestData::Service service1("s1",
                                                          "https://s1.com",
                                                          11, AllowOverwriteYes,
-                                                         list_of("s1u1")("s1u2"), AllowOverwriteYes);
+                                                         DontUseClientOsLogonUser,
+                                                         list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                          "https://s2.com",
                                                          12, AllowOverwriteYes,
-                                                         vector<string>(), AllowOverwriteYes);
-        myReq.services = list_of(service1)(service2);
+                                                         DontUseClientOsLogonUser,
+                                                         vector<string>());
+        const Settings::RccdRequestData::Service service3("s3",
+                                                         "https://s3.com",
+                                                         12, AllowOverwriteYes,
+                                                         DoUseClientOsLogonUser);
+        myReq.services = list_of(service1)(service2)(service3);
 
         // when
         bool myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml");
@@ -1014,7 +1025,7 @@ public:
         TS_ASSERT_EQUALS(Settings::getLogLevel(), "DEBUG");
         TS_ASSERT_EQUALS(Settings::getReseptSvrAddress(), myReq.svrAddress);
 
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name)(service3.name));
         foreach (const Settings::RccdRequestData::Service& service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
@@ -1036,11 +1047,16 @@ public:
         myReq.commCaPem = ta::readData("commcacert.pem");
         myReq.pcaPem = ta::readData("pcacert.pem");
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
-        const Settings::RccdRequestData::Service service3("s3",
-                                                         "https://s3.com",
+        const Settings::RccdRequestData::Service service4("s3",
+                                                         "https://s4.com",
                                                           13, AllowOverwriteYes,
-                                                          list_of("s3u1")("s3u2"), AllowOverwriteYes);
-        myReq.services = list_of(service3);
+                                                          DontUseClientOsLogonUser,
+                                                          list_of("s4u1")("s4u2"));
+        const Settings::RccdRequestData::Service service5("s5",
+                                                         "https://s5.com",
+                                                          13, AllowOverwriteYes,
+                                                          DoUseClientOsLogonUser);
+        myReq.services = list_of(service4)(service5);
 
         // when
         myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml");
@@ -1064,7 +1080,7 @@ public:
         TS_ASSERT_EQUALS(Settings::getLogLevel(), "DEBUG");
         TS_ASSERT_EQUALS(Settings::getReseptSvrAddress(), myReq.svrAddress);
 
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service3.name));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service4.name)(service5.name));
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));

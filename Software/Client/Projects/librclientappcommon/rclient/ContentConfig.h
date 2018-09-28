@@ -31,6 +31,11 @@ namespace rclient
         //
         // version 2.0.1 (Sep 2017; supported by KeyTalk-5.x; fully compatible with the previous version)
         //     - removed 'ProxySettings' from user.ini and master.ini as http proxy does not make sense for https connection used by KeyTalk
+        //
+        // version 2.0.2 (Sep, 2018; supported by KeyTalk-5.x; fully compatible with the previous version)
+        //     - added use client os logon user setting to allow installation to add the (currently only Windows) logged on username to be added to the user list for the specific service
+        //     - no longer supporting users in master.ini/yaml, actively removing the users if found in master.ini/yaml
+
 
         static const ta::version::Version LatestVersion = ta::version::Version(2,0,1);
 
@@ -137,7 +142,7 @@ namespace rclient
         // Install RCCD content given its configuration
         // param [in] anInstallCAsCustomCb / aCbCookie custom callback with a cookie for installation of CAs. Must be NULL for production code, use it ONLY for test purposes
         //
-        void install(const Config& aConfig, InstallCAsCb anInstallCAsCustomCb = NULL, void* aCbCookie = NULL);
+        void install(const Config& aConfig, const std::string& aUsername, InstallCAsCb anInstallCAsCustomCb = NULL, void* aCbCookie = NULL);
     }
 }
 

@@ -87,6 +87,8 @@ IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy "test.psm1" "$(OutDir)"
 IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy "..\..\Projects\librclientcore\KeyTalkUtils.psm1" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\master.ini.from_rccdv2_0_1" "$(OutDir)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

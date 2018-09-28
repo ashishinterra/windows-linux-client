@@ -189,7 +189,7 @@ namespace rclient
         }
 
 
-        void install(const Config& aConfig, InstallCAsCb anInstallCAsCustomCb, void* aCbCookie)
+        void install(const Config& aConfig, const string& aUsername, InstallCAsCb anInstallCAsCustomCb, void* aCbCookie)
         {
             const string myNewProviderName = aConfig.getProviderName();
             const size_t myNewContentVersion = aConfig.getContentVersion();
@@ -206,13 +206,13 @@ namespace rclient
             {
                 DEBUGLOG(boost::format("Performing admin installation of settings version %u for provider %s. User settings from %s, master settings from %s. HOME directory: %s. USER: %s") %
                          (unsigned int)myNewContentVersion % myNewProviderName % myUserSettingsSourcePath % myMasterSettingsSourcePath % myHomeDir % myUserName);
-                rclient::Settings::adminInstallProvider(myUserSettingsSourcePath, myMasterSettingsSourcePath);
+                rclient::Settings::adminInstallProvider(myUserSettingsSourcePath, myMasterSettingsSourcePath, aUsername);
             }
             else
             {
                 DEBUGLOG(boost::format("Performing user installation of settings version %u for provider %s. User settings from %s. HOME directory: %s. USER: %s") %
                          (unsigned int)myNewContentVersion % myNewProviderName % myUserSettingsSourcePath % myHomeDir % myUserName);
-                rclient::Settings::userInstallProvider(myUserSettingsSourcePath);
+                rclient::Settings::userInstallProvider(myUserSettingsSourcePath, aUsername);
             }
 
             //

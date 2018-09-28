@@ -63,6 +63,7 @@ namespace rclient
         static const std::string DefLogLevel           = str(ta::LogLevel::Debug); // it is important to have some default for log level in order KeyTalk app can start&complain regardless messed up configuration
         static const bool DefServiceDisplayName       = true;
         static const bool DefServiceCleanupUserCert   = false;
+        static const bool DefServiceUseClientOsLogonUser = true;
 
 
         //
@@ -241,7 +242,7 @@ namespace rclient
                 }
                 foreach (const Service& service, services)
                 {
-                    if (!service.allowOverwriteCertValidityPercentage || !service.allowOverwriteUsers)
+                    if (!service.allowOverwriteCertValidityPercentage)
                     {
                         return true;
                     }
@@ -266,36 +267,36 @@ namespace rclient
                 Service() // default c'tor is required by boost::serialize
                     : certValidityPercentage(DefCertValidPercent)
                     , allowOverwriteCertValidityPercentage(true)
-                    , allowOverwriteUsers(true)
+                    , useClientOsLogonUser(DefServiceUseClientOsLogonUser)
                 {}
                 Service(const std::string& aName, const std::string& aUri)
                     : name(aName)
                     , uri(aUri)
                     , certValidityPercentage(DefCertValidPercent)
                     , allowOverwriteCertValidityPercentage(true)
-                    , allowOverwriteUsers(true)
+                    , useClientOsLogonUser(DefServiceUseClientOsLogonUser)
                 {}
                 // this c'tor is for testing only
                 Service(const std::string& aName,
                         const std::string& aUri,
                         const unsigned int aCertValidityPercentage,
                         const bool anAllowOverwriteCertValidityPercentage,
-                        const std::vector<std::string>& aUsers,
-                        const bool anAllowOverwriteUsers)
+                        const bool aUseClientOsLogonUser,
+                        const std::vector<std::string>& aUsers = std::vector<std::string>())
                     : name(aName)
                     , uri(aUri)
                     , certValidityPercentage(aCertValidityPercentage)
                     , allowOverwriteCertValidityPercentage(anAllowOverwriteCertValidityPercentage)
+                    , useClientOsLogonUser(aUseClientOsLogonUser)
                     , users(aUsers)
-                    , allowOverwriteUsers(anAllowOverwriteUsers)
                 {}
 
                 std::string name;
                 std::string uri;
                 unsigned int certValidityPercentage;
                 bool allowOverwriteCertValidityPercentage;
+                bool useClientOsLogonUser;
                 std::vector<std::string> users;
-                bool allowOverwriteUsers;
             };
 
             std::string providerName;
@@ -325,11 +326,11 @@ namespace rclient
 
         // Performs administration installation of the provider from the config files.
         // The provider settings are added, if new, otherwise overwrite the existing ones.
-        void adminInstallProvider(const std::string& aUserConfigPath, const std::string& aMasterConfigPath);
+        void adminInstallProvider(const std::string& aUserConfigPath, const std::string& aMasterConfigPath, const std::string& aUsername);
 
         // Performs user installation of the provider from the config file.
         // The provider settings are added, if new, otherwise overwrite the existing ones.
-        void userInstallProvider(const std::string& aUserConfigPath);
+        void userInstallProvider(const std::string& aUserConfigPath, const std::string& aUsername);
     }
 }
 
@@ -345,7 +346,7 @@ namespace boost
             ar & aService.certValidityPercentage;
             ar & aService.allowOverwriteCertValidityPercentage;
             ar & aService.users;
-            ar & aService.allowOverwriteUsers;
+            ar & aService.useClientOsLogonUser;
         }
 
         template<class Archive>

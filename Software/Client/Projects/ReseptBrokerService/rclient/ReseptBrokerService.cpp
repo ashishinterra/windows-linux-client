@@ -267,7 +267,7 @@ namespace rclient
                 }
             }
 
-            ContentConfig::install(aRequest.contentConfig);
+            ContentConfig::install(aRequest.contentConfig, aRequest.username);
         }
 
         void uninstallUserSettings(const UninstallSettingsRequest& aRequest)

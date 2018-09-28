@@ -7,6 +7,7 @@
 #include "ta/certutils.h"
 #include "ta/logger.h"
 #include "ta/logconfiguration.h"
+#include "ta/utils.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -67,10 +68,17 @@ namespace rclient
                         myServiceConfig.add(ServiceUri, libconfig::Setting::TypeString) = service.uri;
                         myServiceConfig.add(ServiceCertValidPercent, libconfig::Setting::TypeInt) = (int)service.certValidityPercentage;
 
-                        libconfig::Setting& myUsersConfig = myServiceConfig.add(ServiceUserList, libconfig::Setting::TypeArray);
-                        foreach (const string& user, service.users)
+                        if (service.useClientOsLogonUser)
                         {
-                            myUsersConfig.add(libconfig::Setting::TypeString) = user;
+                            myServiceConfig.add(ServiceUseClientOsLogonUser, libconfig::Setting::TypeBoolean) = service.useClientOsLogonUser;
+                        }
+                        else
+                        {
+                            libconfig::Setting& myUsersConfig = myServiceConfig.add(ServiceUserList, libconfig::Setting::TypeArray);
+                            foreach(const string& user, service.users)
+                            {
+                                myUsersConfig.add(libconfig::Setting::TypeString) = user;
+                            }
                         }
                     }
 
@@ -137,14 +145,21 @@ namespace rclient
                         conf << YAML::Key << ServiceUri << YAML::Value << service.uri;
                         conf << YAML::Key << ServiceCertValidPercent << YAML::Value << service.certValidityPercentage;
 
-                        // populate users
-                        conf << YAML::Key << ServiceUserList;
-                        conf << YAML::Value << YAML::BeginSeq;
-                        foreach (const string& user, service.users)
+                        if (service.useClientOsLogonUser)
                         {
-                            conf << user;
+                            conf << YAML::Key << ServiceUseClientOsLogonUser << YAML::Value << service.useClientOsLogonUser;
                         }
-                        conf << YAML::EndSeq; //users
+                        else
+                        {
+                            // populate users
+                            conf << YAML::Key << ServiceUserList;
+                            conf << YAML::Value << YAML::BeginSeq;
+                            foreach(const string& user, service.users)
+                            {
+                                conf << user;
+                            }
+                            conf << YAML::EndSeq; //users
+                        }
 
                         conf << YAML::EndMap; // end per-service settings
                     }
@@ -228,14 +243,6 @@ namespace rclient
                         {
                             myServiceConfig.add(ServiceCertValidPercent, libconfig::Setting::TypeInt) = (int)service.certValidityPercentage;
                         }
-                        if (!service.allowOverwriteUsers)
-                        {
-                            libconfig::Setting& myUsersConfig = myServiceConfig.add(ServiceUserList, libconfig::Setting::TypeArray);
-                            foreach (const string& user, service.users)
-                            {
-                                myUsersConfig.add(libconfig::Setting::TypeString) = user;
-                            }
-                        }
                     }
 
                     // save to file
@@ -310,17 +317,6 @@ namespace rclient
                         if (!service.allowOverwriteCertValidityPercentage)
                         {
                             conf << YAML::Key << ServiceCertValidPercent << YAML::Value << service.certValidityPercentage;
-                        }
-                        if (!service.allowOverwriteUsers)
-                        {
-                            // populate users
-                            conf << YAML::Key << ServiceUserList;
-                            conf << YAML::Value << YAML::BeginSeq;
-                            foreach (const string& user, service.users)
-                            {
-                                conf << user;
-                            }
-                            conf << YAML::EndSeq; //users
                         }
 
                         conf << YAML::EndMap; // end per-service settings
@@ -776,8 +772,50 @@ namespace rclient
             }
         }
 
+        void setClientOsLogonUser(libconfig::Config& aTargetConfig, const string& aProviderName, const string& aUsername)
+        {
+            const map<string, string> myServices = SettingsImpl::getServices(aTargetConfig, SettingsImpl::getProviderPath(0));
+            foreach(const string& myServiceName, ta::extractKeys(myServices))
+            {
+                if (SettingsImpl::isServiceValExist<bool>(aTargetConfig, ServiceUseClientOsLogonUser, aProviderName, myServiceName))
+                {
+                    const string myUseClientOsLogonUserPath = SettingsImpl::getServiceSettingPath(ta::getValueByKey(myServiceName, myServices), ServiceUseClientOsLogonUser);
+                    if (aTargetConfig.exists(myUseClientOsLogonUserPath))
+                    {
+                        bool myUseClientOsLogonUser = false;
+                        if (aTargetConfig.lookupValue(myUseClientOsLogonUserPath, myUseClientOsLogonUser) && myUseClientOsLogonUser)
+                        {
+                            // Remove useClientOsLogonUser
+                            libconfig::Setting& myServiceSetting = aTargetConfig.lookup(ta::getValueByKey(myServiceName, myServices));
+                            myServiceSetting.remove(ServiceUseClientOsLogonUser);
 
-        void installProvider(const string& aUserConfigPath, bool anIsAdminInstall, const string& aMasterConfigPath)
+                            // Add the user element & add the user to it
+                            const string myUserListPath = SettingsImpl::getServiceSettingPath(ta::getValueByKey(myServiceName, myServices), ServiceUserList);
+                            libconfig::Setting& myUserListSetting = aTargetConfig.exists(myUserListPath) ? aTargetConfig.lookup(myUserListPath)
+                                                                    : myServiceSetting.add(ServiceUserList, libconfig::Setting::TypeArray);
+                            myUserListSetting.add(libconfig::Setting::TypeString) = aUsername;
+                        }
+                    }
+                }
+            }
+        }
+
+        void removeUsersFromMasterConfig(libconfig::Config& aMasterConfig, const string& aProviderName)
+        {
+            const map<string, string> myServices = SettingsImpl::getServices(aMasterConfig, SettingsImpl::getProviderPath(0));
+            foreach(const string& myServiceName, ta::extractKeys(myServices))
+            {
+                if (SettingsImpl::isServiceValExist<vector<string> >(aMasterConfig, ServiceUserList, aProviderName, myServiceName))
+                {
+                    // Remove Users
+                    libconfig::Setting& myServiceSetting = aMasterConfig.lookup(ta::getValueByKey(myServiceName, myServices));
+                    myServiceSetting.remove(ServiceUserList);
+                }
+            }
+        }
+
+
+        void installProvider(const string& aUserConfigPath, bool anIsAdminInstall, const string& aMasterConfigPath, const string& aUsername)
         {
             // Retrieve provider name
             const string myProvider0NameSettingName = SettingsImpl::getProviderSettingPath(0, ProviderName);
@@ -788,6 +826,7 @@ namespace rclient
                 TA_THROW_MSG(SettingsError, boost::format("No %s setting exist in %s or it is not a string") %  myProvider0NameSettingName % aUserConfigPath);
             if (mySrcUserConfigPtr->exists(SettingsImpl::getProviderPath(1)))
                 TA_THROW_MSG(SettingsError, boost::format("More than one provider exists in the source user config %s. Only one provider is allowed.") % aUserConfigPath);
+            setClientOsLogonUser(*mySrcUserConfigPtr.get(), myProviderName, aUsername);
 
             auto_ptr<libconfig::Config> mySrcMasterConfigPtr;
             if (anIsAdminInstall)
@@ -845,6 +884,9 @@ namespace rclient
                 {
                     myTargetMasterConfigPtr = mySrcMasterConfigPtr;
                 }
+                // remove users from master config as these are not supported anymore since RCCD v2.0.2
+                removeUsersFromMasterConfig(*myTargetMasterConfigPtr.get(), myProviderName);
+
                 assert(myTargetMasterConfigPtr.get());
             }
 
@@ -857,14 +899,14 @@ namespace rclient
         }
 
 
-        void adminInstallProvider(const string& aUserConfigPath, const string& aMasterConfigPath)
+        void adminInstallProvider(const string& aUserConfigPath, const string& aMasterConfigPath, const string& aUsername)
         {
-            installProvider(aUserConfigPath, true, aMasterConfigPath);
+            installProvider(aUserConfigPath, true, aMasterConfigPath, aUsername);
         }
 
-        void userInstallProvider(const string& aUserConfigPath)
+        void userInstallProvider(const string& aUserConfigPath, const string& aUsername)
         {
-            installProvider(aUserConfigPath, false, "");
+            installProvider(aUserConfigPath, false, "", aUsername);
         }
 
         ta::NetUtils::RemoteAddress getReseptSvrAddress()

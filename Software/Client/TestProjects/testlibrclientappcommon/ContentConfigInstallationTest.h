@@ -141,6 +141,8 @@ public:
 
         static const bool AllowOverwriteYes = true;
         static const bool AllowOverwriteNo  = false;
+        static const bool DoUseClientOsLogonUser = true;
+        static const bool DontUseClientOsLogonUser = false;
 
         Settings::RccdRequestData myReq;
         myReq.providerName = "DemoProvider";
@@ -157,12 +159,18 @@ public:
         const Settings::RccdRequestData::Service service1("s1",
                                                         "https://s1.com",
                                                          11, AllowOverwriteYes,
-                                                         list_of("s1u1")("s1u2"), AllowOverwriteYes);
+                                                         DontUseClientOsLogonUser,
+                                                         list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                         "https://s2.com",
                                                          12, AllowOverwriteYes,
-                                                         list_of("s2u1"), AllowOverwriteYes);
-        myReq.services = list_of(service1)(service2);
+                                                         DontUseClientOsLogonUser,
+                                                         list_of("s2u1"));
+        const Settings::RccdRequestData::Service service3("s3",
+                                                        "https://s3.com",
+                                                         12, AllowOverwriteYes,
+                                                         DoUseClientOsLogonUser);
+        myReq.services = list_of(service1)(service2)(service3);
 
         return myReq;
     }
@@ -276,7 +284,7 @@ public:
         verifyNotCustomized();
 
         // when
-        ContentConfig::install(myConfig, &installCAs, this);
+        ContentConfig::install(myConfig, ta::getUserName(), &installCAs, this);
 
         // then
         verifyCustomized(myReq);
@@ -293,7 +301,7 @@ public:
         verifyNotCustomized();
 
         // when
-        ContentConfig::install(myConfig, &installCAs, this);
+        ContentConfig::install(myConfig, ta::getUserName(), &installCAs, this);
 
         // then
         verifyCustomized(myReq);
@@ -310,7 +318,7 @@ public:
         verifyNotCustomized();
 
         // when
-        ContentConfig::install(myConfig, &installCAs, this);
+        ContentConfig::install(myConfig, ta::getUserName(), &installCAs, this);
 
         // then
         verifyCustomized(myReq);
@@ -327,7 +335,7 @@ public:
         verifyNotCustomized();
 
         // when
-        ContentConfig::install(myConfig, &installCAs, this);
+        ContentConfig::install(myConfig, ta::getUserName(), &installCAs, this);
 
         // then
         verifyCustomized(myReq);
@@ -345,7 +353,7 @@ public:
         verifyNotCustomized();
 
         // when
-        ContentConfig::install(myConfig, &installCAs, this);
+        ContentConfig::install(myConfig, ta::getUserName(), &installCAs, this);
 
         // then
         verifyCustomized(myReq, myWithExtraSigningCAs);
