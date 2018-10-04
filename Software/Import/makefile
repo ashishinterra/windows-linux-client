@@ -2,7 +2,7 @@ include ../mk/keytalk.common.mk
 
 ifneq ($(wildcard /resept_server_dev),)
   # KeyTalk Server
-  PRJS+=ulxmlrpcpp sscep
+  PRJS+=ulxmlrpcpp sscep libbcrypt-1.3
   INST_PRJS+=softhsm-2.1 sscep
 else ifneq ($(wildcard /resept_hsm_proxy_dev),)
   # KeyTalk HSM Proxy

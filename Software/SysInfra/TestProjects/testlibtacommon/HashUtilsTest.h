@@ -108,6 +108,78 @@ public:
         TS_ASSERT_EQUALS(ta::HashUtils::getSha256HexFile(BlobFileName), "f697d5b221ddfd2ffbecaf8cca252701ab976cf8cbb74ce0238ef336093327a8");
     }
 
+    void testBcrypt()
+    {
+#ifdef RESEPT_SERVER
+        {
+            //given
+            const string myEmptyPwd = "";
+            const string myEmptyHash = "";
+            //when-then
+            TS_TRACE("Testing empty password gets hashed as well");
+            TS_ASSERT_DIFFERS(ta::HashUtils::getBcryptHash(myEmptyPwd), myEmptyHash);
+        }
+        {
+            //given
+            const string myTestPwd = "Testtesttest";
+            //when
+            const string myGoodHash = ta::HashUtils::getBcryptHash(myTestPwd);
+            //then
+            TS_TRACE("Testing if password is validated correctly");
+            TS_ASSERT(ta::HashUtils::isBcryptPasswdValid(myTestPwd, myGoodHash));
+        }
+        {
+            //given
+            const string myTestPwd = "Testtesttest";
+            const string myIncorrectPwd = "INCORRECT";
+            //when
+            const string myGoodHash = ta::HashUtils::getBcryptHash(myTestPwd);
+            //then
+            TS_TRACE("Testing if incorrect password is rejected");
+            TS_ASSERT(!ta::HashUtils::isBcryptPasswdValid(myIncorrectPwd, myGoodHash));
+        }
+        {
+            //given
+            const string myEmptyHash = "";
+            const string myVeryLongPwd = "testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest";
+            //when-hen
+            TS_TRACE("Testing very long hash");
+            TS_ASSERT(ta::HashUtils::getBcryptHash(myVeryLongPwd) != myEmptyHash);
+        }
+        {
+            //given
+            const string myEmptyPwd = "";
+            //when
+            const string myGoodHash = ta::HashUtils::getBcryptHash(myEmptyPwd);
+            //then
+            TS_TRACE("Testing that password validation with empty password");
+            TS_ASSERT(ta::HashUtils::isBcryptPasswdValid(myEmptyPwd, myGoodHash));
+        }
+        {
+            //given
+            const string myFilename = "bcrypt_test_password.txt";
+            const string myTestPwd = "Testtesttest";
+            //when
+            ta::writeData(myFilename, myTestPwd);
+            const string myHashFromFile = ta::HashUtils::getBcryptHashFile(myFilename);
+            //then
+            TS_TRACE("Testing bcrypt file access");
+            TS_ASSERT(ta::HashUtils::isBcryptPasswdValid(myTestPwd, myHashFromFile));
+        }
+        {
+            //given
+            const string myTestPwd = "Testpassword";
+            const string myEmptyHash = "";
+            //when-then
+            TS_TRACE("Verifying that password validation with empty hash is not possible");
+            TS_ASSERT_THROWS(ta::HashUtils::isBcryptPasswdValid(myTestPwd, myEmptyHash), std::exception);
+        }
+#else
+        TS_SKIP("testBcrypt will only be tested on server");
+#endif
+    }
+
+
     static const std::string TempFileName;
     static const std::string BlobFileName;
 };

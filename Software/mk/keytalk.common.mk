@@ -28,6 +28,11 @@ endif
 # Location of libraries
 #
 
+# bcrypt library
+BCRYPT_VERSION_DIR=libbcrypt-1.3
+BCRYPT_LIB=$(BCRYPT_VERSION_DIR)/bcrypt.a
+BCRYPT_INCLUDE_DIR=$(BCRYPT_VERSION_DIR)
+
 # Boost libraries
 BOOST_VERSION_DIR=boost-1.64
 BOOST_LIB_DIR=$(BOOST_VERSION_DIR)/bin.v2/libs

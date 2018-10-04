@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-class WindowsHtUtilsTest : public CxxTest::TestSuite
+class WindowsHwUtilsTest : public CxxTest::TestSuite
 {
 public:
     void testDevInfo4AllSupportedClasses()

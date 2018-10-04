@@ -3,6 +3,10 @@
 #include "scopedresource.hpp"
 #include "common.h"
 
+#ifdef RESEPT_SERVER
+#include "ta/utils.h"
+#include "bcrypt.h"
+#endif
 #include "openssl/evp.h"
 #include <stdexcept>
 #ifdef _WIN32_
@@ -201,6 +205,45 @@ namespace ta
         {
             return getFileDigestBin(aFilePath, dgstSha256);
         }
+
+#ifdef RESEPT_SERVER
+        //
+        // bcrypt
+        //
+
+        string getBcryptHash(const string& aVal)
+        {
+            const int DefaultBrcyptWorkFactor = 12;
+            char mySalt[BCRYPT_HASHSIZE] = { '\0' };
+            char myHash[BCRYPT_HASHSIZE + 1] = { '\0' };
+            int result = bcrypt_gensalt(DefaultBrcyptWorkFactor, mySalt);
+            if (result != 0)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("bcrypt_gensalt failed with error code %i") % result);
+            }
+            result = bcrypt_hashpw(aVal.c_str(), mySalt, myHash);
+            if (result != 0)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("bcrypt_hashpwd failed with error code %i") % result);
+            }
+            return myHash;
+        }
+
+        string getBcryptHashFile(const string& aFilePath)
+        {
+            return getBcryptHash(ta::readData(aFilePath));
+        }
+
+        bool isBcryptPasswdValid(const string& aPw, const string& aHash)
+        {
+            const int pwcheck_result = bcrypt_checkpw(aPw.c_str(), aHash.c_str());
+            if (pwcheck_result < 0)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("bcrypt password validation failed with error code: %i") % pwcheck_result);
+            }
+            return pwcheck_result == 0;
+        }
+#endif
 
     }
 }

@@ -32,5 +32,12 @@ namespace ta
         std::string getSha256Hex(const std::string& aVal);
         std::string getSha256Hex(const std::vector<unsigned char>& aVal);
         std::string getSha256HexFile(const std::string& aFilePath);
+
+#ifdef RESEPT_SERVER
+        std::string getBcryptHash(const std::string& aVal);
+        std::string getBcryptHashFile(const std::string& aFilePath);
+
+        bool isBcryptPasswdValid(const std::string& aPw, const std::string& aHash);
+#endif
     }
 }
