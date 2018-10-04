@@ -35,7 +35,7 @@ Install packages
     Make sure 'universe' repository is listed in /etc/apt/sources.list, add it if not
 
     # apt-get update
-    # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python-pip pylint hdparm zip clang lsb-release
+    # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python-pip pylint python3 hdparm zip clang lsb-release
     # pip2 install lxml pyopenssl
     # a2enmod ssl
     # curl -s https://bootstrap.pypa.io/get-pip.py | python3
