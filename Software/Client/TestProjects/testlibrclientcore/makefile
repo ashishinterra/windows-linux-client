@@ -87,10 +87,10 @@ ifdef RESEPT_LINUX_CLIENT
 	cp -f ../../../SysInfra/Projects/Export/hwutils $(OUT_DIR)/
 	@echo " Creating minimal KeyTalk client installation..."
 	mkdir -p ~/.keytalk/
-	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient/user.ini ~/.keytalk/
+	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/user.ini ~/.keytalk/
 	mkdir -p /etc/keytalk/
-	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient/master.ini /etc/keytalk/
-	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient/resept.ini /etc/keytalk/
+	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
+	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
 		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /usr/local/share/ca-certificates/test-commcacert-pcacert.crt; \
 		update-ca-certificates; \

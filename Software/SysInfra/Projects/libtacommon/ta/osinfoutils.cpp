@@ -258,6 +258,11 @@ namespace ta
         {
             return ta::isFileExist("/etc/redhat-release");
         }
+
+        bool isDockerContainer()
+        {
+            return ta::isFileExist("/.dockerenv");
+        }
 #endif // __linux__
 
     } //OsInfoUtils

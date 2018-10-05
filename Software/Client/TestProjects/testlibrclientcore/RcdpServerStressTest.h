@@ -209,7 +209,7 @@ public:
     void _testConcurrent_10_threads()
     {
         const unsigned int myNumThreads = 10;
-        const unsigned int myDeadlineSec = 10;
+        const unsigned int myDeadlineSec = 25;
 
         doTestConcurrent(myNumThreads, myDeadlineSec);
     }
@@ -217,7 +217,7 @@ public:
     void testConcurrent_20_threads()
     {
         const unsigned int myNumThreads = 20;
-        const unsigned int myDeadlineSec = 20;
+        const unsigned int myDeadlineSec = 50;
 
         doTestConcurrent(myNumThreads, myDeadlineSec);
     }
@@ -225,7 +225,7 @@ public:
     void testSequential()
     {
         const unsigned int myNumberOfRequests = 10;
-        const unsigned int myExpectedMaxAvgRequestLatencySec = 2;
+        const unsigned int myExpectedMaxAvgRequestLatencySec = 3;
         int myTotalCertsReceived = 0;
 
         TS_TRACE(str(boost::format("Test getting certificate using %d sequential requests") % myNumberOfRequests).c_str());

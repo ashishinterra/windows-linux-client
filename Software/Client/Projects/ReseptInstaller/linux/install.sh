@@ -263,11 +263,11 @@ function install_apache_cert_renewal_prerequisities()
 
 
     if [ -f /etc/debian_version ]; then
-        apt-get -qq -y install cron python-lxml python-openssl
+        apt-get -qq -y install cron python python-lxml python-openssl
         IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK=true
         return 0
     elif [ -f /etc/redhat-release ]; then
-        yum -y install cronie python-lxml pyOpenSSL
+        yum -y install cronie python python-lxml pyOpenSSL
         IS_APACHE_CERT_RENEWAL_PREREQUISITES_OK=true
         return 0
     fi
@@ -284,11 +284,11 @@ function install_tomcat_cert_renewal_prerequisities()
 
 
     if [ -f /etc/debian_version ]; then
-        apt-get -qq -y install cron python-lxml python-openssl
+        apt-get -qq -y install cron python python-lxml python-openssl
         IS_TOMCAT_CERT_RENEWAL_PREREQUISITES_OK=true
         return 0
     elif [ -f /etc/redhat-release ]; then
-        yum -y install cronie python-lxml pyOpenSSL
+        yum -y install cronie python python-lxml pyOpenSSL
         IS_TOMCAT_CERT_RENEWAL_PREREQUISITES_OK=true
         return 0
     fi

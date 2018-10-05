@@ -5,7 +5,6 @@ client-5.4.0, in development
 ----------------------
     - ADDED: Allow using OS logon username as KeyTalk client username (KEYTALK-471)
 
-
 server-5.4.0, in development
 ----------------------
 Support upgrades from v5.2.1 and higher

@@ -4,28 +4,21 @@ set -e
 set -u
 set -x
 
-# usage: ./$0 [client-version installer-dir rccds-dir cas-dir logs-backup-dir | test-name ]
+# usage: ./$0 [installer-dir logs-backup-dir | test-name ]
 
 . ./test_install_functions.inc.sh
 
-CLIENT_VERSION=
+CLIENT_VERSION=$(cut -d '=' -f 2 ../../../version)
 INSTALLER_DIR=../../../Projects/Export/
-RCCDS_DIR=
 LOGS_BACKUP_DIR=/var/log/keytalk
 TEST_NAME=
 CAS_DIR=../../../../CertKeys/CommunicationAndSigning
 
-if [ $# -eq 0 ]; then
-    CLIENT_VERSION=$(cut -d '=' -f 2 ../../../version)
-elif [ $# -eq 1 ]; then
-    CLIENT_VERSION=$(cut -d '=' -f 2 ../../../version)
+if [ $# -eq 1 ]; then
     TEST_NAME="$1"
-elif [ $# -eq 5 ]; then
-    CLIENT_VERSION="$1"
-    INSTALLER_DIR="$2"
-    RCCDS_DIR="$3"
-    CAS_DIR="$4"
-    LOGS_BACKUP_DIR="$5"
+elif [ $# -eq 2 ]; then
+    INSTALLER_DIR="$1"
+    LOGS_BACKUP_DIR="$2"
 fi
 
 KT_SVR_WEBUI_IP="192.168.33.111"
@@ -156,15 +149,11 @@ function setup_test()
     mkdir -p ${INSTALLER_TEMP_DIR}
     tar -xzf ${INSTALLER_TGZ_PATH} -C ${INSTALLER_TEMP_DIR}
 
-    # generate or grab test RCCDs
-    if [ "${RCCDS_DIR}" ]; then
-        cp -f "${RCCDS_DIR}"/*.rccd ${INSTALLER_TEMP_DIR}/${PACKAGE_DIR_NAME}/
-    else
-        pushd ../../../../WebUI.Server/Projects/ > /dev/null
-        ./create_test_rccds.py ${KT_SVR_WEBUI_IP}
-        cp -f Export/*.rccd ${INSTALLER_TEMP_DIR}/${PACKAGE_DIR_NAME}/
-        popd > /dev/null
-    fi
+    # generate test RCCDs
+    pushd ../../../../WebUI.Server/Projects/ > /dev/null
+    ./create_test_rccds.py ${KT_SVR_WEBUI_IP}
+    cp -f Export/*.rccd ${INSTALLER_TEMP_DIR}/${PACKAGE_DIR_NAME}/
+    popd > /dev/null
 }
 
 function teardown_test()

@@ -108,6 +108,11 @@ namespace ta
 
         bool getPrimaryHardDriveSerial(string& aSerial)
         {
+            if (ta::OsInfoUtils::isDockerContainer())
+            {
+                WARNLOG("Skip retrieving HDD information in docker container");
+                return false;
+            }
             string mySdtOut, myStdErr;
 
             // Reading HDD serial under Linux requires root privileges. To work this around we placed this function in the external tool with setuid bit set .

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ta/linuxhwutils.h"
+#include "ta/osinfoutils.h"
 #include "ta/common.h"
 #include "cxxtest/TestSuite.h"
 #include <string>
@@ -25,15 +26,25 @@ public:
 
     void test_that_serial_num_can_be_read()
     {
-        const std::string test_str = ta::linuxhwutils::getSerialNum();
-        TS_TRACE("Serial number is " + test_str);
-        TS_ASSERT(!test_str.empty());
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            const std::string test_str = ta::linuxhwutils::getSerialNum();
+            TS_TRACE("Serial number is " + test_str);
+            TS_ASSERT(!test_str.empty());
+        }
+        else
+        {
+            TS_SKIP("Skip system serial number retrieval test for docker container");
+        }
     }
 
     void test_that_sshd_host_keys_can_be_retrieved()
     {
-        std::vector<ta::linuxhwutils::SshPubKey> myKeys = ta::linuxhwutils::getSsh2HostPubKeys();
-        TS_ASSERT(!myKeys.empty());
+        const std::vector<ta::linuxhwutils::SshPubKey> myKeys = ta::linuxhwutils::getSsh2HostPubKeys();
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            TS_ASSERT(!myKeys.empty());
+        }
         foreach (const ta::linuxhwutils::SshPubKey& key, myKeys)
         {
             TS_TRACE(str(boost::format("SShd host key type: %s, value: %s") % key.type % key.val).c_str());

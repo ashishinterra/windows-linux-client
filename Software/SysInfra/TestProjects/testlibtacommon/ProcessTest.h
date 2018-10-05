@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ta/process.h"
+#include "ta/osinfoutils.h"
 #include "ta/utils.h"
 
 #include "cxxtest/TestSuite.h"
@@ -473,7 +474,10 @@ public:
    {
 #if defined(__linux__)
         // when-then
-        TS_ASSERT(Process::isServiceRunning("rsyslog"));
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            TS_ASSERT(Process::isServiceRunning("rsyslog"));
+        }
 
 #ifdef RESEPT_SERVER
         // when

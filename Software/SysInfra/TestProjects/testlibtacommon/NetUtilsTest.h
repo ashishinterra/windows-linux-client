@@ -3,6 +3,7 @@
 #include "ta/common.h"
 #include "ta/netutils.h"
 #include "ta/timeutils.h"
+#include "ta/osinfoutils.h"
 #include "ta/utils.h"
 #include "cxxtest/TestSuite.h"
 #include <string>
@@ -274,32 +275,39 @@ public:
     void testGetIfaceConfigType()
     {
 #ifndef _WIN32
-        using namespace ta::NetUtils;
-
-        IfaceConfigType::val myIPv4IfaceConfigType, myIPv6IfaceConfigType;
-
-        // when
-        boost::tie(myIPv4IfaceConfigType, myIPv6IfaceConfigType) = getNetIfaceConfigType("lo");
-        // then
-        TS_ASSERT_EQUALS(myIPv4IfaceConfigType, IfaceConfigType::Auto);
-        TS_ASSERT_EQUALS(myIPv6IfaceConfigType, IfaceConfigType::Auto);
-
-        // when-then
-        TS_ASSERT_THROWS(getNetIfaceConfigType("__non_nexisting_iface__"), std::runtime_error);
-
-        // given (iterate over local interfaces)
-        foreach (const Iface& iface, getMyIfaces())
+        if (!ta::OsInfoUtils::isDockerContainer())
         {
-            // when
-            boost::tie(myIPv4IfaceConfigType, myIPv6IfaceConfigType) = getNetIfaceConfigType(iface.first);
+            using namespace ta::NetUtils;
 
-            //
+            IfaceConfigType::val myIPv4IfaceConfigType, myIPv6IfaceConfigType;
+
+            // when
+            boost::tie(myIPv4IfaceConfigType, myIPv6IfaceConfigType) = getNetIfaceConfigType("lo");
             // then
-            //
-            TS_TRACE((boost::format("Interface %1% has IPv4 %2% and %3% configuration") %
-                    iface.first % str(iface.second.ipv4) % str(myIPv4IfaceConfigType)).str().c_str());
-            TS_TRACE((boost::format("Interface %1% has IPv6 %2% and %3% configuration") %
-                    iface.first % str(iface.second.ipsv6) %  str(myIPv6IfaceConfigType)).str().c_str());
+            TS_ASSERT_EQUALS(myIPv4IfaceConfigType, IfaceConfigType::Auto);
+            TS_ASSERT_EQUALS(myIPv6IfaceConfigType, IfaceConfigType::Auto);
+
+            // when-then
+            TS_ASSERT_THROWS(getNetIfaceConfigType("__non_nexisting_iface__"), std::runtime_error);
+
+            // given (iterate over local interfaces)
+            foreach (const Iface& iface, getMyIfaces())
+            {
+                // when
+                boost::tie(myIPv4IfaceConfigType, myIPv6IfaceConfigType) = getNetIfaceConfigType(iface.first);
+
+                //
+                // then
+                //
+                TS_TRACE((boost::format("Interface %1% has IPv4 %2% and %3% configuration") %
+                        iface.first % str(iface.second.ipv4) % str(myIPv4IfaceConfigType)).str().c_str());
+                TS_TRACE((boost::format("Interface %1% has IPv6 %2% and %3% configuration") %
+                        iface.first % str(iface.second.ipsv6) %  str(myIPv6IfaceConfigType)).str().c_str());
+            }
+        }
+        else
+        {
+            TS_SKIP("Skip network interface configuration test for docker containers");
         }
 #else
         TS_SKIP("Not implemented on Windows");
@@ -313,7 +321,10 @@ public:
         const ta::NetUtils::DefGateway myDefGateway = ta::NetUtils::getDefIpv4Gateway();
         // then
         TS_ASSERT(ta::NetUtils::isValidIpv4(myDefGateway.ip));
-        TS_ASSERT(isValidInterfaceName(myDefGateway.iface));
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            TS_ASSERT(isValidInterfaceName(myDefGateway.iface));
+        }
         TS_TRACE(("IPv4 default gateway: " + str(myDefGateway)).c_str());
 #else
         TS_SKIP("Not implemented on Windows");
@@ -400,8 +411,15 @@ public:
     {
         using namespace ta::NetUtils;
 #ifndef _WIN32
-        TS_ASSERT_EQUALS(checkConnectivity(), connectivityOk);
-        TS_ASSERT_EQUALS(checkConnectivity(boost::assign::list_of(RemoteAddress("google.com", 666))), connectivityTcpServersNotAccessible);
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            TS_ASSERT_EQUALS(checkConnectivity(), connectivityOk);
+            TS_ASSERT_EQUALS(checkConnectivity(boost::assign::list_of(RemoteAddress("google.com", 666))), connectivityTcpServersNotAccessible);
+        }
+        else
+        {
+            TS_SKIP("Skip Internet connectivity test for docker container");
+        }
 #else
         TS_SKIP("Not implemented on Windows");
 #endif

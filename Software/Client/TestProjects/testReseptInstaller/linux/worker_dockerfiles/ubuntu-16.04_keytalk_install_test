@@ -1,6 +1,6 @@
-# Dockerfile for Debian 9 guest image used in multi-platform tests
+# Dockerfile to test the pre-built Ubuntu 16.04 KeyTalk client by installing it
 
-FROM debian:stretch
+FROM ubuntu:16.04
 
 RUN apt-get update
 RUN apt-get -y install openssh-client procps apache2 hdparm unzip lsb-release
@@ -9,4 +9,4 @@ RUN a2enmod ssl
 # install mailserver, suppressing any prompts
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install mailutils postfix
 
-ENTRYPOINT service postfix restart && ./bootstrap/test_multiplatform_guest.sh
+ENTRYPOINT service postfix restart && ./bootstrap/worker_start_installation_test.sh

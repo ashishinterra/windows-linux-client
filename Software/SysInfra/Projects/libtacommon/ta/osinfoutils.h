@@ -28,6 +28,8 @@ namespace ta
         bool isLinuxDebian(); // Debian or Ubuntu
         bool isLinuxCentOS();
         bool isLinuxRHEL();
+
+        bool isDockerContainer();
 #endif
     }
 }

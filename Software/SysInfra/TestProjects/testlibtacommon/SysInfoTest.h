@@ -2,6 +2,7 @@
 
 #include "ta/sysinfo.h"
 #include "ta/timeutils.h"
+#include "ta/osinfoutils.h"
 #include "cxxtest/TestSuite.h"
 #include <string>
 
@@ -41,9 +42,16 @@ public:
 
     void testSerialNumber()
     {
-        const std::string serialNumber = ta::SysInfo::getSerialNumber();
-        TS_TRACE("Serial number is " + serialNumber);
-        TS_ASSERT(!serialNumber.empty());
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            const std::string serialNumber = ta::SysInfo::getSerialNumber();
+            TS_TRACE("Serial number is " + serialNumber);
+            TS_ASSERT(!serialNumber.empty());
+        }
+        else
+        {
+            TS_SKIP("Skip system serial number retrieval test for docker container");
+        }
     }
 
     void testGetHardwareDescription()
