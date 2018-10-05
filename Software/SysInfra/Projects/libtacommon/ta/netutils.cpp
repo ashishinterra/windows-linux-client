@@ -61,6 +61,7 @@ namespace ta
             string NetIfaceConfigPath(const string& anIfaceName) { return "/etc/sysconfig/network-scripts/ifcfg-" + anIfaceName; }
 
             const string LoopbackIfaceName       = "lo";
+            const string DockerIfaceName         = "docker0";
 
             bool isIfaceConfigBlockStarted(const string& anIfaceName, const string& aLine)
             {
@@ -1043,7 +1044,7 @@ namespace ta
 #endif // WIN32
 
 #ifndef _WIN32
-        Ifaces getMyIpv4faces(SkipLoopBack aSkipLoopBack)
+        Ifaces getMyIpv4faces(const SkipLoopBack aSkipLoopBack, const SkipDocker aSkipDocker)
         {
             Ifaces myIfaces;
             int mySock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -1088,6 +1089,10 @@ namespace ta
                 {
                     continue;
                 }
+                if (aSkipDocker == skipDockerYes && isDocker(pifReq -> ifr_name))
+                {
+                    continue;
+                }
 
                 // Retrieve IPv4
                 sockaddr_in myIp = {0};
@@ -1124,7 +1129,7 @@ namespace ta
             return myIfaces;
         }
 
-        Ifaces getMyIpv6faces(SkipLoopBack aSkipLoopBack)
+        Ifaces getMyIpv6faces(const SkipLoopBack aSkipLoopBack, const SkipDocker aSkipDocker)
         {
             Ifaces myIfaces;
             string myStdOut, myStdErr;
@@ -1149,6 +1154,10 @@ namespace ta
                 {
                     continue;
                 }
+                if (aSkipDocker == skipDockerYes && isDocker(myIfaceName))
+                {
+                    continue;
+                }
                 const IPv6 ipv6(parseIpv6(myIpv6AddrStr, myIfaceName),
                                 parseIpv6PrefixLength(myPrefixLenHex, myIfaceName));
 
@@ -1165,10 +1174,10 @@ namespace ta
             return myIfaces;
         }
 
-        Ifaces getMyIfaces(SkipLoopBack aSkipLoopBack)
+        Ifaces getMyIfaces(const SkipLoopBack aSkipLoopBack, const SkipDocker aSkipDocker)
         {
-            Ifaces myIfaces = getMyIpv4faces(aSkipLoopBack);
-            foreach (const Iface& iface, getMyIpv6faces(aSkipLoopBack))
+            Ifaces myIfaces = getMyIpv4faces(aSkipLoopBack, aSkipDocker);
+            foreach (const Iface& iface, getMyIpv6faces(aSkipLoopBack, aSkipDocker))
             {
                 const string myIfaceName = iface.first;
                 IfaceInfo myIfaceInfo;
@@ -1481,6 +1490,10 @@ namespace ta
         bool isLoopback(const string& anIfaceName)
         {
             return anIfaceName == LoopbackIfaceName;
+        }
+        bool isDocker(const string& anIfaceName)
+        {
+            return anIfaceName == DockerIfaceName;
         }
 
         string getLoopbackIfName()

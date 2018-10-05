@@ -240,12 +240,6 @@ namespace ta
         };
 
 
-        enum SkipLoopBack
-        {
-            skipLoopBackYes,
-            skipLoopBackNo
-
-        };
 #ifdef _WIN32
         /**
           Retrieve interfaces of local host skipping down and loopback
@@ -254,13 +248,23 @@ namespace ta
         Ifaces getMyIpv4faces();
         Ifaces getMyIfaces();
 #else
+        enum SkipLoopBack
+        {
+            skipLoopBackYes,
+            skipLoopBackNo
+        };
+        enum SkipDocker
+        {
+            skipDockerYes,
+            skipDockerNo
+        };
         /**
           Retrieve interfaces of local host skipping down interfaces
           @param aSkipLoopBack skip loopback interfaces
          */
-        Ifaces getMyIpv6faces(SkipLoopBack aSkipLoopBack = skipLoopBackYes);
-        Ifaces getMyIpv4faces(SkipLoopBack aSkipLoopBack = skipLoopBackYes);
-        Ifaces getMyIfaces(SkipLoopBack aSkipLoopBack = skipLoopBackYes);
+        Ifaces getMyIpv6faces(const SkipLoopBack aSkipLoopBack = skipLoopBackYes, const SkipDocker aSkipDocker = skipDockerYes);
+        Ifaces getMyIpv4faces(const SkipLoopBack aSkipLoopBack = skipLoopBackYes, const SkipDocker aSkipDocker = skipDockerYes);
+        Ifaces getMyIfaces(const SkipLoopBack aSkipLoopBack = skipLoopBackYes, const SkipDocker aSkipDocker = skipDockerYes);
 #endif
 
 #ifndef _WIN32
@@ -437,6 +441,7 @@ namespace ta
 
 #ifndef _WIN32
         bool isLoopback(const std::string& anIfaceName);
+        bool isDocker(const std::string& anIfaceName);
         std::string getLoopbackIfName();
 #endif
 
