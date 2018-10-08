@@ -816,7 +816,7 @@ namespace ta
         }
 #endif
 
-        bool shellExecAsync(const string& aCommand, std::vector<unsigned char>& anStdOut, std::vector<unsigned char>& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTime)
+        bool shellExecAsync(const string& aCommand, std::vector<unsigned char>& anStdOut, std::vector<unsigned char>& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTimeMsec)
         {
 #ifdef _WIN32
             SECURITY_ATTRIBUTES mySa = {0};
@@ -877,7 +877,7 @@ namespace ta
 
             //@todo If the process generates a lot of output before timeout reaches thus filling the output pipe because we do not yet read it with readStdOutputsSafe()
             // This will end up in the process being blocked forever trying to write to the pipe.
-            bool myIsProcessFinished = (::WaitForSingleObject( myPi.hProcess, aMaxWaitTime ) == WAIT_OBJECT_0);
+            bool myIsProcessFinished = (::WaitForSingleObject( myPi.hProcess, aMaxWaitTimeMsec ) == WAIT_OBJECT_0);
             if  (myIsProcessFinished)
             {
                 // Process finished. Retrieve process exit code and stdout/stderr to help the user figure out what actualy happens.
@@ -974,7 +974,7 @@ namespace ta
 
             int myExitStatus;
             bool myIsChildFinished = false;
-            const time_t myChildStartTime = time(NULL);
+            const ta::TimeUtils::LocalTime myChildStartTime;
             while (true)
             {
                 //@todo If the process generates a lot of output before timeout reaches thus filling the output pipe because we do not yet read it with readStdOutputsSafe().
@@ -990,10 +990,10 @@ namespace ta
 
                 if (myWaitRet  == 0) // no finished process
                 {
-                    if (aMaxWaitTime == 0) // no wait
+                    if (aMaxWaitTimeMsec == 0) // no wait
                         break;
                     TimeUtils::sleep(10);
-                    if (time(NULL) - myChildStartTime >= aMaxWaitTime)
+                    if (ta::TimeUtils::LocalTime() - myChildStartTime >= aMaxWaitTimeMsec)
                         break;
                     continue;
                 }
@@ -1026,19 +1026,19 @@ namespace ta
 #endif
         }
 
-        bool shellExecAsync(const string& aCommand, string& anStdOut, string& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTime)
+        bool shellExecAsync(const string& aCommand, string& anStdOut, string& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTimeMsec)
         {
             std::vector<unsigned char> myStdOut, myStdErr;
-            const bool myRetVal = shellExecAsync(aCommand, myStdOut, myStdErr, anExitCode, aMaxWaitTime);
+            const bool myRetVal = shellExecAsync(aCommand, myStdOut, myStdErr, anExitCode, aMaxWaitTimeMsec);
             anStdOut = ta::vec2Str(myStdOut);
             anStdErr = ta::vec2Str(myStdErr);
             return myRetVal;
         }
 
-        bool shellExecAsync(const string& aCommand, unsigned int& anExitCode, unsigned int aMaxWaitTime)
+        bool shellExecAsync(const string& aCommand, unsigned int& anExitCode, unsigned int aMaxWaitTimeMsec)
         {
             std::vector<unsigned char> myDummyStdOut, myDymmyStdErr;
-            return shellExecAsync(aCommand, myDummyStdOut, myDymmyStdErr, anExitCode, aMaxWaitTime);
+            return shellExecAsync(aCommand, myDummyStdOut, myDymmyStdErr, anExitCode, aMaxWaitTimeMsec);
         }
 
         Subsystem getSelfSubsystem()

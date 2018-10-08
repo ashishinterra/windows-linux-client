@@ -196,15 +196,15 @@ namespace ta
           "%ProgramFiles%\MyVpn\vpn.exe" --certauth port:123 "argument with whitespace"
         @param[out] anStdOut Standard output
         @param[out] anStdErr Standard error
-        @param[in] aMaxWaitTime time in msec to wait for the command to start. The command might exit before the timeout reached or fail to start e.g. because command file is not found.
-        @return true if the command has been finished or not started within aMaxWaitTime interval In this case anExitCode, anStdOut and anStdErr are respectively filled with exit code, stdout and stderr output of the exited command. It is then the responsibility of the caller to interpret these values correctly.
+        @param[in] aMaxWaitTimeMsec time in msec to wait for the command to start. The command might exit before the timeout reached or fail to start e.g. because command file is not found.
+        @return true if the command has been finished or not started within aMaxWaitTimeMsec interval In this case anExitCode, anStdOut and anStdErr are respectively filled with exit code, stdout and stderr output of the exited command. It is then the responsibility of the caller to interpret these values correctly.
                 Otherwise we consider the command is still running detached and the function return false
 
          @throw ProcessExecError
         */
-        bool shellExecAsync(const std::string& aCommand, std::string& anStdOut, std::string& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTime = 1000);
-        bool shellExecAsync(const std::string& aCommand, std::vector<unsigned char>& anStdOut, std::vector<unsigned char>& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTime = 1000);
-        bool shellExecAsync(const std::string& aCommand, unsigned int& anExitCode, unsigned int aMaxWaitTime = 1000);
+        bool shellExecAsync(const std::string& aCommand, std::string& anStdOut, std::string& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTimeMsec = 1000);
+        bool shellExecAsync(const std::string& aCommand, std::vector<unsigned char>& anStdOut, std::vector<unsigned char>& anStdErr, unsigned int& anExitCode, unsigned int aMaxWaitTimeMsec = 1000);
+        bool shellExecAsync(const std::string& aCommand, unsigned int& anExitCode, unsigned int aMaxWaitTimeMsec = 1000);
 
         enum Subsystem
         {

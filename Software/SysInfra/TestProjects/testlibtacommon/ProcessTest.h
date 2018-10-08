@@ -194,8 +194,6 @@ public:
         }
     }
 
-
-
     void testExecSync()
     {
         string myGoodCommand, myBadCommand;
@@ -547,4 +545,4 @@ public:
         TS_SKIP("The test is for Linux only");
 #endif
    }
-};
+}; // ProcessTest
