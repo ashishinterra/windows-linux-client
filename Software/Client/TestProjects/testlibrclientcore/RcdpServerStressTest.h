@@ -9,6 +9,7 @@
 #include "ta/certutils.h"
 #include "ta/timeutils.h"
 #include "ta/netutils.h"
+#include "ta/osinfoutils.h"
 #include "ta/logger.h"
 #include "ta/scopedresource.hpp"
 #include "ta/url.h"
@@ -206,18 +207,15 @@ public:
     }
 
 
-    void _testConcurrent_10_threads()
-    {
-        const unsigned int myNumThreads = 10;
-        const unsigned int myDeadlineSec = 25;
-
-        doTestConcurrent(myNumThreads, myDeadlineSec);
-    }
-
-    void testConcurrent_20_threads()
+    void testConcurrent()
     {
         const unsigned int myNumThreads = 20;
-        const unsigned int myDeadlineSec = 50;
+#ifdef _WIN32
+        const unsigned int myDeadlineSec = 20;
+#else
+        // docker containers are way slower than regular systems
+        const unsigned int myDeadlineSec = ta::OsInfoUtils::isDockerContainer() ? 80 : 20;
+#endif
 
         doTestConcurrent(myNumThreads, myDeadlineSec);
     }
@@ -225,7 +223,12 @@ public:
     void testSequential()
     {
         const unsigned int myNumberOfRequests = 10;
+#ifdef _WIN32
         const unsigned int myExpectedMaxAvgRequestLatencySec = 3;
+#else
+        // docker containers are way slower than regular systems
+        const unsigned int myExpectedMaxAvgRequestLatencySec = ta::OsInfoUtils::isDockerContainer() ? 8 : 3;
+#endif
         int myTotalCertsReceived = 0;
 
         TS_TRACE(str(boost::format("Test getting certificate using %d sequential requests") % myNumberOfRequests).c_str());
