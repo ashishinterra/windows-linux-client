@@ -974,7 +974,7 @@ namespace ta
 
             int myExitStatus;
             bool myIsChildFinished = false;
-            TimeUtils::LocalTime myChildStartTime;
+            const time_t myChildStartTime = time(NULL);
             while (true)
             {
                 //@todo If the process generates a lot of output before timeout reaches thus filling the output pipe because we do not yet read it with readStdOutputsSafe().
@@ -993,7 +993,7 @@ namespace ta
                     if (aMaxWaitTime == 0) // no wait
                         break;
                     TimeUtils::sleep(10);
-                    if (TimeUtils::LocalTime() - myChildStartTime >= aMaxWaitTime)
+                    if (time(NULL) - myChildStartTime >= aMaxWaitTime)
                         break;
                     continue;
                 }

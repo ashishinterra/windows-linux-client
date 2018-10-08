@@ -42,6 +42,11 @@ public:
 
     void testSerialNumber()
     {
+#ifdef _WIN32
+        const std::string serialNumber = ta::SysInfo::getSerialNumber();
+        TS_TRACE("Serial number is " + serialNumber);
+        TS_ASSERT(!serialNumber.empty());
+#else
         if (!ta::OsInfoUtils::isDockerContainer())
         {
             const std::string serialNumber = ta::SysInfo::getSerialNumber();
@@ -52,6 +57,7 @@ public:
         {
             TS_SKIP("Skip system serial number retrieval test for docker container");
         }
+#endif
     }
 
     void testGetHardwareDescription()
