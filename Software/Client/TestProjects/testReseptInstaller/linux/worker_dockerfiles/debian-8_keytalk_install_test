@@ -7,9 +7,8 @@ RUN apt-get update
 RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release
 RUN a2enmod ssl
 
-# install mailserver, suppressing any prompts
-RUN DEBIAN_FRONTEND=noninteractive apt -y install mailutils postfix
 # set time
 ENV TZ=UTC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-ENTRYPOINT service postfix restart && ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh
+
+ENTRYPOINT ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh

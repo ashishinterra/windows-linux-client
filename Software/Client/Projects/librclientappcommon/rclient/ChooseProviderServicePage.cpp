@@ -48,7 +48,7 @@ namespace rclient
         const string mySelectedService = theServicesCombo->currentText().toUtf8();
 
         rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
-        rclient::NativeCertStore::deleteAllReseptUserCerts();
+        rclient::NativeCertStore::deleteReseptUserCerts();
 
         // Before we select a user, we may want to start Kerberos if required.
         try

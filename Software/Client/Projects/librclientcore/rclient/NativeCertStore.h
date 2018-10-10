@@ -32,6 +32,8 @@ namespace rclient
 
     namespace NativeCertStore
     {
+
+        enum CertsSmimeOpt { certsSmimeKeep, certsSmimeRemove };
         enum ErrorPolicy { proceedOnError, failOnError};
 
         /**
@@ -43,22 +45,23 @@ namespace rclient
            @return The number of valid certificates found
            @throw NativeCertStoreValidateError
         */
-        unsigned int validateReseptUserCert();
+        ta::StringArray validateReseptUserCert();
 
         /**
           Delete certificates form the personal store associated with the current KeyTalk service
           @return  a number of removed certificates
           @throw NativeCertStoreDeleteError
         */
-        unsigned int deleteAllReseptUserCerts();
+        unsigned int deleteReseptUserCerts();
 
 
         /**
           Delete non-CA certificates from the personal store issued by the given CN, tolerating when cert deletion fails.
+          @aSmimeCertsOpt ONLY FOR TESTING PURPOSES
           @return  a number of removed certificates
           @throw NativeCertStoreDeleteError
         */
-        unsigned int deleteUserCertsForIssuerCN(const std::string& anIssuerCn, ErrorPolicy anErrorPolicy);
+        unsigned int deleteUserCertsForIssuerCN(const std::string& anIssuerCn, ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt = certsSmimeKeep);
 
         /**
            Imports PKCS#12 PFX into the personal store.

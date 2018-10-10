@@ -4,6 +4,7 @@ Release Notes of KeyTalk
 client-5.4.0, in development
 ----------------------
     - ADDED: Allow using OS logon username as KeyTalk client username
+    - FIXED: KeyTalk client should not remove S/MIME certificates
 
 server-5.4.0, in development
 ----------------------

@@ -168,7 +168,7 @@ class RcdpServerStressTest : public CxxTest::TestSuite
             if (theNumberOfSucceededTests == aNumThreads)
             {
                 TS_TRACE(str(boost::format("Get %d certificates (concurrently) within %d seconds (%.02lf sec per certificate)\n") % aNumThreads % myElapsedTimeSec % ((double)myElapsedTimeSec/(double)aNumThreads)).c_str());
-                TS_ASSERT(myElapsedTimeSec <= aDeadlineSec);
+                TS_ASSERT_LESS_THAN(myElapsedTimeSec, aDeadlineSec);
             }
             else
             {
@@ -214,7 +214,7 @@ public:
         const unsigned int myDeadlineSec = 20;
 #else
         // docker containers are way slower than regular systems
-        const unsigned int myDeadlineSec = ta::OsInfoUtils::isDockerContainer() ? 80 : 20;
+        const unsigned int myDeadlineSec = ta::OsInfoUtils::isDockerContainer() ? 120 : 20;
 #endif
 
         doTestConcurrent(myNumThreads, myDeadlineSec);
@@ -227,7 +227,7 @@ public:
         const unsigned int myExpectedMaxAvgRequestLatencySec = 3;
 #else
         // docker containers are way slower than regular systems
-        const unsigned int myExpectedMaxAvgRequestLatencySec = ta::OsInfoUtils::isDockerContainer() ? 8 : 3;
+        const unsigned int myExpectedMaxAvgRequestLatencySec = ta::OsInfoUtils::isDockerContainer() ? 10 : 3;
 #endif
         int myTotalCertsReceived = 0;
 

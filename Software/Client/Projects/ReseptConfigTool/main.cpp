@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
             bool validCertFound = true;
             if (rclient::Settings::isCustomized())
             {
-                validCertFound = rclient::NativeCertStore::validateReseptUserCert() > 0;
+                validCertFound = rclient::NativeCertStore::validateReseptUserCert().size() > 0;
             }
             else
             {

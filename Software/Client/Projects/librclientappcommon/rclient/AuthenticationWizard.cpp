@@ -51,7 +51,7 @@ namespace rclient
             const string mySelectedService = rclient::Settings::getServices()[0];
 
             rclient::Settings::setLatestProviderService(mySelectedProvider, mySelectedService);
-            rclient::NativeCertStore::deleteAllReseptUserCerts();
+            rclient::NativeCertStore::deleteReseptUserCerts();
             if (authenticateWithKerberos())
             {
                 throw KerberosAuthSuccessException(this);

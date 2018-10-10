@@ -295,7 +295,7 @@ private:
             TS_ASSERT(theOnUserMessagesCalled);
             if (aCertFormat == resept::certformatP12)
             {
-                const unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+                const unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
                 if (myNumValidCerts > 0)
                 {
                     TS_ASSERT(theOnPfxCalled);
@@ -323,7 +323,7 @@ private:
                 TS_ASSERT(theOnUserMessagesCalled);
                 if (aCertFormat == resept::certformatP12)
                 {
-                    const unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+                    const unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
                     if (myNumValidCerts > 0)
                     {
                         TS_ASSERT(theOnPfxCalled);

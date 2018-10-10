@@ -283,37 +283,6 @@ class TestUtil(unittest.TestCase):
         self.assertRegexpMatches(errors[0], 'Unknown setting "UnknownSetting" encountered')
         self.assertEquals(settings, None)
 
-    def test_email(self):
-        # given
-        mailbox_dir = '/var/mail'
-        random_string = str(uuid.uuid4())
-        subject = 'Test Mail ' + random_string
-        msg_body = 'Message body: ' + random_string
-        attachments = [('attachment1-name-' + random_string, 'attachment1-body'),
-                       ('attachment2-name-' + random_string, 'attachment2-body')]
-        # when
-        util.send_email(
-            smtp_server_addr='localhost',
-            sender='root@localhost',
-            recipients=['root@localhost'],
-            subject=subject,
-            message=msg_body,
-            attachments=attachments)
-
-        # then
-        time.sleep(2)
-        self.assertTrue(os.listdir(mailbox_dir))
-        mailbox_file_name = util.run_cmd('ls -Art /var/mail| tail -n 1')
-        mail_file = mailbox_dir + '/' + mailbox_file_name
-        mails = open(mail_file).read()
-
-        self.assertTrue('From: root@localhost' in mails)
-        self.assertTrue('To: root@localhost' in mails)
-        self.assertTrue('Subject: ' + subject in mails)
-        self.assertTrue(msg_body in mails)
-        self.assertTrue('filename=\\"{}\\"";'.format(attachments[0][0]) in mails)
-        self.assertTrue('filename=\\"{}\\"";'.format(attachments[1][0]) in mails)
-
     def test_is_backup_file_path(self):
         self.assertFalse(util.is_backup_file_path('/home/me/some-file_path'))
         self.assertFalse(util.is_backup_file_path('some-file_path'))

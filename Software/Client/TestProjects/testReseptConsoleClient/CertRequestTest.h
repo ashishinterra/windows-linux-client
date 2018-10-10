@@ -434,7 +434,7 @@ private:
 
         if (aCredentialsPoisoning == credentialsPoisonNo)
         {
-            if (rclient::NativeCertStore::validateReseptUserCert() > 0)
+            if (rclient::NativeCertStore::validateReseptUserCert().size() > 0)
             {
                 const bool myPfxSaved = ta::isFileExist(aPfxDir+rclient::PfxFileName);
                 const bool myPfxPassSaved = ta::isFileExist(aPfxDir+rclient::PfxPassFileName);
@@ -459,7 +459,7 @@ private:
         }
         else if (aCredentialsPoisoning == credentialsPoisonNoResponse)
         {
-            if (rclient::NativeCertStore::validateReseptUserCert() > 0)
+            if (rclient::NativeCertStore::validateReseptUserCert().size() > 0)
             {
                 if (theTestConfig.isCrFileRequired(aServiceName, aUserId))
                 {

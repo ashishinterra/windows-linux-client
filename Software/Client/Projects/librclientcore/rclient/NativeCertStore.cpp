@@ -66,13 +66,13 @@ namespace rclient
                 storeRoot,
                 _LastStoreType = storeRoot
             };
-            static const string StoreTypeStrs[] = {"Personal", "Intermediate", "Root" };
+            static const string StoreTypeStrs[] = { "Personal", "Intermediate", "Root" };
             BOOST_STATIC_ASSERT(_FirstStoreType <= _LastStoreType);
-            BOOST_STATIC_ASSERT(sizeof(StoreTypeStrs)/sizeof(StoreTypeStrs[0]) == _LastStoreType-_FirstStoreType+1);
+            BOOST_STATIC_ASSERT(sizeof(StoreTypeStrs) / sizeof(StoreTypeStrs[0]) == _LastStoreType - _FirstStoreType + 1);
 
             string str(const StoreType aStoreType)
             {
-                return StoreTypeStrs[aStoreType-_FirstStoreType];
+                return StoreTypeStrs[aStoreType - _FirstStoreType];
             }
 
             enum CertAttribute
@@ -83,9 +83,9 @@ namespace rclient
                 certAttrSha1Finterprint,
                 _LastCertAttribute = certAttrSha1Finterprint
             };
-            static const string CertAttributeStrs[] = {"issuer CN", "subject CN", "sha1 fingerprint" };
+            static const string CertAttributeStrs[] = { "issuer CN", "subject CN", "sha1 fingerprint" };
             BOOST_STATIC_ASSERT(_FirstCertAttribute <= _LastCertAttribute);
-            BOOST_STATIC_ASSERT(sizeof(CertAttributeStrs)/sizeof(CertAttributeStrs[0]) == _LastCertAttribute-_FirstCertAttribute+1);
+            BOOST_STATIC_ASSERT(sizeof(CertAttributeStrs) / sizeof(CertAttributeStrs[0]) == _LastCertAttribute - _FirstCertAttribute + 1);
             string str(const CertAttribute aCertAttr)
             {
                 return CertAttributeStrs[aCertAttr];
@@ -112,19 +112,20 @@ namespace rclient
                 ::SystemTimeToFileTime(&myStNow, &myFtNow);
 
                 ULARGE_INTEGER myNotBefore = *(ULARGE_INTEGER*)&aCertContextPtr->pCertInfo->NotBefore;
-                ULARGE_INTEGER myNotAfter  = *(ULARGE_INTEGER*)&aCertContextPtr->pCertInfo->NotAfter;
+                ULARGE_INTEGER myNotAfter = *(ULARGE_INTEGER*)&aCertContextPtr->pCertInfo->NotAfter;
                 ULARGE_INTEGER myNow = *(ULARGE_INTEGER*)&myFtNow;
 
-                unsigned int myRemain   = static_cast<unsigned int>((myNotAfter.QuadPart - myNow.QuadPart)/10000000);
+                unsigned int myRemain = static_cast<unsigned int>((myNotAfter.QuadPart - myNow.QuadPart) / 10000000);
                 if (!myRemain)
                     return false;
                 if (myNotAfter.QuadPart < myNotBefore.QuadPart)
                     TA_THROW_MSG(NativeCertStoreError, "Certificate expires before it gets valid ?!");
-                unsigned int myCertDuration = static_cast<unsigned int>((myNotAfter.QuadPart - myNotBefore.QuadPart)/10000000);
+                unsigned int myCertDuration = static_cast<unsigned int>((myNotAfter.QuadPart - myNotBefore.QuadPart) / 10000000);
                 unsigned int myCertValidPercent;
                 try {
                     myCertValidPercent = Settings::getCertValidPercentage();
-                } catch (SettingsError& e) {
+                }
+                catch (SettingsError& e) {
                     TA_THROW_MSG(NativeCertStoreError, e.what());
                 }
                 bool myIsValid = (myRemain >= myCertDuration * myCertValidPercent / 100);
@@ -137,8 +138,18 @@ namespace rclient
                 }
                 myIsValid = myIsValid && !ta::CertUtils::isCertFileRevoked(myX509);
 
-                DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid?"":"in"));
+                DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid ? "" : "in"));
                 return myIsValid;
+            }
+
+            //
+            // Abstract  : return whether the provided certificate is a S/MIME certificate
+            //
+            bool isSmimeCert(PCCERT_CONTEXT aCertContextPtr)
+            {
+                const vector<unsigned char> myDerCert(aCertContextPtr->pbCertEncoded, aCertContextPtr->pbCertEncoded + aCertContextPtr->cbCertEncoded);
+                const std::string myPem = ta::CertUtils::convDer2Pem(myDerCert);
+                return ta::CertUtils::isSmimeCert(myPem);
             }
 
             //
@@ -160,19 +171,19 @@ namespace rclient
                 boost::to_lower(myContainerNameW);
                 string myContainerName = ta::Strings::toMbyte(myContainerNameW);
                 myContainerName += '\0';
-                vector<unsigned char> myMd5ContainerNameBin  = ta::HashUtils::getMd5Bin (myContainerName);
+                vector<unsigned char> myMd5ContainerNameBin = ta::HashUtils::getMd5Bin(myContainerName);
                 TA_ASSERT(myMd5ContainerNameBin.size() == 16);
                 for (unsigned short i = 0; i <= 12; i += 4)
                 {
-                    swap(myMd5ContainerNameBin[i], myMd5ContainerNameBin[i+3]);
-                    swap(myMd5ContainerNameBin[i+1], myMd5ContainerNameBin[i+2]);
+                    swap(myMd5ContainerNameBin[i], myMd5ContainerNameBin[i + 3]);
+                    swap(myMd5ContainerNameBin[i + 1], myMd5ContainerNameBin[i + 2]);
                 }
                 string myMd5ContainerName = ta::Strings::toHex(ta::getSafeBuf(myMd5ContainerNameBin), myMd5ContainerNameBin.size());
 
                 string myUserSID, myAppDataDir;
                 try
                 {
-                    myUserSID  = ta::OsUserInfo::getCurrentUserSID();
+                    myUserSID = ta::OsUserInfo::getCurrentUserSID();
                     myAppDataDir = ta::Process::getUserAppDataDir();
                 }
                 catch (std::runtime_error& e)
@@ -182,7 +193,8 @@ namespace rclient
                 string myMachineGuid;
                 try {
                     ta::Registry::read(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Cryptography", "MachineGuid", myMachineGuid, ta::SysInfo::isWow64());
-                } catch (std::exception& e) {
+                }
+                catch (std::exception& e) {
                     TA_THROW_MSG(NativeCertStoreError, e.what());
                 }
                 string myContainerPath = str(boost::format("%s\\Microsoft\\Crypto\\RSA\\%s\\%s_%s") % myAppDataDir % myUserSID % myMd5ContainerName % myMachineGuid);
@@ -209,7 +221,7 @@ namespace rclient
                         return boost::none;
                     }
                     std::auto_ptr<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
-                    if (!::CertGetNameString(aCertContextPtr,  CERT_NAME_SIMPLE_DISPLAY_TYPE,   CERT_NAME_ISSUER_FLAG,  0, myAttrVal.get(), myAttrValLen))
+                    if (!::CertGetNameString(aCertContextPtr, CERT_NAME_SIMPLE_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, 0, myAttrVal.get(), myAttrValLen))
                     {
                         return boost::none;
                     }
@@ -224,7 +236,7 @@ namespace rclient
                         return boost::none;
                     }
                     std::auto_ptr<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
-                    if (!::CertGetNameString(aCertContextPtr, CERT_NAME_ATTR_TYPE, 0,  szOID_COMMON_NAME, myAttrVal.get(), myAttrValLen))
+                    if (!::CertGetNameString(aCertContextPtr, CERT_NAME_ATTR_TYPE, 0, szOID_COMMON_NAME, myAttrVal.get(), myAttrValLen))
                     {
                         return boost::none;
                     }
@@ -369,9 +381,9 @@ namespace rclient
                 }
 
 
-                unsigned int findValidCerts(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint) const
+                ta::StringArray findValidCerts(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint) const
                 {
-                    unsigned int myNumOfValidCerts = 0;
+                    ta::StringArray myValidCerts;
 
                     for (PCCERT_CONTEXT myCertCtx = ::CertEnumCertificatesInStore(theStore, NULL);
                             myCertCtx;
@@ -382,12 +394,12 @@ namespace rclient
                         {
                             if (isCertValid(myCertCtx))
                             {
-                                ++myNumOfValidCerts;
+                                myValidCerts.push_back(mySha1Fingerprint.get());
                             }
                         }
                     }
-                    DEBUGLOG(boost::format("Found %d valid certificate(s) in %s store for service %s") % myNumOfValidCerts % str(theStoreType) % aServiceNameHint);
-                    return myNumOfValidCerts;
+                    DEBUGLOG(boost::format("Found %d valid certificate(s) in %s store for service %s") % myValidCerts.size() % str(theStoreType) % aServiceNameHint);
+                    return myValidCerts;
                 }
 
                 boost::optional<string> findFirstCertByAttr(const CertAttribute aCertAttr, const string& anAttrVal) const
@@ -444,8 +456,14 @@ namespace rclient
                             myCertCtx = ::CertEnumCertificatesInStore(theStore, myCertCtx))
                     {
                         const boost::optional<string> mySha1Fingerprint = getCertAttrValue(myCertCtx, certAttrSha1Finterprint);
-                        if (mySha1Fingerprint  && ta::isElemExist(*mySha1Fingerprint, aCertSha1Fingerprints))
+                        if (mySha1Fingerprint && ta::isElemExist(*mySha1Fingerprint, aCertSha1Fingerprints))
                         {
+                            // Do not remove ever if certificate is S/MIME in Personal store
+                            if (theStoreType == storePersonal && isSmimeCert(myCertCtx))
+                            {
+                                DEBUGLOG(boost::format("Will not delete S/MIME certificate with fingerprint %s") % mySha1Fingerprint);
+                                continue;
+                            }
                             if (aCertRemovelOpt == certsRemoveAll || (aCertRemovelOpt == certsRemoveInvalid && !isCertValid(myCertCtx)))
                             {
                                 string myRsaPrivKeyTmpFileName;
@@ -454,7 +472,8 @@ namespace rclient
                                 {
                                     try {
                                         myRsaPrivKeyTmpFileName = getRsaPrivKeyTmpFileName(myCertCtx);
-                                    } catch (NativeCertStoreError& e) {
+                                    }
+                                    catch (NativeCertStoreError& e) {
                                         WARNLOG2("RSA temporary keys cleanup error.", e.what());
                                     }
                                 }
@@ -476,7 +495,7 @@ namespace rclient
                     return myRemovedCertsSha1Fingerprints;
                 }
 
-                unsigned int removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, ErrorPolicy anErrorPolicy)
+                unsigned int removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
                 {
                     DEBUGLOG(boost::format("Deleting certificate from %s store having %s %s") % str(theStoreType) % str(aCertAttr) % anAttrVal);
                     if (theReadOnly)
@@ -495,6 +514,12 @@ namespace rclient
                             string myRsaPrivKeyTmpFileName;
                             if (theStoreType == storePersonal)
                             {
+                                // Do not remove ever if certificate is S/MIME in Personal store
+                                if (aSmimeCertsOpt == certsSmimeKeep && isSmimeCert(myCertCtx))
+                                {
+                                    DEBUGLOG(boost::format("Will not delete S/MIME certificate for attribute %s") % myAttrVal);
+                                    continue;
+                                }
                                 try
                                 {
                                     myRsaPrivKeyTmpFileName = getRsaPrivKeyTmpFileName(myCertCtx);
@@ -559,18 +584,18 @@ namespace rclient
                     DWORD cchFile = ::GetFileSize(hFile, NULL);
                     ta::ScopedResource<BSTR> bstrCert(::SysAllocStringByteLen(NULL, cchFile), ::SysFreeString);
                     DWORD cbRead = 0;
-                    if (!::ReadFile(hFile, (char*)(BSTR)bstrCert, cchFile, &cbRead,   NULL))
+                    if (!::ReadFile(hFile, (char*)(BSTR)bstrCert, cchFile, &cbRead, NULL))
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot read file '%s'") % aDerCertPath);
                     }
 
-                    PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext( X509_ASN_ENCODING, (const unsigned char*)(const BSTR)bstrCert, cchFile);
+                    PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext(X509_ASN_ENCODING, (const unsigned char*)(const BSTR)bstrCert, cchFile);
                     if (!pDesiredCert)
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot create certificate context for file '%s'") % aDerCertPath);
                     }
 
-                    if (!::CertAddCertificateContextToStore( theStore, pDesiredCert, CERT_STORE_ADD_REPLACE_EXISTING, NULL))
+                    if (!::CertAddCertificateContextToStore(theStore, pDesiredCert, CERT_STORE_ADD_REPLACE_EXISTING, NULL))
                     {
                         const DWORD myLastError = ::GetLastError();
                         ::CertFreeCertificateContext(pDesiredCert);
@@ -580,7 +605,7 @@ namespace rclient
                     DEBUGLOG(boost::format("Successfully imported DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
                 }
 
-                void importPemCertToTrustedStore(const string& aPemCert)
+                bool importPemCertToTrustedStore(const string& aPemCert)
                 {
                     DEBUGLOG(boost::format("Importing certificate to %s store") % str(theStoreType));
                     if (theStoreType == storePersonal)
@@ -607,6 +632,7 @@ namespace rclient
                     }
                     ::CertFreeCertificateContext(pDesiredCert);
                     DEBUGLOG(boost::format("Successfully imported certificate %s store") % str(theStoreType));
+                    return true;
                 }
 
                 //
@@ -620,7 +646,7 @@ namespace rclient
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, "Cannot add certificate to the " + str(theStoreType) + " store because the store is opened read-only");
                     }
-                    if (!::CertAddCertificateContextToStore (theStore, aCertContextPtr, aDisposition, 0))
+                    if (!::CertAddCertificateContextToStore(theStore, aCertContextPtr, aDisposition, 0))
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, "Failed to add certificate to the " + str(theStoreType) + " store");
                     }
@@ -790,7 +816,7 @@ namespace rclient
                     TA_THROW_MSG(NativeCertStoreImportError, "No terminal certificate found in the received Pfx");
                 }
 
-                boost::optional<string> myCertSubjCn  = getCertAttrValue(myCertCtx, certAttrSubjCn);
+                boost::optional<string> myCertSubjCn = getCertAttrValue(myCertCtx, certAttrSubjCn);
                 if (!myCertSubjCn)
                 {
                     myCertSubjCn = "unknown-subject";
@@ -834,7 +860,7 @@ namespace rclient
                 if (myCertDuration < 0)
                     TA_THROW_MSG(NativeCertStoreError, "Certificate expires before it gets valid ?!");
 
-                if (myNow < aCertInfo.utcNotBefore || myNow  >= aCertInfo.utcNotAfter)
+                if (myNow < aCertInfo.utcNotBefore || myNow >= aCertInfo.utcNotAfter)
                     return false;
 
                 const int myRemain = aCertInfo.utcNotAfter - myNow;
@@ -842,7 +868,8 @@ namespace rclient
                 unsigned int myCertValidPercent;
                 try {
                     myCertValidPercent = Settings::getCertValidPercentage();
-                } catch (SettingsError& e) {
+                }
+                catch (SettingsError& e) {
                     TA_THROW_MSG(NativeCertStoreError, e.what());
                 }
                 const int myMinRemain = (int)(myCertDuration * myCertValidPercent / 100);
@@ -850,8 +877,14 @@ namespace rclient
                 bool myIsValid = (myRemain >= myMinRemain);
                 myIsValid = myIsValid && !ta::CertUtils::isCertFileRevoked(aCertPath);
 
-                DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid?"":"in"));
+                DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid ? "" : "in"));
                 return myIsValid;
+            }
+
+            bool isSmimeCert(const std::string& aCertPath)
+            {
+                const std::string myPem = ta::readData(aCertPath);
+                return ta::CertUtils::isSmimeCert(myPem);
             }
 
             class Store
@@ -898,12 +931,12 @@ namespace rclient
                     return false;
                 }
 
-                unsigned int findValidCerts(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint) const
+                ta::StringArray findValidCerts(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint) const
                 {
-                    unsigned int myNumOfValidCerts = 0;
+                    ta::StringArray myValidCerts;
 
                     fs::directory_iterator it(getStoreDir()), eod;
-                    foreach (fs::path const& p, std::make_pair(it, eod))
+                    foreach(fs::path const& p, std::make_pair(it, eod))
                     {
                         if (isPemCertFile(p))
                         {
@@ -912,19 +945,19 @@ namespace rclient
                             {
                                 if (isCertValid(p.string(), myCertInfo))
                                 {
-                                    ++myNumOfValidCerts;
+                                    myValidCerts.push_back(myCertInfo.sha1Fingerprint);
                                 }
                             }
                         }
                     }
-                    DEBUGLOG(boost::format("Found %d valid certificate(s) in %s store for KeyTalk service %s") % myNumOfValidCerts % str(theStoreType) % aServiceNameHint);
-                    return myNumOfValidCerts;
+                    DEBUGLOG(boost::format("Found %d valid certificate(s) in %s store for KeyTalk service %s") % myValidCerts.size() % str(theStoreType) % aServiceNameHint);
+                    return myValidCerts;
                 }
 
                 boost::optional<string> findFirstCertByAttr(const CertAttribute aCertAttr, const string& anAttrVal) const
                 {
                     fs::directory_iterator it(getStoreDir()), eod;
-                    foreach (fs::path const& p, std::make_pair(it, eod))
+                    foreach(fs::path const& p, std::make_pair(it, eod))
                     {
                         if (isPemCertFile(p))
                         {
@@ -935,7 +968,8 @@ namespace rclient
                             {
                                 if (myCertInfo.subjCN == anAttrVal) {
                                     return (string)ta::readData(p.string());
-                                } else {
+                                }
+                                else {
                                     continue;
                                 }
                             }
@@ -943,7 +977,8 @@ namespace rclient
                             {
                                 if (myCertInfo.sha1Fingerprint == anAttrVal) {
                                     return (string)ta::readData(p.string());
-                                } else {
+                                }
+                                else {
                                     continue;
                                 }
                             }
@@ -962,7 +997,7 @@ namespace rclient
                     ta::StringArray myFoundCertFingerprints;
 
                     fs::directory_iterator it(getStoreDir()), eod;
-                    foreach (fs::path const& p, std::make_pair(it, eod))
+                    foreach(fs::path const& p, std::make_pair(it, eod))
                     {
                         if (isPemCertFile(p))
                         {
@@ -988,11 +1023,17 @@ namespace rclient
 
                     ta::StringArray myRemovedCertsSha1Fingerprints;
                     fs::directory_iterator it(getStoreDir()), eod;
-                    foreach (fs::path const& p, std::make_pair(it, eod))
+                    foreach(fs::path const& p, std::make_pair(it, eod))
                     {
                         if (isPemCertFile(p))
                         {
                             const ta::CertUtils::CertInfo myCertInfo = ta::CertUtils::getCertInfoFile(p.string());
+                            // Do not remove ever if certificate is S/MIME
+                            if (theStoreType == storePersonal && isSmimeCert(p.string()))
+                            {
+                                DEBUGLOG(boost::format("Will not delete S/MIME certificate with fingerprint %s") % myCertInfo.sha1Fingerprint);
+                                continue;
+                            }
                             if (ta::isElemExist(myCertInfo.sha1Fingerprint, aCertSha1Fingerprints))
                             {
                                 if (aCertRemovelOpt == certsRemoveAll || (aCertRemovelOpt == certsRemoveInvalid && !isCertValid(p.string(), myCertInfo)))
@@ -1009,7 +1050,7 @@ namespace rclient
                     return myRemovedCertsSha1Fingerprints;
                 }
 
-                unsigned int removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, const ErrorPolicy anErrorPolicy)
+                unsigned int removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, const ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
                 {
                     DEBUGLOG(boost::format("Deleting certificates from %s store having %s %s") % str(theStoreType) % str(aCertAttr) % anAttrVal);
                     if (theReadOnly)
@@ -1020,13 +1061,19 @@ namespace rclient
                     unsigned int myNumFilesRemoved = 0;
                     fs::directory_iterator it(getStoreDir()), eod;
 
-                    foreach (fs::path const& p, std::make_pair(it, eod))
+                    foreach(fs::path const& p, std::make_pair(it, eod))
                     {
                         if (isPemCertFile(p))
                         {
                             try
                             {
                                 const ta::CertUtils::CertInfo myCertInfo = ta::CertUtils::getCertInfoFile(p.string());
+                                // Do not remove ever if certificate is S/MIME
+                                if (theStoreType == storePersonal && aSmimeCertsOpt == certsSmimeKeep && isSmimeCert(p.string()))
+                                {
+                                    DEBUGLOG(boost::format("Will not delete S/MIME certificate with fingerprint %s") % myCertInfo.sha1Fingerprint);
+                                    continue;
+                                }
                                 switch (aCertAttr)
                                 {
                                 case certAttrIssuerCn:
@@ -1128,11 +1175,12 @@ namespace rclient
                 {
                     DEBUGLOG(boost::format("Importing DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
                     const string myPemCert = ta::CertUtils::convDer2Pem(ta::readData(aDerCertPath));
-                    importPemCertToTrustedStore(myPemCert);
-                    DEBUGLOG(boost::format("Successfully imported DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
+                    const bool myIsImported = importPemCertToTrustedStore(myPemCert);
+                    if (myIsImported)
+                        DEBUGLOG(boost::format("Successfully imported DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
                 }
 
-                void importPemCertToTrustedStore(const string& aPemCert)
+                bool importPemCertToTrustedStore(const string& aPemCert)
                 {
                     DEBUGLOG(boost::format("Importing PEM certificate to %s store") % str(theStoreType));
                     if (theStoreType == storePersonal)
@@ -1143,10 +1191,17 @@ namespace rclient
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, "Cannot remove certificate from the " + str(theStoreType) + " store because the store is opened read-only");
                     }
-                    const string myCertPath = makeNewCertKeyPath(theStoreType);
+                    const string mySha1Fingerprint = ta::CertUtils::getCertInfo(aPemCert).sha1Fingerprint;
+                    const string myCertPath = makeNewCertKeyPath(theStoreType, mySha1Fingerprint);
+                    if (ta::isFileExist(myCertPath))
+                    {
+                        DEBUGDEVLOG(boost::format("Skipped importing cert to trusted store %s because cert already exists at %s") % str(theStoreType) % myCertPath);
+                        return false;
+                    }
                     ta::writeData(myCertPath, aPemCert);
                     effectuateNewCertsInStore();
                     DEBUGLOG(boost::format("Successfully imported certificate to %s store") % str(theStoreType));
+                    return true;
                 }
 
             private:
@@ -1179,32 +1234,19 @@ namespace rclient
                     }
                 }
 
-                static string genCertKeyPath(const StoreType aStoreType)
+                static string makeNewCertKeyPath(const StoreType aStoreType, const string aSha1Fingerprint)
                 {
                     static const string myCertFilePrefix = "keytalk_"; //to be easier distinguished from non-KeyTalk certs
                     switch (aStoreType)
                     {
                     case storePersonal:
-                        return str(boost::format("%s/%s%s.pem") % getStoreDir(aStoreType) % myCertFilePrefix % ta::genUuid());
+                        return str(boost::format("%s/%s%s.pem") % getStoreDir(aStoreType) % myCertFilePrefix % aSha1Fingerprint);
                     case storeIntermediate:
                     case storeRoot:
                         // .crt extension is required to be understood by 'update-ca-certificates' utility for debian and 'update-ca-trust' utility for RHEL/CentOS
-                        return str(boost::format("%s/%s%s.crt") % getStoreDir(aStoreType) % myCertFilePrefix % ta::genUuid());
+                        return str(boost::format("%s/%s%s.crt") % getStoreDir(aStoreType) % myCertFilePrefix % aSha1Fingerprint);
                     default:
                         TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
-                    }
-                }
-
-                static string makeNewCertKeyPath(const StoreType aStoreType)
-                {
-                    while (true)
-                    {
-                        const string myNewFilePath = genCertKeyPath(aStoreType);
-                        if (!ta::isFileExist(myNewFilePath))
-                        {
-                            return myNewFilePath;
-                        }
-                        continue; // collision, try again
                     }
                 }
                 static void freeStackOf509(STACK_OF(X509) * ca)
@@ -1217,7 +1259,13 @@ namespace rclient
 
                 static void importCertKeyToPersonalStore(X509* aCert, EVP_PKEY* aPrivateKey, STACK_OF(X509) *anCa)
                 {
-                    const string myCertKeyPath = makeNewCertKeyPath(storePersonal);
+                    const string mySha1Fingerprint = ta::CertUtils::getCertInfo(aCert).sha1Fingerprint;
+                    const string myCertKeyPath = makeNewCertKeyPath(storePersonal, mySha1Fingerprint);
+                    if (ta::isFileExist(myCertKeyPath))
+                    {
+                        DEBUGDEVLOG(boost::format("Skipped importing cert key to personal store because cert already exists at %s") % myCertKeyPath);
+                        return;
+                    }
 
                     {
                         ta::ScopedResource<FILE*> myCertKeyFile(fopen(myCertKeyPath.c_str(), "w"), fclose);
@@ -1246,7 +1294,8 @@ namespace rclient
                         const string myChmodErrorStr = strerror(errno);
                         try {
                             fs::remove(myCertKeyPath.c_str());
-                        } catch (std::exception& e) {
+                        }
+                        catch (std::exception& e) {
                             TA_THROW_MSG(NativeCertStoreError, boost::format("Failed to set permissions on the imported personal certificate with private key at %s. %s. Furthermore the file cannot be removed as well. %s") % myCertKeyPath % myChmodErrorStr % e.what());
                         }
                         TA_THROW_MSG(NativeCertStoreError, boost::format("Failed to set permissions on the imported personal certificate with private key at %s. %s") % myCertKeyPath % myChmodErrorStr);
@@ -1268,7 +1317,7 @@ namespace rclient
                             ta::Process::checkedShellExecSync("update-ca-trust");
                             return;
                         }
-                        else if(ta::OsInfoUtils::isLinuxDebian())
+                        else if (ta::OsInfoUtils::isLinuxDebian())
                         {
                             ta::Process::checkedShellExecSync("update-ca-certificates");
                             return;
@@ -1323,7 +1372,7 @@ namespace rclient
                 const ta::StringArray myFoundCertFingerprints = myStore.findCertsByFingerprints(myOrigCertFingerprints);
 
                 ta::StringArray myCertFingerprintsToRemove;
-                foreach (const string& fingerprint, myOrigCertFingerprints)
+                foreach(const string& fingerprint, myOrigCertFingerprints)
                 {
                     if (!isElemExist(fingerprint, myFoundCertFingerprints))
                     {
@@ -1341,7 +1390,7 @@ namespace rclient
         // Public API
         //
 
-        unsigned int validateReseptUserCert()
+        ta::StringArray validateReseptUserCert()
         {
             try
             {
@@ -1363,7 +1412,7 @@ namespace rclient
             }
         }
 
-        unsigned int deleteAllReseptUserCerts()
+        unsigned int deleteReseptUserCerts()
         {
             try
             {
@@ -1388,12 +1437,12 @@ namespace rclient
             }
         }
 
-        unsigned int deleteUserCertsForIssuerCN(const string& anIssuerCn, const ErrorPolicy anErrorPolicy)
+        unsigned int deleteUserCertsForIssuerCN(const string& anIssuerCn, const ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
         {
             try
             {
                 Store myStore(storePersonal);
-                return myStore.removeCertKeysByAttr(certAttrIssuerCn, anIssuerCn, anErrorPolicy);
+                return myStore.removeCertKeysByAttr(certAttrIssuerCn, anIssuerCn, anErrorPolicy, aSmimeCertsOpt);
             }
             catch (NativeCertStoreDeleteError&)
             {
@@ -1479,12 +1528,12 @@ namespace rclient
                 rclient::Settings::addInstalledUserCA(myUcaCn);
 
                 // import extra signing CAs
-                foreach (const string& path, anExtraSigningCAsPemPaths)
+                foreach(const string& path, anExtraSigningCAsPemPaths)
                 {
                     ta::StringArray myCAs = ta::CertUtils::extractPemCertsFromFile(path);
                     // CAs we receive are ordered from child to parent, but import should happen in reverse direction
                     std::reverse(myCAs.begin(), myCAs.end());
-                    foreach (const string& ca, myCAs)
+                    foreach(const string& ca, myCAs)
                     {
                         const string mySha1Fingerprint = getCertInfo(ca).sha1Fingerprint;
                         if (ta::CertUtils::isSelfSignedCert(ca))
@@ -1531,42 +1580,42 @@ namespace rclient
             const Store myRootStore(storeRoot, myReadOnly);
             const Store myIntStore(storeIntermediate, myReadOnly);
 
-            foreach (const string& cn, Settings::getInstalledUserCaCNs())
+            foreach(const string& cn, Settings::getInstalledUserCaCNs())
             {
                 if (const boost::optional<string> pem = myIntStore.findFirstCertByAttr(certAttrSubjCn, cn))
                 {
                     aUCAs.push_back(*pem);
                 }
             }
-            foreach (const string& cn, Settings::getInstalledServerCaCNs())
+            foreach(const string& cn, Settings::getInstalledServerCaCNs())
             {
                 if (const boost::optional<string> pem = myIntStore.findFirstCertByAttr(certAttrSubjCn, cn))
                 {
                     anSCAs.push_back(*pem);
                 }
             }
-            foreach (const string& cn, Settings::getInstalledPrimaryCaCNs())
+            foreach(const string& cn, Settings::getInstalledPrimaryCaCNs())
             {
                 if (const boost::optional<string> pem = myRootStore.findFirstCertByAttr(certAttrSubjCn, cn))
                 {
                     aPCAs.push_back(*pem);
                 }
             }
-            foreach (const string& cn, Settings::getInstalledRootCaCNs())
+            foreach(const string& cn, Settings::getInstalledRootCaCNs())
             {
                 if (const boost::optional<string> pem = myRootStore.findFirstCertByAttr(certAttrSubjCn, cn))
                 {
                     anRCAs.push_back(*pem);
                 }
             }
-            foreach (const string& fp, Settings::getInstalledExtraSigningIntCaSha1Fingerprints())
+            foreach(const string& fp, Settings::getInstalledExtraSigningIntCaSha1Fingerprints())
             {
                 if (const boost::optional<string> pem = myIntStore.findFirstCertByAttr(certAttrSha1Finterprint, fp))
                 {
                     anExtraSigningCAs.push_back(*pem);
                 }
             }
-            foreach (const string& fp, Settings::getInstalledExtraSigningRootCaSha1Fingerprints())
+            foreach(const string& fp, Settings::getInstalledExtraSigningRootCaSha1Fingerprints())
             {
                 if (const boost::optional<string> pem = myRootStore.findFirstCertByAttr(certAttrSha1Finterprint, fp))
                 {
@@ -1578,24 +1627,24 @@ namespace rclient
         unsigned int deleteFromRootStoreByCN(const string& aSubjCN, const ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeRoot);
-            return myStore.removeCertKeysByAttr(certAttrSubjCn, aSubjCN, anErrorPolicy);
+            return myStore.removeCertKeysByAttr(certAttrSubjCn, aSubjCN, anErrorPolicy, certsSmimeKeep);
         }
         unsigned int deleteFromIntermediateStoreByCN(const string& aSubjCN, ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeIntermediate);
-            return myStore.removeCertKeysByAttr(certAttrSubjCn, aSubjCN, anErrorPolicy);
+            return myStore.removeCertKeysByAttr(certAttrSubjCn, aSubjCN, anErrorPolicy, certsSmimeKeep);
         }
 
         unsigned int deleteFromRootStoreByFingerprint(const string& aSha1Fingerprint, ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeRoot);
-            return myStore.removeCertKeysByAttr(certAttrSha1Finterprint, aSha1Fingerprint, anErrorPolicy);
+            return myStore.removeCertKeysByAttr(certAttrSha1Finterprint, aSha1Fingerprint, anErrorPolicy, certsSmimeKeep);
         }
 
         unsigned int deleteFromIntermediateStoreByFingerprint(const string& aSha1Fingerprint, ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeIntermediate);
-            return myStore.removeCertKeysByAttr(certAttrSha1Finterprint, aSha1Fingerprint, anErrorPolicy);
+            return myStore.removeCertKeysByAttr(certAttrSha1Finterprint, aSha1Fingerprint, anErrorPolicy, certsSmimeKeep);
         }
 
 #ifdef _WIN32

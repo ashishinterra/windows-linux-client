@@ -14,10 +14,10 @@ public:
     unsigned int cleanUserCerts(const std::string& anIssuerCnSuffix = "")
     {
         unsigned int myNumDeleted = 0;
-        foreach (const std::string& issuer, rclient::Settings::getInstalledUserCaCNs())
+        foreach(const std::string& issuer, rclient::Settings::getInstalledUserCaCNs())
         {
             myNumDeleted += rclient::NativeCertStore::deleteUserCertsForIssuerCN(issuer + anIssuerCnSuffix,
-                                                                               rclient::NativeCertStore::proceedOnError);
+                rclient::NativeCertStore::proceedOnError, rclient::NativeCertStore::certsSmimeRemove);
         }
         return myNumDeleted;
     }
@@ -73,14 +73,14 @@ public:
         const std::string myCertSha1Finderprint = rclient::NativeCertStore::importPfx(thePfxWithValidCert);
         // then
         TS_ASSERT_EQUALS(myCertSha1Finderprint, thePfxWithValidCertCertSha1Fingerprint);
-        unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         TS_ASSERT_EQUALS(myNumValidCerts, 1);
 
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
+        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
-        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
     }
 
@@ -90,14 +90,14 @@ public:
         const std::string myCertSha1Finderprint = rclient::NativeCertStore::importPfx(thePfxWithExpiredCert);
         // then
         TS_ASSERT_EQUALS(myCertSha1Finderprint, thePfxWithExpiredCertCertSha1Fingerprint);
-        unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
 
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
+        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
-        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
     }
 
@@ -107,28 +107,28 @@ public:
         const std::string myCertSha1Finderprint = rclient::NativeCertStore::importPfx(thePfxWithValidCert);
         // then
         TS_ASSERT_EQUALS(myCertSha1Finderprint, thePfxWithValidCertCertSha1Fingerprint);
-        unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        unsigned int myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         TS_ASSERT_EQUALS(myNumValidCerts, 1);
 
         // given (remove the imported cert record from the registry)
         rclient::Settings::removeImportedUserCertFingerprints(boost::assign::list_of(myCertSha1Finderprint));
         // when
-        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         // then (the cert does not exist for KeyTalk)
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
+        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 0);
 
         // given (restore the imported cert back in the registry)
         rclient::Settings::addImportedUserCertFingerprint(myCertSha1Finderprint);
         // when
-        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert();
+        myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
         // then
         TS_ASSERT_EQUALS(myNumValidCerts, 1);
         // when
-        myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
+        myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
     }
@@ -137,7 +137,7 @@ public:
     {
         // given
         thePfxWithExpiredCert.password = "_bad_password_";
-        TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert(), 0);
+        TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert().size(), 0);
         // when-then
         TS_ASSERT_THROWS(rclient::NativeCertStore::importPfx(thePfxWithExpiredCert), rclient::NativeCertStoreError);
     }
@@ -152,14 +152,14 @@ public:
         rclient::NativeCertStore::importPfx(thePfxWithExpiredCert);
 
         // Then
-        TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert(), 1);
+        TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert().size(), 1);
 
         // When
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteAllReseptUserCerts();
+        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
 
         // Then
         TS_ASSERT_EQUALS(myNumOfDeleted, 2);
-        TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert(), 0);
+        TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert().size(), 0);
     }
 
     void test_certificate_with_can_be_deleted_by_issuer_cn()
@@ -208,15 +208,16 @@ public:
         const string myScaCn = getCertInfoFile(myScaPath, ta::CertUtils::DER).subjCN;
         const string myPcaCn = getCertInfoFile(myPcaPath, ta::CertUtils::DER).subjCN;
         vector<string> myExtraSigningIntCAsFingerprints, myExtraSigningRootCAsFingerprints;
-        foreach (const string& path, myExtraSigningCAsPemPaths)
+        foreach(const string& path, myExtraSigningCAsPemPaths)
         {
-            foreach (const string& ca, ta::CertUtils::extractPemCertsFromFile(path))
+            foreach(const string& ca, ta::CertUtils::extractPemCertsFromFile(path))
             {
                 const string myFingerprint = ta::CertUtils::getCertInfo(ca).sha1Fingerprint;
                 if (ta::CertUtils::isSelfSignedCert(ca)) {
                     myExtraSigningRootCAsFingerprints.push_back(myFingerprint);
-                } else {
-                   myExtraSigningIntCAsFingerprints.push_back(myFingerprint);
+                }
+                else {
+                    myExtraSigningIntCAsFingerprints.push_back(myFingerprint);
                 }
             }
         }
@@ -224,11 +225,11 @@ public:
         deleteFromIntermediateStoreByCN(myScaCn, proceedOnError);
         deleteFromIntermediateStoreByCN(myUcaCn, proceedOnError);
         deleteFromRootStoreByCN(myPcaCn, proceedOnError);
-        foreach (const string& fingerprint, myExtraSigningRootCAsFingerprints)
+        foreach(const string& fingerprint, myExtraSigningRootCAsFingerprints)
         {
             deleteFromRootStoreByFingerprint(fingerprint, proceedOnError);
         }
-        foreach (const string& fingerprint, myExtraSigningIntCAsFingerprints)
+        foreach(const string& fingerprint, myExtraSigningIntCAsFingerprints)
         {
             deleteFromIntermediateStoreByFingerprint(fingerprint, proceedOnError);
         }
@@ -258,11 +259,11 @@ public:
         TS_ASSERT_EQUALS(deleteFromIntermediateStoreByCN(myScaCn, failOnError), 1);
         TS_ASSERT_EQUALS(deleteFromIntermediateStoreByCN(myUcaCn, failOnError), 1);
         TS_ASSERT_EQUALS(deleteFromRootStoreByCN(myPcaCn, failOnError), 1);
-        foreach (const string& fingerprint, myExtraSigningRootCAsFingerprints)
+        foreach(const string& fingerprint, myExtraSigningRootCAsFingerprints)
         {
             TS_ASSERT_EQUALS(deleteFromRootStoreByFingerprint(fingerprint, failOnError), 1);
         }
-        foreach (const string& fingerprint, myExtraSigningIntCAsFingerprints)
+        foreach(const string& fingerprint, myExtraSigningIntCAsFingerprints)
         {
             TS_ASSERT_EQUALS(deleteFromIntermediateStoreByFingerprint(fingerprint, failOnError), 1);
         }
@@ -271,11 +272,11 @@ public:
         TS_ASSERT_EQUALS(deleteFromIntermediateStoreByCN(myScaCn, failOnError), 0);
         TS_ASSERT_EQUALS(deleteFromIntermediateStoreByCN(myUcaCn, failOnError), 0);
         TS_ASSERT_EQUALS(deleteFromRootStoreByCN(myPcaCn, failOnError), 0);
-        foreach (const string& fingerprint, myExtraSigningRootCAsFingerprints)
+        foreach(const string& fingerprint, myExtraSigningRootCAsFingerprints)
         {
             TS_ASSERT_EQUALS(deleteFromRootStoreByFingerprint(fingerprint, failOnError), 0);
         }
-        foreach (const string& fingerprint, myExtraSigningIntCAsFingerprints)
+        foreach(const string& fingerprint, myExtraSigningIntCAsFingerprints)
         {
             TS_ASSERT_EQUALS(deleteFromIntermediateStoreByFingerprint(fingerprint, failOnError), 0);
         }
@@ -299,12 +300,66 @@ public:
 #endif
     }
 
+    void test_that_smime_certs_are_not_removed_on_delete()
+    {
+        using namespace rclient::NativeCertStore;
+        using namespace std;
+        using namespace ta::CertUtils;
+        rclient::Pfx mySmimePfx(ta::readData("smime.p12"), ta::readData("smime.pfx.pass.txt"));
+        rclient::Pfx myNoSmimePfx(ta::readData("no_smime.p12"), ta::readData("no_smime.pfx.pass.txt"));
+
+        //given
+        // check nr of certs in store
+        const int nrOfCertsInStore = validateReseptUserCert().size();
+        TS_ASSERT(isSmimeCert(convPfx2Pem(mySmimePfx.data, mySmimePfx.password)));
+        TS_ASSERT(!isSmimeCert(convPfx2Pem(myNoSmimePfx.data, myNoSmimePfx.password)));
+        // add certs to store
+        string mySmimeFingerprint = importPfx(mySmimePfx);
+        string myNoSmimeFingerprint = importPfx(myNoSmimePfx);
+        ta::StringArray myFingerprints = validateReseptUserCert();
+        TS_ASSERT_EQUALS(myFingerprints.size(), nrOfCertsInStore + 2);
+        TS_ASSERT(ta::isElemExist(mySmimeFingerprint, myFingerprints));
+        TS_ASSERT(ta::isElemExist(myNoSmimeFingerprint, myFingerprints));
+
+        //when
+        int myDeletedCertCount = deleteReseptUserCerts();
+
+        //then
+        TS_ASSERT_EQUALS(myDeletedCertCount, 1);
+        myFingerprints = validateReseptUserCert();
+        TS_ASSERT_EQUALS(myFingerprints.size(), nrOfCertsInStore + 1);
+        TS_ASSERT(ta::isElemExist(mySmimeFingerprint, myFingerprints));
+        TS_ASSERT(!ta::isElemExist(myNoSmimeFingerprint, myFingerprints));
+
+        //given
+        // add certs to store
+        mySmimeFingerprint = importPfx(mySmimePfx);
+        myNoSmimeFingerprint = importPfx(myNoSmimePfx);
+        myFingerprints = validateReseptUserCert();
+        TS_ASSERT_EQUALS(myFingerprints.size(), nrOfCertsInStore + 2);
+        TS_ASSERT(ta::isElemExist(mySmimeFingerprint, myFingerprints));
+        TS_ASSERT(ta::isElemExist(myNoSmimeFingerprint, myFingerprints));
+
+        const string myIssuerCn = getCertInfo(convPfx2Pem(myNoSmimePfx.data, myNoSmimePfx.password)).issuerCN;
+        TS_ASSERT_EQUALS(getCertInfo(convPfx2Pem(mySmimePfx.data, mySmimePfx.password)).issuerCN, myIssuerCn);
+        //when
+        myDeletedCertCount = deleteUserCertsForIssuerCN(myIssuerCn, proceedOnError);
+
+        //then
+        // only smime left
+        TS_ASSERT_EQUALS(myDeletedCertCount, 1);
+        myFingerprints = validateReseptUserCert();
+        TS_ASSERT_EQUALS(myFingerprints.size(), nrOfCertsInStore + 1);
+        TS_ASSERT(ta::isElemExist(mySmimeFingerprint, myFingerprints));
+        TS_ASSERT(!ta::isElemExist(myNoSmimeFingerprint, myFingerprints));
+    }
+
     //@todo test with root store
 
     void test_that_invalid_CAs_cannot_be_installed()
     {
         TS_ASSERT_THROWS(rclient::NativeCertStore::installCAs("non-existing-uca", "non-existing-sca", "non-existing-pca", "", ta::StringArray()),
-                         rclient::NativeCertStoreError);
+            rclient::NativeCertStoreError);
     }
 
     void test_get_store_names_yields_some_common_store_names()

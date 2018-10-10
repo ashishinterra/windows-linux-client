@@ -9,7 +9,8 @@
 #          3 : Not enough parameters provided
 ###############################################################################
 
-set timeout 5
+# docker containers might need more time, otherwise 5 seconds is usually enough
+set timeout 20
 
 if {[llength $argv] < 3 } {
   send_user "Usage: testKtclient \$HOME service user\n"

@@ -764,7 +764,7 @@ namespace rclient
             rclient::Settings::setLatestProviderService(pImpl->provider, pImpl->service);
 
             const ta::NetUtils::RemoteAddress mySvr = rclient::Settings::getReseptSvrAddress();
-            rclient::NativeCertStore::deleteAllReseptUserCerts();
+            rclient::NativeCertStore::deleteReseptUserCerts();
 
             DEBUGLOG(boost::format("Connecting to %s server at %s") % resept::ProductName % toString(mySvr));
             rclient::RcdpHandler myRcdpHandler(mySvr);

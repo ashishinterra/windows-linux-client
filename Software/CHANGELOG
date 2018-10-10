@@ -4,6 +4,7 @@ CHANGE LOG of KeyTalk
 client-5.4.0, in development
 ----------------------
     - ADDED: Allow using OS logon username as KeyTalk client username (KEYTALK-471)
+    - FIXED: KeyTalk client should not remove S/MIME certificates (KEYTALK-476)
 
 server-5.4.0, in development
 ----------------------
