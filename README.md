@@ -41,11 +41,14 @@ Install packages
     # curl -s https://bootstrap.pypa.io/get-pip.py | python3
 
 Ubuntu 18 and Debain 9:
+
     # apt -y install tomcat8 tomcat8-*
     # systemctl daemon-reload
     # systemctl enable tomcat8
     # systemctl restart tomcat8
+
 Ubuntu 16 and Debain 8:
+
     # apt -y install tomcat7 tomcat7-*
     # systemctl daemon-reload
     # systemctl enable tomcat7
