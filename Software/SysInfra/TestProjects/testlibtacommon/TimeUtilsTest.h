@@ -52,8 +52,8 @@ public:
     {
         using namespace ta::TimeUtils;
 
-        TS_ASSERT_EQUALS(timestampToUtcStr(1452600616U, true), "12-01-2016 12:10:16");
-        TS_ASSERT_EQUALS(timestampToUtcStr(1452600616U, false), "12-01-2016 12:10");
+        TS_ASSERT_EQUALS(timestampToUtcStr(1452600616, true), "12-01-2016 12:10:16");
+        TS_ASSERT_EQUALS(timestampToUtcStr(1452600616, false), "12-01-2016 12:10");
 
         const time_t now = time(NULL);
         const std::string nowFull = getNowAsLocalStr(true);
@@ -184,6 +184,25 @@ public:
         TS_ASSERT_EQUALS(formatTimeInterval(2*24*60*60 + 12*60*60, precisionCompact), "2 days and 12 hours");
         TS_ASSERT_EQUALS(formatTimeInterval(2*24*60*60 + 12*60*60 + 22*60 + 32), "2 days, 12 hours, 22 minutes and 32 seconds");
         TS_ASSERT_EQUALS(formatTimeInterval(2*24*60*60 + 12*60*60 + 22*60 + 32, precisionCompact), "2 days and 12 hours");
+    }
+
+    void testParseDate()
+    {
+        using namespace ta::TimeUtils;
+
+        // given
+        const time_t myDate9July2018Utc = 1531094400;
+
+        // when-then
+        TS_ASSERT_EQUALS(parseUtcDate("7-9-2018"), myDate9July2018Utc);
+        TS_ASSERT_EQUALS(parseUtcDate("7/9/2018"), myDate9July2018Utc);
+        TS_ASSERT_EQUALS(parseUtcDate("07/09/2018"), myDate9July2018Utc);
+        TS_ASSERT_EQUALS(parseUtcDate("07-09-2018"), myDate9July2018Utc);
+        // when-then
+        TS_ASSERT_THROWS(parseUtcDate("07-09/2018"), std::exception);
+        TS_ASSERT_THROWS(parseUtcDate("7-09-18"), std::exception);
+        TS_ASSERT_THROWS(parseUtcDate(""), std::exception);
+        TS_ASSERT_THROWS(parseUtcDate("gibberish"), std::exception);
     }
 
     void testLocalTime()

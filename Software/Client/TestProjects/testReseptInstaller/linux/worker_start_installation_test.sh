@@ -30,4 +30,13 @@ function start_test()
 # Here we go!
 #
 
+echo "Starting installation tests..."
+
+# NOTICE
+# to debug this docker container by pausing it:
+# 1. uncomment the line below the comment
+# 2. start the container (docker run) with '-it' argument (e.g. from supervisor_start_test.sh)
+# 3. in a separate shell: docker exec -it ${container_name} /bin/bash
+# read -p "The test script is paused, let's debug it!"
+
 start_test

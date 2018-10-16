@@ -23,6 +23,7 @@
 using std::string;
 using std::vector;
 namespace fs = boost::filesystem;
+using boost::assign::list_of;
 
 namespace PrGenerator
 {
@@ -234,7 +235,7 @@ namespace PrGenerator
         ta::StringArray tryCopyMiniDump(const string& aDir)
         {
             ta::StringArray myRetVal;
-            const ta::StringArray myApps = boost::assign::list_of(rclient::ReseptDesktopClient)(rclient::ReseptConsoleClient)(rclient::ReseptConfigManager);
+            const ta::StringArray myApps = list_of(rclient::ReseptDesktopClient)(rclient::ReseptConsoleClient)(rclient::ReseptConfigManager);
             foreach (const string& app, myApps)
             {
                 try
@@ -277,8 +278,8 @@ namespace PrGenerator
             // Apache config
             try
             {
-                const string mySrcPath = rclient::Settings::getReseptConfigDir() + ta::getDirSep() + "apache.ini";
-                const string myDestPath = aDir + ta::getDirSep() + "apache.ini";
+                const string mySrcPath = rclient::Settings::getReseptConfigDir() + "/apache.ini";
+                const string myDestPath = aDir + "/apache.ini";
                 copyFile(mySrcPath, myDestPath);
                 myRetVal.push_back(myDestPath);
             }
@@ -293,7 +294,7 @@ namespace PrGenerator
                 const string mySrcPath = "/etc/cron.d/keytalk.apache";
                 if (ta::isFileExist(mySrcPath))
                 {
-                    const string myDestPath = aDir + ta::getDirSep() + "etc_cron_d_keytalk_apache";
+                    const string myDestPath = aDir + "/etc_cron_d_keytalk_apache";
                     copyFile(mySrcPath, myDestPath);
                     myRetVal.push_back(myDestPath);
                 }
@@ -304,7 +305,7 @@ namespace PrGenerator
             }
 
             // KeyTalk Apache logs
-            static const vector<string> myApacheLogs = boost::assign::list_of(ta::Process::getTempDir() + "ktapachecertrenewal.log")
+            static const vector<string> myApacheLogs = list_of(ta::Process::getTempDir() + "ktapachecertrenewal.log")
                     (ta::Process::getTempDir() + "cron.ktapachecertrenewal.log");
             foreach (const string& logPath, myApacheLogs)
             {
@@ -312,7 +313,7 @@ namespace PrGenerator
                 {
                     if (ta::isFileExist(logPath))
                     {
-                        const string myDestPath = aDir + ta::getDirSep() + fs::path(logPath).filename().string();
+                        const string myDestPath = aDir + "/" + fs::path(logPath).filename().string();
                         copyFile(logPath, myDestPath);
                         myRetVal.push_back(myDestPath);
                     }
@@ -330,7 +331,7 @@ namespace PrGenerator
                 try
                 {
                     const string myApacheConfigFile = "/etc/httpd/conf/httpd.conf";
-                    const string myDestPath = aDir + ta::getDirSep() + "apache_ports.conf";
+                    const string myDestPath = aDir + "/apache_ports.conf";
                     copyFile(myApacheConfigFile, myDestPath);
                     myRetVal.push_back(myDestPath);
                 }
@@ -349,7 +350,7 @@ namespace PrGenerator
                         if (fs::is_symlink(p))
                         {
                             const fs::path mySymLinkPath = sitesEnabledDir / fs::read_symlink(p);
-                            const string myDestPath = aDir + ta::getDirSep() + "apache_sites_enabled_"  + mySymLinkPath.filename().string();
+                            const string myDestPath = aDir + "/apache_sites_enabled_"  + mySymLinkPath.filename().string();
                             copyFile(mySymLinkPath.string(), myDestPath);
                             myRetVal.push_back(myDestPath);
                         }
@@ -386,7 +387,7 @@ namespace PrGenerator
                         if (fs::is_symlink(p))
                         {
                             const fs::path mySymLinkPath = sitesEnabledDir / fs::read_symlink(p);
-                            const string myDestPath = aDir + ta::getDirSep() + "apache_sites_enabled_"  + mySymLinkPath.filename().string();
+                            const string myDestPath = aDir + "/apache_sites_enabled_"  + mySymLinkPath.filename().string();
                             copyFile(mySymLinkPath.string(), myDestPath);
                             myRetVal.push_back(myDestPath);
                         }
@@ -397,29 +398,119 @@ namespace PrGenerator
                     }
                 }
             }
+            return myRetVal;
+        }
 
+        string guessTomCatDirName()
+        {
+            string myTomCatDir = "tomcat";
 
-            // Apache log
+            if (ta::isFileExist("/usr/sbin/tomcat"))
+            {
+                myTomCatDir = "tomcat";
+            }
+            else
+            {
+                static const ta::StringArray Versions = list_of("tomcat")
+                                                        ("tomcat6")
+                                                        ("tomcat7")
+                                                        ("tomcat8")
+                                                        ("tomcat9");
+                foreach (const string& version, Versions)
+                {
+                    if (ta::isFileExist("/etc/init.d/" + version))
+                    {
+                        myTomCatDir = version;
+                    }
+                }
+            }
+
+            return myTomCatDir;
+        }
+
+        ta::StringArray tryCopyTomCatFiles(const string& aDir)
+        {
+            ta::StringArray myRetVal;
+
+            // KeyTalk TomCat config
             try
             {
-                const string mySrcPathHttpd = "/var/log/httpd/error_log";
-                const string mySrcPathApache = "/var/log/apache2/error.log";
-                if (ta::isFileExist(mySrcPathHttpd))
+                const string mySrcPath = rclient::Settings::getReseptConfigDir() + "/tomcat.ini";
+                const string myDestPath = aDir + "/tomcat.ini";
+                copyFile(mySrcPath, myDestPath);
+                myRetVal.push_back(myDestPath);
+            }
+            catch (std::exception& e)
+            {
+                WARNLOG(boost::format("Failed to copy %s tomcat config to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
+            }
+
+            // Tomcat server configuration
+            try
+            {
+                const string myConfigFilePath = "/etc/" + guessTomCatDirName() + "/server.xml";
+                if (ta::isFileExist(myConfigFilePath))
                 {
-                    const string myDestPath = aDir + ta::getDirSep() + "apache_error_log";
-                    copyFile(mySrcPathHttpd, myDestPath);
-                    myRetVal.push_back(myDestPath);
-                }
-                else if (ta::isFileExist(mySrcPathApache))
-                {
-                    const string myDestPath = aDir + ta::getDirSep() + "apache_error.log";
-                    copyFile(mySrcPathApache, myDestPath);
+                    const string myDestPath = aDir + "/tomcat_server.xml";
+                    copyFile(myConfigFilePath, myDestPath);
                     myRetVal.push_back(myDestPath);
                 }
             }
             catch (std::exception& e)
             {
-                WARNLOG(boost::format("Failed to copy apache log to %s. %s. Skipping...") % aDir % e.what());
+                WARNLOG(boost::format("Failed to copy tomcat server config to %s. %s. Skipping...") % aDir % e.what());
+            }
+
+            // Tomcat cron job
+            try
+            {
+                const string mySrcPath = "/etc/cron.d/keytalk.tomcat";
+                if (ta::isFileExist(mySrcPath))
+                {
+                    const string myDestPath = aDir + "/etc_cron_d_keytalk_tomcat";
+                    copyFile(mySrcPath, myDestPath);
+                    myRetVal.push_back(myDestPath);
+                }
+            }
+            catch (std::exception& e)
+            {
+                WARNLOG(boost::format("Failed to copy %s tomcat cron job config to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
+            }
+
+            // KeyTalk TomCat logs
+            static const vector<string> myLogs = list_of(ta::Process::getTempDir() + "kttomcatcertrenewal.log")
+                                                 (ta::Process::getTempDir() + "cron.kttomcatcertrenewal.log");
+            foreach (const string& logPath, myLogs)
+            {
+                try
+                {
+                    if (ta::isFileExist(logPath))
+                    {
+                        const string myDestPath = aDir + "/" + fs::path(logPath).filename().string();
+                        copyFile(logPath, myDestPath);
+                        myRetVal.push_back(myDestPath);
+                    }
+                }
+                catch (std::exception& e)
+                {
+                    WARNLOG(boost::format("Failed to copy %s tomcat client log to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
+                }
+            }
+
+            // TomCat logs
+            try
+            {
+                const string myLogFilePath  = "/var/log/" + guessTomCatDirName() + "/catalina.out";
+                if (ta::isFileExist(myLogFilePath))
+                {
+                    const string myDestPath = aDir + "/" + fs::path(myLogFilePath).filename().string();
+                    copyFile(myLogFilePath, myDestPath);
+                    myRetVal.push_back(myDestPath);
+                }
+            }
+            catch (std::exception& e)
+            {
+                WARNLOG(boost::format("Failed to copy tomcat log to %s. %s. Skipping...") % aDir % e.what());
             }
 
             return myRetVal;
@@ -665,6 +756,7 @@ namespace PrGenerator
         myFileList += tryCopyMiniDump(aDir);
 #else
         myFileList += tryCopyApacheFiles(aDir);
+        myFileList += tryCopyTomCatFiles(aDir);
 #endif
         myFileList += tryCopySelfLog(aDir);
 

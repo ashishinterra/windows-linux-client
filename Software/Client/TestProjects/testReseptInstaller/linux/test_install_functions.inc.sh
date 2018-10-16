@@ -12,18 +12,25 @@ INSTALLATION_FILES_REQUIRED="\
 /usr/local/bin/keytalk/ktprgen \
 /usr/local/bin/keytalk/hwutils \
 /usr/local/bin/keytalk/renew_apache_ssl_cert \
+/usr/local/bin/keytalk/renew_tomcat_ssl_cert \
 /usr/local/bin/keytalk/util.py \
 /usr/local/bin/keytalk/apache_util.py \
+/usr/local/bin/keytalk/tomcat_util.py \
+/usr/local/bin/keytalk/tomcat.sh \
 /usr/local/bin/keytalk/uninstall_keytalk \
 /usr/local/lib/keytalk/libtalogger.so \
 /etc/keytalk/resept.ini \
 /etc/keytalk/apache.ini \
+/etc/keytalk/tomcat.ini \
 /etc/keytalk/version \
 /etc/keytalk/devstage \
 /etc/keytalk/cr.conf \
 /etc/cron.d/keytalk.apache \
+/etc/cron.d/keytalk.tomcat \
 /usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Apache.txt \
-/usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Apache.pdf"
+/usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Apache.pdf \
+/usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Tomcat.txt \
+/usr/share/doc/keytalk/KeyTalk_LinuxClient_for_Tomcat.pdf"
 
 INSTALLATION_DIRS_REQUIRED="\
 /usr/local/bin/keytalk \
@@ -37,12 +44,13 @@ devstage \
 user\.ini \
 resept\.ini \
 apache\.ini \
+tomcat\.ini \
 etc_cron_d_keytalk_apache \
+etc_cron_d_keytalk_tomcat \
 apache_ports\.conf \
 ktclient\.log \
 ktconfig\.log \
 ktconfupdater\.log \
-apache_error\.log \
 signing_ca_[0-9a-f]*\.pem \
 comm_ca_[0-9a-f]*\.pem \
 primary_ca_[0-9a-f]*\.pem"
@@ -347,6 +355,46 @@ function configure_apache()
     if ! service apache2 restart ; then
         echo "ERROR restarting Apache. Recent apache error log:"
         tail -n 50 /var/log/apache2/error.log
+        return 1
+    fi
+}
+
+function configure_tomcat()
+{
+    echo "Configuring Tomcat for test"
+
+    cp tomcat/tomcat.ini /etc/keytalk/
+
+    local tomcat_dir=""
+
+    # Identifying Tomcat directory
+    if [ -f /usr/sbin/tomcat ]; then
+        tomcat_dir="tomcat"
+    elif [ -f /etc/init.d/tomcat ]; then
+        tomcat_dir="tomcat"
+    elif [ -f /etc/init.d/tomcat9 ]; then
+        tomcat_dir="tomcat9"
+    elif [ -f /etc/init.d/tomcat8 ]; then
+        tomcat_dir="tomcat8"
+    elif [ -f /etc/init.d/tomcat7 ]; then
+        tomcat_dir="tomcat7"
+    elif [ -f /etc/init.d/tomcat6 ]; then
+        tomcat_dir="tomcat6"
+    else
+        tomcat_dir="tomcat"
+    fi
+
+    local server_xml_file="/etc/${tomcat_dir}/server.xml"
+
+    # Edit server.xml to enable 8443 port for SSL connection to Tomcat, using certificate stored in JAVA keystore
+    if ! grep -q "keystoreFile=\"/etc/keytalk/keystore\"" ${server_xml_file} ; then
+        echo "Add KeyTalk SSL connector to TomCat"
+        sed -i '/A "Connector" using the shared thread pool/i \\n    <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol" \n        maxThreads="150" SSLEnabled="true" scheme="https" secure="true" \n        clientAuth="false" sslProtocol="TLS" \n        keystoreFile="/etc/keytalk/keystore" keystorePass="changeit" />\n' ${server_xml_file}
+    fi
+
+    if ! service ${tomcat_dir} restart ; then
+        echo "ERROR restarting Tomcat."
+        echo "Check recent tomcat error log in /var/log/${tomcat_dir}/"
         return 1
     fi
 }

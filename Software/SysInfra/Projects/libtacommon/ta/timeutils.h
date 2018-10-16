@@ -51,6 +51,9 @@ namespace ta
         };
         std::string formatTimeInterval(const unsigned int aTotalSeconds, const Precision aPrecision = precisionFull);
 
+        // Parse date expressed as "m[m]-d[d]-yyyy" or "m[m]/d[d]/yyyy" UTC assuming time is 00:00:00
+        time_t parseUtcDate(const std::string& aDateStr);
+
 
         class LocalTime
         {

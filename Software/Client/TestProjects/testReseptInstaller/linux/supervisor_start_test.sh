@@ -83,7 +83,9 @@ function test_build()
     local container_name="${image_name}-container"
     echo "Start build test on ${image_name} (container ${container_name})"
 
+    # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
     if docker run \
+      --privileged=true \
        --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
        --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
        --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/result:rw \
@@ -113,7 +115,9 @@ function test_installation()
     local container_name="${image_name}-container"
     echo "Start installation test on ${image_name} (container ${container_name})"
 
+    # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
     if docker run \
+      --privileged=true \
        --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
        --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
        --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/installer:rw \
@@ -179,9 +183,9 @@ function start_tests()
     echo "Logs can be found under ${SHARED_TEST_LOG_DIR}"
 
     if (( failed_build_tests == 0 && failed_installation_tests == 0 )); then
-        return 0
+        exit 0
     else
-        return 1
+        exit 1
     fi
 }
 

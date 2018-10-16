@@ -88,7 +88,7 @@ function run_test()
 # Here we go!
 #
 
-echo "Starting..."
+echo "Starting build tests..."
 
 # NOTICE
 # to debug this docker container by pausing it:

@@ -2,7 +2,7 @@
 
 set -e
 set -u
-set -x
+# set -x
 
 # usage: ./$0 [installer-dir logs-backup-dir | test-name ]
 
@@ -284,6 +284,20 @@ function test_apache_ssl_cert_renewal()
     SUCCEEDED_TESTS=$((SUCCEEDED_TESTS+1))
 }
 
+# Install, customize, test tomcat SSL certificate renewal feature and finally uninstall
+function test_tomcat_ssl_cert_renewal()
+{
+    echo "--- Running test_tomcat_ssl_cert_renewal ..."
+    _cleanup_keytalk_installation
+    _test_install_customize "http://r4webdemo.gotdns.com/rccds/v2/settings.DemoProvider.ApacheSslTest.user.rccd"
+    configure_tomcat
+    pushd tomcat/ > /dev/null
+    ./run_tests.py
+    popd > /dev/null
+    _test_uninstall
+    _cleanup_keytalk_installation
+    SUCCEEDED_TESTS=$((SUCCEEDED_TESTS+1))
+}
 
 
 
@@ -307,6 +321,7 @@ if [ -z ${TEST_NAME} ] ; then
     test_install_customize_from_file_with_admin_user_rccds_different_providers
     test_downgrade_rccd_content_version_non_interactively
     test_apache_ssl_cert_renewal
+    test_tomcat_ssl_cert_renewal
 else
     # run specific test
     eval ${TEST_NAME}

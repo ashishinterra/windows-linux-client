@@ -329,6 +329,40 @@ namespace ta
             }
         }
 
+        time_t parseUtcDate(const string& aDateStr)
+        {
+            try
+            {
+                const boost::regex myRegEx("\\s*(?<month>\\d\\d?)(?<separator>-|/)(?<day>\\d\\d?)\\k<separator>(?<year>\\d{4})\\s*");
+                boost::cmatch myMatch;
+                if (!regex_match(aDateStr.c_str(), myMatch, myRegEx))
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse m[m]-d[d]-yyyy or m[m]/d[d]/yyyy date from string '%1%'") % aDateStr);
+                }
+
+                tm myTm = {0};
+                myTm.tm_mday = Strings::parse<unsigned int>(myMatch["day"]);
+                myTm.tm_mon = Strings::parse<unsigned int>(myMatch["month"]) - 1;
+                myTm.tm_year = Strings::parse<unsigned int>(myMatch["year"]) - 1900;
+
+                const time_t myTimestamp = mktime(&myTm);
+                if (myTimestamp == (time_t)(-1))
+                {
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse m[m]-d[d]-yyyy or m[m]/d[d]/yyyy date from string '%1%'. mktime(3) failed.") % aDateStr);
+                }
+
+                return myTimestamp;
+            }
+            catch (const std::invalid_argument&)
+            {
+                throw;
+            }
+            catch (const std::exception& e)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Cannot parse m[m]-d[d]-yyyy or m[m]/d[d]/yyyy date from string '%1%'. %2%") % aDateStr % e.what());
+            }
+        }
+
 
         LocalTime::LocalTime()
         {

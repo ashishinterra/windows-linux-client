@@ -40,6 +40,16 @@ Install packages
     # a2enmod ssl
     # curl -s https://bootstrap.pypa.io/get-pip.py | python3
 
+Ubuntu 18 and Debain 9:
+    # apt -y install tomcat8 tomcat8-*
+    # systemctl daemon-reload
+    # systemctl enable tomcat8
+    # systemctl restart tomcat8
+Ubuntu 16 and Debain 8:
+    # apt -y install tomcat7 tomcat7-*
+    # systemctl daemon-reload
+    # systemctl enable tomcat7
+    # systemctl restart tomcat7
 
 Optional. Ubuntu 16/18 and Debain 9: install ccache to speedup C/C++ builds
 
@@ -90,6 +100,9 @@ Install packages:
     # yum -y update
     # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget wkhtmltopdf pylint bind-utils nc
     # pip install lxml pyopenssl
+    # yum install tomcat tomcat-*
+    # systemctl enable tomcat
+    # systemctl restart tomcat
 
 
 
@@ -135,6 +148,8 @@ Install packages:
     # yum -y update
     # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget bind-utils nc
     # pip install lxml pyopenssl
+    # yum install tomcat6 tomcat6-*
+    # service tomcat6 start
 
     # wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
     # tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
