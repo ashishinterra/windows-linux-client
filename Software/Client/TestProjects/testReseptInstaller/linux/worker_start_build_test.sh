@@ -74,12 +74,13 @@ function run_test()
                 local installer_package_path="${REPO_DIR}/Software/Client/Projects/Export/${package}"
                 if [ -f "${installer_package_path}" ]; then
                     cp "${installer_package_path}" "${RESULT_DIR}/"
-                    return 0
                 else
                     echo "ERROR: No installer package found under ${installer_package_path}" >&2
                     return 1
                 fi
             done
+
+            return 0
         else
             echo "ERROR: Test failed" >&2
             return 1
@@ -101,7 +102,7 @@ echo "Starting build tests..."
 # 1. uncomment the line below the comment
 # 2. start the container (docker run) with '-it' argument (e.g. from supervisor_start_test.sh)
 # 3. in a separate shell: docker exec -it ${container_name} /bin/bash
-# read -p "The test script is paused, let's debug it!"
+# read -p 'The test script is paused, use "docker exec -it ${container_name} /bin/bash" to debug it'
 
 cleanup
 setup_test

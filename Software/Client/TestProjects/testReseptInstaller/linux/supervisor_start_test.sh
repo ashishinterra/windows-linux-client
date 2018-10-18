@@ -18,7 +18,8 @@ FAKE_BUILD_TEST=false
 # dict( build image name -> installation image name )
 TEST_IMAGES=\
 " debian-8-keytalk-build-test:debian-8-keytalk-install-test"\
-" debian-9-keytalk-build-test:debian-9-keytalk-install-test"
+" debian-9-keytalk-build-test:debian-9-keytalk-install-test" \
+" ubuntu-16.04-keytalk-build-test:ubuntu-16.04-keytalk-install-test"
 
 # Repository root, the supervisor shares it with the workers.
 # The primary reason to share the repository is to save time for the workers cloning it.

@@ -14,9 +14,9 @@ WIN32 = sys.platform == 'win32'
 inputDirectories = [os.path.join(x, "Projects") for x in (
     "Common", "SysInfra", "Server", "WebUI.Server", "Client")]
 astyleOptions = "--indent-namespaces --keep-one-line-blocks --keep-one-line-statements --indent=spaces=4 --lineend=linux --mode=c --formatted"
-testFilePatterns = re.compile(".*\.(c|h|cpp|hpp)$")
+testFilePatterns = re.compile(r".*\.(c|h|cpp|hpp)$")
 if WIN32:
-    astyleExecutable = "Import\\astyle\\bin\\win32\\Astyle.exe"
+    astyleExecutable = r"Import\astyle\bin\win32\Astyle.exe"
 else:
     import platform
     os_, _, _, _, arch, _ = platform.uname()
@@ -100,7 +100,7 @@ def filter_out_ignored_files(files):
 
 
 def apply_template_fix(string):
-    return re.sub("\$ {", "${", string)
+    return re.sub(r"\$ {", r"${", string)
 
 #
 # Here we go

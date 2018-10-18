@@ -37,6 +37,6 @@ echo "Starting installation tests..."
 # 1. uncomment the line below the comment
 # 2. start the container (docker run) with '-it' argument (e.g. from supervisor_start_test.sh)
 # 3. in a separate shell: docker exec -it ${container_name} /bin/bash
-# read -p "The test script is paused, let's debug it!"
+# read -p 'The test script is paused, use "docker exec -it ${container_name} /bin/bash" to debug it'
 
 start_test

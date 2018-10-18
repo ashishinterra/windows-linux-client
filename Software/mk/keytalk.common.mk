@@ -1,5 +1,5 @@
 OSSPEC := $(shell lsb_release --id --short | tr "[:upper:]" "[:lower:]")-$(shell lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-$(shell uname -m | cut -d '-' -f 1)
-
+OSTYPE := $(shell uname | tr "[:upper:]" "[:lower:]")
 
 # We build KeyTalk Server if /resept_server_dev exists
 ifneq ($(wildcard /resept_server_dev),)
@@ -84,7 +84,7 @@ ZLIB_LIB=$(ZLIB_LIB_VERSION_DIR)/lib/$(OSSPEC)/libzwapi.a
 
 # Curl static library
 CURL_LIB_VERSION_DIR=curl-7.54
-CURL_INCLUDE_DIR=$(CURL_LIB_VERSION_DIR)/include/$(OSSPEC)
+CURL_INCLUDE_DIR=$(CURL_LIB_VERSION_DIR)/include/$(OSTYPE)
 CURL_LIB=$(CURL_LIB_VERSION_DIR)/lib/$(OSSPEC)/libcurl.a
 
 ifdef RESEPT_LINUX_CLIENT

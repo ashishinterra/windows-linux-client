@@ -2,8 +2,18 @@
 
 FROM ubuntu:16.04
 
+# Install packages
 RUN apt-get update
-RUN apt-get -y install openssh-client procps apache2 hdparm unzip lsb-release
+RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release python
 RUN a2enmod ssl
 
-ENTRYPOINT ./bootstrap/worker_start_installation_test.sh
+# Install ping
+RUN apt -y install iputils-ping
+
+RUN apt -y install default-jdk tomcat7 tomcat7-*
+
+# set time
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENTRYPOINT ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh
