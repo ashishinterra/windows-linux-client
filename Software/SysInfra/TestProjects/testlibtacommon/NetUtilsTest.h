@@ -657,6 +657,10 @@ public:
         const std::string myBadUrl = "http://www.apache.org/invalid/path";
         // when-then
         TS_ASSERT_THROWS(ta::NetUtils::fetchHttpUrl(myBadUrl), std::exception);
+
+        const std::string myContent2 = ta::vec2Str(ta::NetUtils::fetchHttpUrl("https://192.168.33.102/rcdp/2.2.0/hello", "/tmp/chain.pem"));
+        TS_TRACE(myContent2.c_str());
+        TS_FAIL("@todo");
     }
 
 

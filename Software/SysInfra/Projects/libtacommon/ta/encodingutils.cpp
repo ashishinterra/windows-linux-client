@@ -138,12 +138,12 @@ namespace ta
             return myRetVal;
         }
 
-        string urlEncode(const string& anSrc)
+        string urlEncode(const string& anSrc, const SpaceEncoding aSpaceEncoding)
         {
             string myRetVal;
             const string mySafeChars = SafeUrlEncodingChars;
 
-            string::size_type mySize = anSrc.size();
+            const string::size_type mySize = anSrc.size();
             for (string::size_type pos = 0; pos < mySize; ++pos)
             {
                 unsigned char ch = anSrc[pos];
@@ -152,13 +152,13 @@ namespace ta
                     myRetVal+= ch;
                     continue;
                 }
-                if (ch == ' ')
+                if (ch == ' ' && aSpaceEncoding == encodeSpaceAsPlus)
                 {
-                    myRetVal+= "+";
+                    myRetVal += "+";
                 }
                 else
                 {
-                    myRetVal+= hexEncode(ch);
+                    myRetVal += hexEncode(ch);
                 }
             }
             return myRetVal;
@@ -167,7 +167,7 @@ namespace ta
         string urlDecode(const string& anSrc)
         {
             string myRetVal;
-            string::size_type mySize = anSrc.size();
+            const string::size_type mySize = anSrc.size();
             for (string::size_type pos = 0; pos < mySize; ++pos)
             {
                 unsigned char ch = anSrc[pos];

@@ -53,12 +53,17 @@ public:
     {
         using namespace ta::EncodingUtils;
 
-        const string myOrig    = "/replace+me%20: \"here~\"/";
-        const string myEncoded = "/replace%2Bme%2520%3A+%22here%7E%22/";
-        TS_ASSERT_EQUALS(urlEncode(myOrig), myEncoded);
-        TS_ASSERT_EQUALS(urlDecode(myEncoded), myOrig);
+        const string myOrig = "/replace+me%20: \"here~\"/";
+        const string myEncodedwithPlus = "/replace%2Bme%2520%3A+%22here%7E%22/";
+        const string myEncodedWithHex = "/replace%2Bme%2520%3A%20%22here%7E%22/";
+
+        TS_ASSERT_EQUALS(urlEncode(myOrig), myEncodedwithPlus);
+        TS_ASSERT_EQUALS(urlDecode(myEncodedwithPlus), myOrig);
+        TS_ASSERT_EQUALS(urlEncode(myOrig, encodeSpaceAsHex), myEncodedWithHex);
+        TS_ASSERT_EQUALS(urlDecode(myEncodedWithHex), myOrig);
 
         TS_ASSERT_EQUALS(urlEncode(" "), "+");
+        TS_ASSERT_EQUALS(urlEncode(" ", encodeSpaceAsHex), "%20");
         TS_ASSERT_EQUALS(urlDecode("+"), " ");
         TS_ASSERT_EQUALS(urlDecode("%20"), " ");
 

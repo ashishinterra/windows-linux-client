@@ -68,19 +68,21 @@ post_build:
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
-		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /usr/local/share/ca-certificates/test-commcacert-pcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk-test-commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk-test-pcacert.crt; \
 		update-ca-certificates; \
 	elif [ -f /etc/redhat-release ]; then \
-		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /etc/pki/ca-trust/source/anchors/test-commcacert-pcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-pcacert.crt; \
 		update-ca-trust; \
 	fi
 
 post_clean:
 	rm -f $(OUT_DIR)/ReseptClientAppTest.conf $(OUT_DIR)/log.conf $(OUT_DIR)/hwutils
 	if [ -f /etc/debian_version ]; then \
-		rm -f /usr/local/share/ca-certificates/test-commcacert-pcacert.crt; \
+		rm -f /usr/local/share/ca-certificates/keytalk-test-*.crt; \
 		update-ca-certificates --fresh; \
 	elif [ -f /etc/redhat-release ]; then \
-		rm -f /etc/pki/ca-trust/source/anchors/test-commcacert-pcacert.crt; \
+		rm -f /etc/pki/ca-trust/source/anchors/keytalk-test-*.crt; \
 		update-ca-trust extract; \
 	fi

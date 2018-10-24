@@ -12,7 +12,12 @@ endif
 CXX=clang++
 CC=clang
 
-CFLAGS=-c -std=c++03 -I/usr/local/include -Wall -Wextra -Wunused -Wno-missing-field-initializers -Wpointer-arith -Wcast-align -Wstrict-overflow=5 -Wwrite-strings -Wcast-qual -pedantic -Wno-long-long -Wformat=2 -Winit-self -Wmissing-include-dirs -Wcast-align -Wvariadic-macros -Woverlength-strings -Wctor-dtor-privacy -Wreorder -Woverloaded-virtual
+ifndef CXX_STANDARD_CFLAGS
+  CXX_STANDARD_CFLAGS=-std=c++03
+endif
+CFLAGS=-c -I/usr/local/include -Wall -Wextra -Wunused -Wno-missing-field-initializers -Wpointer-arith -Wcast-align -Wstrict-overflow=5 -Wwrite-strings -Wcast-qual -pedantic -Wno-long-long -Wformat=2 -Winit-self -Wmissing-include-dirs -Wcast-align -Wvariadic-macros -Woverlength-strings -Wctor-dtor-privacy -Wreorder -Woverloaded-virtual
+CFLAGS+=$(CXX_STANDARD_CFLAGS)
+
 ifeq ($(findstring debug,$(MAKECMDGOALS)),debug)
   CFLAGS+=-g -DDEBUG
 else

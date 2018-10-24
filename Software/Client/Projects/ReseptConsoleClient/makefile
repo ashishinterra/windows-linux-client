@@ -60,6 +60,7 @@ install:
 	@echo "Creating minimal KeyTalk installation..."
 	mkdir -p /usr/local/bin/keytalk/ /usr/local/lib/keytalk/
 	cp -f $(OUT_DIR)/$(PROG) /usr/local/bin/keytalk/
+	cp -f util.py apache_util.py tomcat_util.py /usr/local/bin/keytalk/
 	cp -f ../../../SysInfra/Projects/Export/libtalogger.so /usr/local/lib/keytalk/
 
 	@echo "Customizing KeyTalk installation..."
@@ -69,9 +70,11 @@ install:
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
-		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /usr/local/share/ca-certificates/test-commcacert-pcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk-test-commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk-test-pcacert.crt; \
 		update-ca-certificates; \
 	elif [ -f /etc/redhat-release ]; then \
-		cat ../../../CertKeys/CommunicationAndSigning/commcacert.pem ../../../CertKeys/CommunicationAndSigning/pcacert.pem > /etc/pki/ca-trust/source/anchors/test-commcacert-pcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-pcacert.crt; \
 		update-ca-trust; \
 	fi

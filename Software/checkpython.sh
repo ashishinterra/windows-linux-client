@@ -46,6 +46,7 @@ if [ -f /resept_linux_client_dev ]; then
     # workaround pylint's false-positive "[E1101] Module 'ssl' has no 'PROTOCOL_TLSv1' member"
     check_python_scripts "Client/Projects/ReseptConsoleClient/*.py" "E1101"
     check_python_scripts "Client/TestProjects/testReseptInstaller/linux/apache/*.py"
+    check_python_scripts "Client/TestProjects/testReseptInstaller/linux/tomcat/*.py"
 fi
 
 exit $FAILCOUNT

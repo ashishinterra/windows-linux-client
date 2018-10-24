@@ -52,18 +52,16 @@ namespace ta
         /**
           URL-encode the string using the %xx escape. The resulted hex characters are upper-case.
           The following characters are not encoded: 'A'-'Z', 'a'-'z', '0'-'9', '_', '.', '-', '/'
-          ' ' gets encoded to '+'
-          @param[in] anSrc String which needs to be encoded
-          @return encoded string
          */
-        std::string urlEncode(const std::string& anSrc);
-
+        enum SpaceEncoding
+        {
+            encodeSpaceAsPlus,  // ' ' -> '+'
+            encodeSpaceAsHex    // ' ' -> '%20'
+        };
+        std::string urlEncode(const std::string& anSrc, const SpaceEncoding aSpaceEncoding = encodeSpaceAsPlus);
 
         /**
           URL-decode the string. Accepts both lower and upper case hex characters.
-
-          @param[in] anSrc String which needs to be decoded. @see urlEncode
-          @return encoded string
          */
         std::string urlDecode(const std::string& anSrc);
 

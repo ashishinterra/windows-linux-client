@@ -615,9 +615,12 @@ namespace ta
 
         /**
         Fetch data from the given http(s) URL
+        @param [in] aVerificationCaPath - when non-empty should specify a path to CA(s) to verify the remote URL with
+               The file should include the ENTIRE CA chain ending with either the self-signed one or with the one issued by a system-trusted CA
         @throw UrlFetchError for errors that might be useful for callers such as invalid URL; std::exception for the rest errors
         */
-        std::vector<unsigned char> fetchHttpUrl(const std::string& anUrl);
+        std::vector<unsigned char> fetchHttpUrl(const std::string& anUrl, const std::string& aVerificationCaPath = "");
+
     } // namespace NetUtils
 
 } // namespace ta

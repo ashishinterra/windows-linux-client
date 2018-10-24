@@ -587,7 +587,7 @@ namespace ta
             {
                 assert(buffer && aResponse);
                 string* myReponse = (string*)aResponse;
-                size_t myNumBytesConsumed = nmemb*size;
+                const size_t myNumBytesConsumed = nmemb*size;
                 myReponse->append((char*)buffer, myNumBytesConsumed);
                 return myNumBytesConsumed;
             }
@@ -608,13 +608,20 @@ namespace ta
                 }
             }
 
-            void setupSSL(CURL* aCurl)
+            void setupSSL(CURL* aCurl, const string& aVerificationCaPath)
             {
                 if (!aCurl)
                 {
                     TA_THROW_MSG(std::invalid_argument, "NULL curl handle");
                 }
-
+                if (!aVerificationCaPath.empty())
+                {
+                    const CURLcode myCurlRetCode = curl_easy_setopt(aCurl, CURLOPT_CAINFO, aVerificationCaPath.c_str());
+                    if (myCurlRetCode != CURLE_OK)
+                    {
+                        TA_THROW_MSG(std::runtime_error, boost::format("Failed to set Verification CA location to %s. %s") % aVerificationCaPath % curl_easy_strerror(myCurlRetCode));
+                    }
+                }
 #ifdef _WIN32
                 curl_tlssessioninfo * myTlsSessionInfo = NULL;
                 CURLcode myCurlRetCode = curl_easy_getinfo(aCurl, CURLINFO_TLS_SSL_PTR, &myTlsSessionInfo);
@@ -1865,7 +1872,7 @@ namespace ta
         }
 #endif
 
-        std::vector<unsigned char> fetchHttpUrl(const string& aUrl)
+        std::vector<unsigned char> fetchHttpUrl(const string& aUrl, const string& aVerificationCaPath)
         {
             validateHttpFetchUrl(aUrl);
 
@@ -1880,31 +1887,26 @@ namespace ta
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup response callback. %s") % curl_easy_strerror(myCurlRetCode));
             }
             string myResponse;
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEDATA, &myResponse);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_WRITEDATA, &myResponse)) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to setup cookie for response callback. %s") % curl_easy_strerror(myCurlRetCode));
             }
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, aUrl.c_str());
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_URL, aUrl.c_str())) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to set CURLOPTURL curl option to %s. %s") % aUrl % curl_easy_strerror(myCurlRetCode));
             }
 
             static const unsigned long myConnectTimeoutSeconds = 2;
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, myConnectTimeoutSeconds);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_CONNECTTIMEOUT, myConnectTimeoutSeconds)) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to set CURLOPT_CONNECTTIMEOUT curl option. %s") % curl_easy_strerror(myCurlRetCode));
             }
 
             // follow HTTP redirects (3xx)
-            myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_FOLLOWLOCATION, 1L);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_setopt(myCurl, CURLOPT_FOLLOWLOCATION, 1L)) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Failed to set CURLOPT_FOLLOWLOCATION curl option. %s") % curl_easy_strerror(myCurlRetCode));
             }
-
 
             // set buffer for error messages
             char myExtraErrorMsg[CURL_ERROR_SIZE + 1] = {};
@@ -1913,12 +1915,11 @@ namespace ta
             // this is believed to prevent segfaults in curl_resolv_timeout() when DNS lookup times out
             curl_easy_setopt(myCurl, CURLOPT_NOSIGNAL, 1);
 
-            setupSSL(myCurl);
+            setupSSL(myCurl, aVerificationCaPath);
             const boost::optional<RemoteAddress> httpProxy = setupProxy(myCurl, aUrl);
             const string myUrlWithProxyInfo = httpProxy ? aUrl + " using proxy at " + toString(*httpProxy) : aUrl;
 
-            myCurlRetCode = curl_easy_perform(myCurl);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_perform(myCurl)) != CURLE_OK)
             {
                 string myFriendlyErrorMsg = "Cannot fetch URL " + myUrlWithProxyInfo;
                 if (myCurlRetCode == CURLE_PEER_FAILED_VERIFICATION || myCurlRetCode == CURLE_SSL_CACERT)
@@ -1933,8 +1934,7 @@ namespace ta
             }
 
             long myHttpResponseCode = -1;
-            myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode);
-            if (myCurlRetCode != CURLE_OK)
+            if ((myCurlRetCode = curl_easy_getinfo(myCurl, CURLINFO_RESPONSE_CODE, &myHttpResponseCode)) != CURLE_OK)
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Cannot get HTTP response code from URL %s. %s") % myUrlWithProxyInfo % curl_easy_strerror(myCurlRetCode));
             }
