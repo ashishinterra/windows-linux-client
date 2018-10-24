@@ -1,7 +1,7 @@
 Release Notes of KeyTalk
 =================================================================
 
-server-5.4.1, in development
+server-5.4.1, 25 October 2018
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
@@ -10,14 +10,14 @@ Support import of settings created in v5.2.0-v5.4.1, v4.6.0 and v4.6.2
     - FIXED: Do not renew GlobalSign orders expired more than 7 days ago
 
 
-client-5.4.0, 15 September 2018
+client-5.4.0, 15 October 2018
 ----------------------
     - ADDED: Allow using OS logon username as KeyTalk client username
     - ADDED: Support for Tomcat web server certificate renewal for Linux clients
     - FIXED: KeyTalk client should not remove S/MIME certificates
 
 
-server-5.4.0, 15 September 2018
+server-5.4.0, 15 October 2018
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0

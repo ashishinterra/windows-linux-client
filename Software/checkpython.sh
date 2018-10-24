@@ -4,15 +4,17 @@
 
 FAILCOUNT=0
 MSG_TEMPLATE='{abspath}:{line:3d},{column}: {obj}: [{msg_id}] {msg}'
+# disable Convention, Refactoring and Warning messages
+MESSAGE_CONTROL_OPIONS="--disable=C,R,W"
 
 function check_python_scripts()
 {
     local filelist="$1"
-    local extra_options
+    local message_control_options=${MESSAGE_CONTROL_OPIONS}
     if [ $# -eq 2 ]; then
-        extra_options+=" --disable=$2"
+        message_control_options+=",$2"
     fi
-    pylint --msg-template="${MSG_TEMPLATE}" ${extra_options} ${filelist}
+    pylint --reports=no --msg-template="${MSG_TEMPLATE}" ${message_control_options} ${filelist}
     if [ $? -ne 0 ]; then
         let "FAILCOUNT=FAILCOUNT+1"
     fi
@@ -21,11 +23,11 @@ function check_python_scripts()
 function check_python3_scripts()
 {
     local filelist="$1"
-    local extra_options
+    local message_control_options=${MESSAGE_CONTROL_OPIONS}
     if [ $# -eq 2 ]; then
-        extra_options+=" --disable=$2"
+        message_control_options+=",$2"
     fi
-    pylint3 --msg-template="${MSG_TEMPLATE}" ${extra_options} ${filelist}
+    pylint3 --reports=no --msg-template="${MSG_TEMPLATE}" ${message_control_options} ${filelist}
     if [ $? -ne 0 ]; then
         let "FAILCOUNT=FAILCOUNT+1"
     fi
@@ -33,6 +35,7 @@ function check_python3_scripts()
 
 # We check directories one-by-one (as separate projects) otherwise pylint gets confused by the same module names (e.g. common.py) and will not import them again
 if [ -f /resept_server_dev ]; then
+    check_python3_scripts "Server/Projects/fw/*.py"
     check_python3_scripts "Server/Projects/settings/*.py"
     check_python3_scripts "Server/Projects/config/*.py"
     check_python3_scripts "Server/Projects/pykeytalk/*.py"

@@ -96,12 +96,12 @@ def fetch_url(url):
         return None
 
 
-def is_true(dict, key):
-    return (key in dict) and (dict[key].lower() == 'true')
+def is_true(d, key):
+    return (key in d) and (d[key].lower() == 'true')
 
 
-def is_false(dict, key):
-    return (key in dict) and (dict[key].lower() == 'false')
+def is_false(d, key):
+    return (key in d) and (d[key].lower() == 'false')
 
 
 class BadRequestError(Exception):
@@ -350,14 +350,14 @@ class CertRetrievalApi(object):
                 setattr(subj, "emailAddress", value)
 
     @staticmethod
-    def _save_cert(cert, passphrase, format):
+    def _save_cert(cert, passphrase, fmt):
         pass_path = 'certkey-password.txt'
-        if format == conf.CERT_FORMAT_PEM:
+        if fmt == conf.CERT_FORMAT_PEM:
             cert_path = 'cert.pem'
-        elif format == conf.CERT_FORMAT_P12:
+        elif fmt == conf.CERT_FORMAT_P12:
             cert_path = 'cert.pfx'
         else:
-            raise Exception('Unexpected certificate format ' + format)
+            raise Exception('Unexpected certificate format ' + fmt)
 
         with open(cert_path, 'wb') as cert_file:
             cert_file.write(cert)
@@ -366,10 +366,10 @@ class CertRetrievalApi(object):
 
         log("The certificate has been saved to {}, passphrase has been saved to {}".format(
             cert_path, pass_path))
-        if format == conf.CERT_FORMAT_PEM:
+        if fmt == conf.CERT_FORMAT_PEM:
             log("Use the following command if you with to decrypt the key:\nopenssl rsa -in {} -out key.pem -passin pass:{}".format(
                 cert_path, passphrase))
-        elif format == conf.CERT_FORMAT_P12:
+        elif fmt == conf.CERT_FORMAT_P12:
             log("Use the following command if you wish to decrypt the PKCS#12 package:\nopenssl pkcs12 -nodes -in {} -out certkey.pem -passin pass:{}".format(
                 cert_path, passphrase))
 
@@ -555,9 +555,9 @@ class CertRetrievalApi(object):
             self.conn, conf.RCDPV2_REQUEST_CSR_REQUIREMENTS, conf.RCDPV2_RESPONSE_CSR_REQUIREMENTS)
         return response_payload
 
-    def get_cert(self, format, include_chain, out_of_band=False):
+    def get_cert(self, fmt, include_chain, out_of_band=False):
         request_params = {
-            conf.RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT: format,
+            conf.RCDPV2_REQUEST_PARAM_NAME_CERT_FORMAT: fmt,
             conf.RCDPV2_REQUEST_PARAM_NAME_CERT_INCLUDE_CHAIN: include_chain,
             conf.RCDPV2_REQUEST_PARAM_NAME_CERT_OUT_OF_BAND: out_of_band,
         }
