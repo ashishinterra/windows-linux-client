@@ -3,9 +3,6 @@
 
 import sys
 import unittest
-import glob
-import tempfile
-import shutil
 
 sys.path.insert(0, '/usr/local/bin/keytalk')
 import tomcat_util

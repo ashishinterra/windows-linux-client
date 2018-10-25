@@ -6,7 +6,7 @@ import glob
 from lxml import etree
 import util
 
-os_version = util.run_cmd('lsb_release --id --short')
+OS_NAME = util.run_cmd('lsb_release --id --short')
 
 
 def parse_apache_configs(configuration_files):
@@ -146,8 +146,8 @@ def get_apache_vhost_directive(
     :param server_name: The name of the virtual host (in case of an IP-base VHost this should be "None")
     :param directive: the name of the directive to be retrieved
     """
-    vh = get_vhost_config(config_files, vhost, server_name)
-    directive_elements = vh.xpath(directive)
+    config = get_vhost_config(config_files, vhost, server_name)
+    directive_elements = config.xpath(directive)
     if len(directive_elements) is not 1:
         config_files = set([d.xpath('ancestor::ConfigFile/Path')
                             [0].text for d in directive_elements])
@@ -216,10 +216,10 @@ def get_vhost_config(config_files, vhost, server_name=None):
     vhosts = configs.xpath('//VirtualHost')
     searched_vhost_address = parse_connection_address_from_vhost(vhost)
     found_vhost_sections = []
-    for vh in vhosts:
-        vhost_address = parse_connection_address_from_vhost(vh.find('SectionValue').text)
+    for vhost_ in vhosts:
+        vhost_address = parse_connection_address_from_vhost(vhost_.find('SectionValue').text)
         if vhost_address == searched_vhost_address:
-            found_vhost_sections.append(vh)
+            found_vhost_sections.append(vhost_)
 
     results = []
     if not server_name:
@@ -248,15 +248,7 @@ def get_vhost_config(config_files, vhost, server_name=None):
 
 
 def get_apache_ssl_cert_path(vhost, server_name):
-    if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-        if server_name:
-            return '/etc/pki/tls/certs/keytalk-apache-{}-{}-ssl.pem'.format(
-                parse_connection_address_from_vhost(vhost)[1], server_name)
-        else:
-            return '/etc/pki/tls/certs/keytalk-apache-{}-ssl.pem'.format(
-                parse_connection_address_from_vhost(vhost)[1])
-
-    if(os_version == "Debian" or os_version == "Ubuntu"):
+    if OS_NAME in ["Debian", "Ubuntu"]:
         if server_name:
             return '/etc/ssl/certs/keytalk-apache-{}-{}-ssl.pem'.format(
                 parse_connection_address_from_vhost(vhost)[1], server_name)
@@ -264,38 +256,46 @@ def get_apache_ssl_cert_path(vhost, server_name):
             return '/etc/ssl/certs/keytalk-apache-{}-ssl.pem'.format(
                 parse_connection_address_from_vhost(vhost)[1])
 
+    if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
+        if server_name:
+            return '/etc/pki/tls/certs/keytalk-apache-{}-{}-ssl.pem'.format(
+                parse_connection_address_from_vhost(vhost)[1], server_name)
+        else:
+            return '/etc/pki/tls/certs/keytalk-apache-{}-ssl.pem'.format(
+                parse_connection_address_from_vhost(vhost)[1])
+
 
 def is_apache_running():
-    if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-        try:
-            util.run_cmd("pgrep -x httpd")
-        except util.CmdFailedException:
-            return False
-    return True
-
-    if(os_version == "Debian" or os_version == "Ubuntu"):
+    if OS_NAME in ["Debian", "Ubuntu"]:
         try:
             util.run_cmd("pgrep -x apache2")
+            return True
         except util.CmdFailedException:
             return False
-    return True
+
+    if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
+        try:
+            util.run_cmd("pgrep -x httpd")
+            return True
+        except util.CmdFailedException:
+            return False
 
 
 def get_apache_ssl_key_path(vhost, server_name):
-    if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-        if server_name:
-            return '/etc/pki/tls/private/keytalk-apache-{}-{}-ssl.key'.format(
-                parse_connection_address_from_vhost(vhost)[1], server_name)
-        else:
-            return '/etc/pki/tls/private/keytalk-apache-{}-ssl.key'.format(
-                parse_connection_address_from_vhost(vhost)[1])
-
-    if(os_version == "Debian" or os_version == "Ubuntu"):
+    if OS_NAME in ["Debian", "Ubuntu"]:
         if server_name:
             return '/etc/ssl/private/keytalk-apache-{}-{}-ssl.key'.format(
                 parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
             return '/etc/ssl/private/keytalk-apache-{}-ssl.key'.format(
+                parse_connection_address_from_vhost(vhost)[1])
+
+    if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
+        if server_name:
+            return '/etc/pki/tls/private/keytalk-apache-{}-{}-ssl.key'.format(
+                parse_connection_address_from_vhost(vhost)[1], server_name)
+        else:
+            return '/etc/pki/tls/private/keytalk-apache-{}-ssl.key'.format(
                 parse_connection_address_from_vhost(vhost)[1])
 
 

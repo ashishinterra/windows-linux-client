@@ -5,14 +5,12 @@ import json
 import os
 import pwd
 import glob
-import OpenSSL
 import ssl
 import socket
+import subprocess
+
 import tomcat_util
 import util
-import pipes
-import platform
-import subprocess
 
 # @notice we don't use HOME env. variable ( os.path.expanduser("~") or os.getenv('HOME') ) since when this script gets called with 'sudo'
 # it may, depending on the system security policy, give us home directory of the original caller, which is in most cases not what we want.
@@ -29,7 +27,7 @@ CRON_LOG_FILE_PATH = os.path.join(TMP_DIR, 'cron.kttomcatcertrenewal.log')
 KTCLIENT_LOG_PATH = os.path.join(HOME_DIR, '.keytalk/ktclient.log')
 Logger = util.init_logger(
     'keytalk', LOG_FILE_PATH, "KeyTalk Tomcat certificate renewal", "DEBUG", "INFO")
-os_version = util.run_cmd('lsb_release --id --short')
+OS_NAME = util.run_cmd('lsb_release --id --short')
 
 # Globals
 error_messages = []
@@ -42,23 +40,23 @@ force_arg = '--force'
 def is_cert_renewal_needed(site):
     host = site['Host']
     server_name = site.get('ServerName')
-    os = util.run_cmd('lsb_release --id --short')
+    os_name = util.run_cmd('lsb_release --id --short')
     os_major = util.run_cmd(
         'echo $(lsb_release --release --short | egrep -o [0-9]+ | sed -n \'1p\')')
 
-    Host, port = tomcat_util.parse_connection_address_from_host(host)
-    if (os == 'CentOS' or os == 'RedHatEnterpriseServer') and os_major == '6':
+    hostname, port = tomcat_util.parse_connection_address_from_host(host)
+    if os_name in ['CentOS', 'RedHatEnterpriseServer'] and os_major == '6':
         try:
-            pem_cert = ssl.get_server_certificate((Host, port), ssl_version=ssl.PROTOCOL_TLSv1)
+            pem_cert = ssl.get_server_certificate((hostname, port), ssl_version=ssl.PROTOCOL_TLSv1)
         except socket.error as e:
             raise Exception(
-                'Could not retrieve server certificate from "{}:{}": {}'.format(Host, port, e))
+                'Could not retrieve server certificate from "{}:{}": {}'.format(hostname, port, e))
     else:
         try:
-            pem_cert = ssl.get_server_certificate((Host, port))
+            pem_cert = ssl.get_server_certificate((hostname, port))
         except socket.error as e:
             raise Exception(
-                'Could not retrieve server certificate from "{}:{}": {}'.format(Host, port, e))
+                'Could not retrieve server certificate from "{}:{}": {}'.format(hostname, port, e))
 
     # Check whether the cert is expired
     cert_expired, cert_expiration_utc = util.is_cert_expired(
@@ -171,10 +169,10 @@ def validate_site_configuration(site, valid_vhosts):
     if site['Host'] is not None:
         host = tomcat_util.parse_connection_address_from_host(site['Host'])
         if host not in valid_vhosts:
-            if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
+            if OS_NAME in ["Debian", "Ubuntu"]:
                 validation_errors.append(
                     'Tomcat Host "{}:{}" not found.'.format(host[0], host[1]))
-            if(os_version == "Debian" or os_version == "Ubuntu"):
+            if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
                 validation_errors.append(
                     'Tomcat Host "{}:{}" not found.'.format(host[0], host[1]))
 
@@ -221,10 +219,10 @@ def process_host(
                     current_host_string, current_host_name))
 
         if force_renew_certs or is_cert_renewal_needed(current_site):
-            pem_cert_key_path = get_cert(current_site)
             shell_cmd = '/usr/local/bin/keytalk/tomcat.sh {} {}'.format(
                 keystore_password, keystore_location)
             subprocess.call([shell_cmd], shell=True)
+
     except Exception as e:
         # Log error, but continue processing the next Host
         log_error(

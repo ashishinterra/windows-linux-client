@@ -5,13 +5,13 @@ import json
 import os
 import pwd
 import glob
-import OpenSSL
 import ssl
 import socket
-import util
-import apache_util
-import pipes
 import platform
+import OpenSSL
+
+import apache_util
+import util
 
 # @notice we don't use HOME env. variable ( os.path.expanduser("~") or os.getenv('HOME') ) since when this script gets called with 'sudo'
 # it may, depending on the system security policy, give us home directory of the original caller, which is in most cases not what we want.
@@ -28,7 +28,7 @@ CRON_LOG_FILE_PATH = os.path.join(TMP_DIR, 'cron.ktapachecertrenewal.log')
 KTCLIENT_LOG_PATH = os.path.join(HOME_DIR, '.keytalk/ktclient.log')
 Logger = util.init_logger(
     'keytalk', LOG_FILE_PATH, "KeyTalk Apache certificate renewal", "DEBUG", "INFO")
-os_version = util.run_cmd('lsb_release --id --short')
+OS_NAME = util.run_cmd('lsb_release --id --short')
 
 # Globals
 error_messages = []
@@ -123,17 +123,7 @@ def get_cert(site):
 
 
 def reload_apache():
-    if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-        try:
-            util.run_cmd('service httpd status', Logger)
-        except util.CmdFailedException as ex:
-            if ex.retval == 3:
-                return  # Apache inactive, nothing to be done
-            else:
-                raise
-        util.run_cmd('service httpd reload', Logger)
-
-    if(os_version == "Debian" or os_version == "Ubuntu"):
+    if OS_NAME in ["Debian", "Ubuntu"]:
         try:
             util.run_cmd('service apache2 status', Logger)
         except util.CmdFailedException as ex:
@@ -142,6 +132,16 @@ def reload_apache():
             else:
                 raise
         util.run_cmd('service apache2 reload', Logger)
+
+    if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
+        try:
+            util.run_cmd('service httpd status', Logger)
+        except util.CmdFailedException as ex:
+            if ex.retval == 3:
+                return  # Apache inactive, nothing to be done
+            else:
+                raise
+        util.run_cmd('service httpd reload', Logger)
 
 
 def install_apache_ssl_cert(pem_cert_key_path, site, restart_apache=False):
@@ -262,12 +262,12 @@ def validate_site_configuration(site, valid_vhosts):
     if site['VHost'] is not None:
         vhost = apache_util.parse_connection_address_from_vhost(site['VHost'])
         if vhost not in valid_vhosts:
-            if(os_version == "RedHatEnterpriseServer" or os_version == "CentOS"):
-                validation_errors.append(
-                    'Apache VHost "{}:{}" not found. Please check with "httpd -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
-            if(os_version == "Debian" or os_version == "Ubuntu"):
+            if OS_NAME in ["Debian", "Ubuntu"]:
                 validation_errors.append(
                     'Apache VHost "{}:{}" not found. Please check with "apache2ctl -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
+            if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
+                validation_errors.append(
+                    'Apache VHost "{}:{}" not found. Please check with "httpd -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
 
     keytalk_provider = site['KeyTalkProvider']
     keytalk_service = site['KeyTalkService']

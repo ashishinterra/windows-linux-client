@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import util
-
 KT_CONFIG_TOOL_PATH = "/usr/local/bin/keytalk/ktconfigtool"
 AUTH_DELAY = 2
 AUTH_USER_LOCKED = 3

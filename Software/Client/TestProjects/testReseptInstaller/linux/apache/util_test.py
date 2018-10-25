@@ -4,9 +4,6 @@
 import sys
 import unittest
 import os
-import time
-import datetime
-import uuid
 
 sys.path.insert(0, '/usr/local/bin/keytalk')
 import util

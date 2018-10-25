@@ -6,7 +6,6 @@ import os
 from pipes import quote
 import sys
 import zipfile
-from tempfile import NamedTemporaryFile
 import copy
 import subprocess
 import tempfile
@@ -30,21 +29,18 @@ def run_cmd(cmd, logger=None):
         logger.debug("Executing command: " + str(cmd))
 
     try:
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except Exception as e:
-        raise Exception("Failed to execute {}. {}".format(cmd, e))
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        retval = proc.wait()
+    except Exception as ex:
+        raise Exception("Failed to execute {}. {}".format(cmd, ex))
 
-    try:
-        retval = p.wait()
-    except Exception as e:
-        raise Exception("Failed to wait for {} finishes. {}".format(cmd, e))
+    stdout = proc.stdout.read().decode('utf-8').strip()
+    stderr = proc.stderr.read().decode('utf-8').strip()
 
-    stdout = p.stdout.read().decode('utf-8').strip()
-    stderr = p.stderr.read().decode('utf-8').strip()
     if retval == 0:
         return stdout
-
-    raise CmdFailedException(cmd, retval, stdout, stderr)
+    else:
+        raise CmdFailedException(cmd, retval, stdout, stderr)
 
 
 class CmdFailedException(Exception):
@@ -156,7 +152,7 @@ def parse_args():
 def validate_sites(sites, util, tomcat_util, config_path):
     """:returns: A list of error messages found during validation."""
     error_messages = []
-    if (os.path.basename(config_path) == "tomcat.ini"):
+    if os.path.basename(config_path) == "tomcat.ini":
         known_settings = copy.deepcopy(tomcat_util.TOMCAT_RENEWAL_SETTINGS)
         known_settings['RemoteHost'] = {'required': True,
                                         'dependencies': []}
@@ -168,7 +164,7 @@ def validate_sites(sites, util, tomcat_util, config_path):
                 error_messages.append('Errors in Host {} {}:'.format(vhost, server_name))
                 for error in errors:
                     error_messages.append('    ' + error)
-    elif (os.path.basename(config_path) == "apache.ini"):
+    elif os.path.basename(config_path) == "apache.ini":
         known_settings = copy.deepcopy(util.APACHE_RENEWAL_SETTINGS)
         known_settings['RemoteHost'] = {'required': True,
                                         'dependencies': []}
@@ -196,7 +192,7 @@ def deploy_site_config(ssh_host, site_config_path, installer_path, rccd_path, co
                 ssh_host=quote(ssh_host),
                 temp_dir=quote(remote_temp_dir)))
 
-        if (os.path.basename(configfile_path) == "apache.ini"):
+        if os.path.basename(configfile_path) == "apache.ini":
             run_remote_cmd(
                 ssh_host, """set -e;
                          set -x;
@@ -221,7 +217,7 @@ def deploy_site_config(ssh_host, site_config_path, installer_path, rccd_path, co
                         os.path.basename(rccd_path)), config_filename=quote(
                             os.path.basename(configfile_path))), only_stdout=True)
 
-        elif (os.path.basename(configfile_path) == "tomcat.ini"):
+        elif os.path.basename(configfile_path) == "tomcat.ini":
             run_remote_cmd(
                 ssh_host, """set -e;
                          set -x;
@@ -272,7 +268,7 @@ def create_temp_config_file(sites):
         del my_site['RemoteHost']
 
     file_name = None
-    with NamedTemporaryFile(delete=False) as f:
+    with tempfile.NamedTemporaryFile(delete=False) as f:
         file_content = json.dumps(my_sites, sort_keys=True, indent=4)
         f.write(file_content)
         file_name = f.name

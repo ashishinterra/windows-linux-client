@@ -6,10 +6,10 @@ import urllib2
 import unittest
 import time
 import ssl
-import OpenSSL
 import os
 import re
 from subprocess import Popen, PIPE
+import OpenSSL
 
 """
 To run specific test case:

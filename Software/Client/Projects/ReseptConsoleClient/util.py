@@ -14,12 +14,12 @@ import codecs
 import glob
 import smtplib
 import tempfile
-import OpenSSL
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 import shutil
 import pipes
+import OpenSSL
 
 KT_CONFIG_TOOL_PATH = "/usr/local/bin/keytalk/ktconfigtool"
 AUTH_DELAY = 2
