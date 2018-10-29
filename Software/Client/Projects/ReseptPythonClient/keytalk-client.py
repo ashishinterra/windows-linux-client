@@ -574,13 +574,13 @@ class CertRetrievalApi(object):
             assert not fetch_url(cert_url), "the given certificate can only be downloaded once"
         else:
             cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
-            if format == conf.CERT_FORMAT_P12:
+            if fmt == conf.CERT_FORMAT_P12:
                 cert = base64.b64decode(cert)
 
         cert_passphrase = self._get_cert_passphrase()
         log("Successfully received {} certificate {} chain".format(
-            format, "with" if include_chain else "without"))
-        cert_path, cert_pass_path = CertRetrievalApi._save_cert(cert, cert_passphrase, format)
+            fmt, "with" if include_chain else "without"))
+        cert_path, cert_pass_path = CertRetrievalApi._save_cert(cert, cert_passphrase, fmt)
         return cert_path, cert_pass_path
 
     def sign_csr(self, csr, include_chain, out_of_band=False):
