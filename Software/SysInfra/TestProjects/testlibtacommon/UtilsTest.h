@@ -24,49 +24,48 @@ public:
     void testReadWriteData()
     {
         static const std::string myFileName = "file.tmp";
-        std::vector<char> myExpectedData;
-        std::vector<int> myExpectedDataInt;
-        std::string myExpectedDataStr;
-        std::vector<char> myReadDataVec;
-        std::vector<char> myReadDataStr;
-        std::vector<int> myReadDataInt;
 
-        TS_TRACE("Checking empty file");
+        {
+            TS_TRACE("Checking empty file");
 
-        remove(myFileName.c_str());
-        ta::writeData(myFileName, myExpectedData);
-        myReadDataVec = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataVec, myExpectedData);
-        myReadDataStr = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataVec, myReadDataStr);
+            remove(myFileName.c_str());
+            ta::writeData(myFileName, std::vector<char>());
+            const std::vector<char> myReadDataVec = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataVec, std::vector<char>());
+            const std::vector<char> myReadDataStr = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataVec, myReadDataStr);
+        }
 
+        {
+            TS_TRACE("Checking file with ASCII characters");
 
-        TS_TRACE("Checking file with ASCII characters");
+            remove(myFileName.c_str());
+            const std::vector<char> myExpectedData = boost::assign::list_of('x')('y')('z');
+            ta::writeData(myFileName, myExpectedData);
+            std::vector<char> myReadDataVec = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataVec, myExpectedData);
+            std::vector<char> myReadDataStr = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataVec, myReadDataStr);
 
-        remove(myFileName.c_str());
-        myExpectedData = boost::assign::list_of('x')('y')('z');
-        ta::writeData(myFileName, myExpectedData);
-        myReadDataVec = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataVec, myExpectedData);
-        myReadDataStr = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataVec, myReadDataStr);
-
-        remove(myFileName.c_str());
-        myExpectedDataStr.assign(myExpectedData.begin(), myExpectedData.end());
-        ta::writeData(myFileName, myExpectedDataStr);
-        myReadDataVec = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataVec, myExpectedData);
-        myReadDataStr = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataVec, myReadDataStr);
+            remove(myFileName.c_str());
+            const std::string myExpectedDataStr(myExpectedData.begin(), myExpectedData.end());
+            ta::writeData(myFileName, myExpectedDataStr);
+            myReadDataVec = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataVec, myExpectedData);
+            myReadDataStr = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataVec, myReadDataStr);
+        }
 
 
-        TS_TRACE("Checking file with integers");
+        {
+            TS_TRACE("Checking file with integers");
 
-        remove(myFileName.c_str());
-        myExpectedDataInt = boost::assign::list_of(1)(0)(-1);
-        ta::writeData(myFileName, myExpectedDataInt);
-        myReadDataInt = ta::readData(myFileName);
-        TS_ASSERT_EQUALS(myReadDataInt, myExpectedDataInt);
+            remove(myFileName.c_str());
+            const std::vector<int> myExpectedDataInt = boost::assign::list_of(1)(0)(-1);
+            ta::writeData(myFileName, myExpectedDataInt);
+            const std::vector<int> myReadDataInt = ta::readData(myFileName);
+            TS_ASSERT_EQUALS(myReadDataInt, myExpectedDataInt);
+        }
 
         remove(myFileName.c_str());
     }
@@ -75,7 +74,6 @@ public:
     {
         static const std::string myFileName = "file.tmp";
         std::vector<char> myExpectedData;
-        std::vector<int> myExpectedDataInt;
         std::string myExpectedDataStr;
         std::vector<char> myReadDataVec;
         std::vector<char> myReadDataStr;
@@ -126,7 +124,7 @@ public:
 
         TS_TRACE("Checking file with integers");
 
-        myExpectedDataInt = boost::assign::list_of(1)(0)(-1);
+        const std::vector<int> myExpectedDataInt = boost::assign::list_of(1)(0)(-1);
         ta::writeData(myFileName, myExpectedDataInt);
         myReadDataInt = ta::readTail(myFileName, 0);
         TS_ASSERT(myReadDataInt.empty());

@@ -54,7 +54,7 @@ namespace rclient
         try
         {
             const ta::NetUtils::RemoteAddress mySvr = rclient::Settings::getReseptSvrAddress(mySelectedProvider);
-            std::auto_ptr<rclient::RcdpHandler> myRcdpClient(new rclient::RcdpHandler(mySvr));
+            TA_UNIQUE_PTR<rclient::RcdpHandler> myRcdpClient(new rclient::RcdpHandler(mySvr));
             myRcdpClient->hello();
             myRcdpClient->handshake();
             const rclient::AuthRequirements myAuthReqs = myRcdpClient->getAuthRequirements(mySelectedService);

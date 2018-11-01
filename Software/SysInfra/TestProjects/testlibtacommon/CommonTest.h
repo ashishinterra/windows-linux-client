@@ -382,13 +382,17 @@ public:
     {
         using boost::assign::list_of;
 
-        std::vector<string> myVec = list_of<string>("")("a")("")("bc");
+        {
+            const std::vector<string> mySeq = list_of<string>("")("a")("")("bc");
 
-        TS_ASSERT_EQUALS(ta::filterWhen(isNotEmpty, myVec), list_of<string>("a")("bc"));
-        TS_ASSERT_EQUALS(ta::filterOutWhen(&string::empty, myVec), list_of<string>("a")("bc"));
+            TS_ASSERT_EQUALS(ta::filterWhen(isNotEmpty, mySeq), list_of<string>("a")("bc"));
+            TS_ASSERT_EQUALS(ta::filterOutWhen(&string::empty, mySeq), list_of<string>("a")("bc"));
+        }
 
-        myVec = list_of<string>("A")("a")("b")("a");
-        TS_ASSERT_EQUALS(ta::filterOut("a", myVec), list_of<string>("A")("b"));
+        {
+            const std::vector<string> mySeq = list_of<string>("A")("a")("b")("a");
+            TS_ASSERT_EQUALS(ta::filterOut("a", mySeq), list_of<string>("A")("b"));
+        }
     }
 
     void testIntersect()
@@ -396,8 +400,9 @@ public:
         using boost::assign::list_of;
 
         // given
-        std::vector<int> mySec1 = list_of(1)(2)(3)(4);
-        std::vector<int> mySec2 = list_of(4)(1)(5);
+        const std::vector<int> mySec1 = list_of(1)(2)(3)(4);
+        const std::vector<int> mySec2 = list_of(4)(1)(5);
+        const std::vector<int> mySec3 = list_of(5)(6)(7);
 
         // when-then
         TS_ASSERT_EQUALS(ta::intersect(mySec1, mySec2), list_of<int>(1)(4));
@@ -407,12 +412,9 @@ public:
         TS_ASSERT_EQUALS(ta::intersectSets(ta::vec2Set(mySec1), ta::vec2Set(mySec2)), list_of<int>(1)(4));
         TS_ASSERT_EQUALS(ta::intersectSets(ta::vec2Set(mySec1), std::set<int>()), std::set<int>());
         TS_ASSERT_EQUALS(ta::intersectSets(std::set<int>(), ta::vec2Set(mySec2)), std::set<int>());
-
-        // given
-        mySec2 = boost::assign::list_of(5)(6)(7);
         // when-then
-        TS_ASSERT_EQUALS(ta::intersect(mySec1, mySec2), std::vector<int>());
-        TS_ASSERT_EQUALS(ta::intersectSets(ta::vec2Set(mySec1), ta::vec2Set(mySec2)), std::set<int>());
+        TS_ASSERT_EQUALS(ta::intersect(mySec1, mySec3), std::vector<int>());
+        TS_ASSERT_EQUALS(ta::intersectSets(ta::vec2Set(mySec1), ta::vec2Set(mySec3)), std::set<int>());
     }
 
     void testSubtract()
@@ -420,8 +422,9 @@ public:
         using boost::assign::list_of;
 
         // given
-        std::vector<int> mySec1 = list_of(1)(2)(3)(4);
-        std::vector<int> mySec2 = list_of(4)(1)(5);
+        const std::vector<int> mySec1 = list_of(1)(2)(3)(4);
+        const std::vector<int> mySec2 = list_of(4)(1)(5);
+        const std::vector<int> mySec3 = list_of(1)(2)(3)(4)(5);
 
         // when-then (vector)
         TS_ASSERT_EQUALS(ta::subtract(mySec1, mySec2), list_of<int>(2)(3));
@@ -433,12 +436,9 @@ public:
         TS_ASSERT_EQUALS(ta::subtractSets(ta::vec2Set(mySec1), ta::vec2Set(mySec1)), std::set<int>());
         TS_ASSERT_EQUALS(ta::subtractSets(ta::vec2Set(mySec1), std::set<int>()), ta::vec2Set(mySec1));
         TS_ASSERT_EQUALS(ta::subtractSets(std::set<int>(), ta::vec2Set(mySec2)), std::set<int>());
-
-        // given
-        mySec2 = list_of(1)(2)(3)(4)(5);
         // when-then
-        TS_ASSERT_EQUALS(ta::subtract(mySec1, mySec2), std::vector<int>());
-        TS_ASSERT_EQUALS(ta::subtractSets(ta::vec2Set(mySec1), ta::vec2Set(mySec2)), std::set<int>());
+        TS_ASSERT_EQUALS(ta::subtract(mySec1, mySec3), std::vector<int>());
+        TS_ASSERT_EQUALS(ta::subtractSets(ta::vec2Set(mySec1), ta::vec2Set(mySec3)), std::set<int>());
     }
 
 
@@ -446,48 +446,70 @@ public:
     {
         using boost::assign::list_of;
 
-        std::vector<string> myVec = list_of("")("a")("")("bc");
-        TS_ASSERT_EQUALS(ta::getFirstElem(isNotEmpty, myVec), "a");
+        {
+            const std::vector<string> mySec = list_of("")("a")("")("bc");
+            TS_ASSERT_EQUALS(ta::getFirstElem(isNotEmpty, mySec), "a");
+        }
 
-        myVec = list_of("")("");
-        TS_ASSERT_THROWS(ta::getFirstElem(isNotEmpty, myVec), std::exception);
+        {
+            const std::vector<string> mySec = list_of("")("");
+            TS_ASSERT_THROWS(ta::getFirstElem(isNotEmpty, mySec), std::exception);
+        }
     }
 
     void testGetUniqueElem()
     {
-        std::vector<string> myVec = boost::assign::list_of("")("a")("");
-        TS_ASSERT_EQUALS(ta::getUniqueElem(isNotEmpty, myVec), "a");
+        using boost::assign::list_of;
 
-        // no such element
-        myVec = boost::assign::list_of("")("");
-        TS_ASSERT_THROWS(ta::getUniqueElem(isNotEmpty, myVec), std::exception);
+        {
+            const std::vector<string> mySec = list_of("")("a")("");
+            TS_ASSERT_EQUALS(ta::getUniqueElem(isNotEmpty, mySec), "a");
+        }
 
-        // not unique
-        myVec = boost::assign::list_of("")("a")("")("bc");
-        TS_ASSERT_THROWS(ta::getUniqueElem(isNotEmpty, myVec), std::exception);
+        {
+            // no such element
+            const std::vector<string> mySec = list_of("")("");
+            TS_ASSERT_THROWS(ta::getUniqueElem(isNotEmpty, mySec), std::exception);
+        }
+
+        {
+            // not unique
+            const std::vector<string> mySec = list_of("")("a")("")("bc");
+            TS_ASSERT_THROWS(ta::getUniqueElem(isNotEmpty, mySec), std::exception);
+        }
     }
 
     void testDuplicates()
     {
-        std::vector<string> myVec = boost::assign::list_of("1")("2")("3");
-        TS_ASSERT(!ta::hasDuplicates(myVec));
-        TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(myVec)));
-        TS_ASSERT_EQUALS(ta::removeDuplicates(myVec), myVec);
+        using boost::assign::list_of;
 
-        myVec = boost::assign::list_of("1")("3")("1")("3")("2")("2");
-        TS_ASSERT(ta::hasDuplicates(myVec));
-        TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(myVec)));
-        TS_ASSERT_EQUALS(ta::removeDuplicates(myVec), boost::assign::list_of("1")("2")("3"));
+        {
+            const std::vector<string> mySeq = list_of("1")("2")("3");
+            TS_ASSERT(!ta::hasDuplicates(mySeq));
+            TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(mySeq)));
+            TS_ASSERT_EQUALS(ta::removeDuplicates(mySeq), mySeq);
+        }
 
-        myVec = boost::assign::list_of("1")("1")("1");
-        TS_ASSERT(ta::hasDuplicates(myVec));
-        TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(myVec)));
-        TS_ASSERT_EQUALS(ta::removeDuplicates(myVec), boost::assign::list_of("1"));
+        {
+            const std::vector<string> mySeq = list_of("1")("3")("1")("3")("2")("2");
+            TS_ASSERT(ta::hasDuplicates(mySeq));
+            TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(mySeq)));
+            TS_ASSERT_EQUALS(ta::removeDuplicates(mySeq), list_of("1")("2")("3"));
+        }
 
-        myVec.clear();
-        TS_ASSERT(!ta::hasDuplicates(myVec));
-        TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(myVec)));
-        TS_ASSERT_EQUALS(ta::removeDuplicates(myVec), myVec);
+        {
+            const std::vector<string> mySeq = list_of("1")("1")("1");
+            TS_ASSERT(ta::hasDuplicates(mySeq));
+            TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(mySeq)));
+            TS_ASSERT_EQUALS(ta::removeDuplicates(mySeq), list_of("1"));
+        }
+
+        {
+            const std::vector<string> mySeq;
+            TS_ASSERT(!ta::hasDuplicates(mySeq));
+            TS_ASSERT(!ta::hasDuplicates(ta::removeDuplicates(mySeq)));
+            TS_ASSERT_EQUALS(ta::removeDuplicates(mySeq), mySeq);
+        }
     }
 
     void testConversion()

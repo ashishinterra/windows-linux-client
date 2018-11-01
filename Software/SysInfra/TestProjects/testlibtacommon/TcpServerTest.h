@@ -37,7 +37,7 @@ class TcpServerTest : public CxxTest::TestSuite
             theTcpServer.listen(NetUtils::IP(theIpv4, theIpv6), thePort);
             for (unsigned int iConn=1; iConn <= 2; ++iConn)
             {
-                std::auto_ptr<TcpClient> myClient(theTcpServer.accept());
+                TA_UNIQUE_PTR<TcpClient> myClient(theTcpServer.accept());
                 const string myExpectedStr = (boost::format(theExpectedRxStrTempl) % iConn).str();
                 vector<char> myRxData =  myClient->receiveAll(myExpectedStr.size());
                 string myRxStr(ta::getSafeBuf(myRxData), myRxData.size());
@@ -86,7 +86,7 @@ class TcpServerTest : public CxxTest::TestSuite
             }
             for (unsigned int iConn=1; iConn <= 2; ++iConn)
             {
-                std::auto_ptr<TcpClient> myClient(theTcpServer.accept());
+                TA_UNIQUE_PTR<TcpClient> myClient(theTcpServer.accept());
                 const string myExpectedStr = (boost::format(theExpectedRxStrTempl) % iConn).str();
                 vector<char> myRxData =  myClient->receiveAll(myExpectedStr.size());
                 string myRxStr(ta::getSafeBuf(myRxData), myRxData.size());
@@ -127,7 +127,7 @@ class TcpServerTest : public CxxTest::TestSuite
                 TS_TRACE("Start listening 127.0.0.1");
                 thePort = theTcpServer.listen("127.0.0.1");
             }
-            std::auto_ptr<TcpClient> myClient(theTcpServer.accept());
+            TA_UNIQUE_PTR<TcpClient> myClient(theTcpServer.accept());
             const string myExpectedStr = (boost::format(theExpectedRxStrTempl) % 1).str();
             vector<char> myRxData =  myClient->receiveAll(myExpectedStr.size());
             string myRxStr(ta::getSafeBuf(myRxData), myRxData.size());

@@ -52,7 +52,7 @@ namespace ta
             }
         }
 
-        std::auto_ptr<libconfig::Config> load(const string& aConfigFilePath)
+        TA_UNIQUE_PTR<libconfig::Config> load(const string& aConfigFilePath)
         {
             ta::ScopedResource<FILE*> myFd(fopen(aConfigFilePath.c_str(), "rt"), fclose);
             if (!myFd)
@@ -63,7 +63,7 @@ namespace ta
             //libconfig does not understand UTF-8 BOM, lets help it with it
             skipUtf8Bom(myFd);
 
-            std::auto_ptr<libconfig::Config> myConfigPtr;
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr;
             try
             {
                 myConfigPtr.reset(new libconfig::Config());
@@ -111,7 +111,7 @@ namespace ta
         {
             try
             {
-                std::auto_ptr<libconfig::Config> myConfig = load(aConfigFilePath);
+                TA_UNIQUE_PTR<libconfig::Config> myConfig = load(aConfigFilePath);
 
                 if (myConfig->exists(aSettingPath))
                 {
@@ -200,7 +200,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (!myConfig->lookupValue(aSettingPath, aSettingValue))
             {
@@ -241,7 +241,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (!myConfig->lookupValue(aSettingPath, aSettingValue))
             {
@@ -286,7 +286,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (!myConfig->lookupValue(aSettingPath, aSettingValue))
             {
@@ -318,7 +318,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (!myConfig->exists(aSettingPath))
             {
@@ -403,7 +403,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (!myConfig->exists(aSettingPath))
             {
@@ -439,7 +439,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             libconfig::Setting& mySetting = myConfig->lookup(aSettingPath);
             if (!mySetting.isList())
@@ -506,7 +506,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (myConfig->exists(aSettingPath))
             {
@@ -572,7 +572,7 @@ namespace ta
     {
         try
         {
-            std::auto_ptr<libconfig::Config> myConfig = load(theConfigFilePath);
+            TA_UNIQUE_PTR<libconfig::Config> myConfig = load(theConfigFilePath);
 
             if (!myConfig->exists(aSettingPath))
                 return;

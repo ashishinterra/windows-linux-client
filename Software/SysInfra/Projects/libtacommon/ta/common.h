@@ -24,13 +24,20 @@ namespace boost {
 #elif defined(__FUNCTION__)
 # define TA_PRETTY_FUNC __FUNCTION__
 # define TA_BARE_FUNC __FUNCTION__
-#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901)
+#elif (__cplusplus >= 199901)
 # define TA_PRETTY_FUNC __func__
 # define TA_BARE_FUNC __func__
 #else
 # define TA_PRETTY_FUNC "(unknown)"
 # define TA_BARE_FUNC "(unknown)"
 #endif
+
+#if (__cplusplus >= 201103L)
+#define TA_UNIQUE_PTR std::unique_ptr
+#else
+#define TA_UNIQUE_PTR std::auto_ptr
+#endif
+
 
 #define UNUSED(x)
 

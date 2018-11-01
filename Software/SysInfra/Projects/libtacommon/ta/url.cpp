@@ -84,11 +84,13 @@ namespace ta
             string normalizePath(const Parts& anUrlParts, const DirectoryIndex* aDirectoryIndex)
             {
                 string myPath = anUrlParts.path;
+                const ta::StringArray myBaseNames = boost::assign::list_of("index")("default");
+                const ta::StringArray myExts = boost::assign::list_of("htm")("html")("asp")("php")("chm")("py")("pl");
 
                 // remove directory index
                 DirectoryIndex myDefDirectoryIndex;
-                myDefDirectoryIndex.baseNames = boost::assign::list_of("index")("default");
-                myDefDirectoryIndex.exts = boost::assign::list_of("htm")("html")("asp")("php")("chm")("py")("pl");
+                myDefDirectoryIndex.baseNames = myBaseNames;
+                myDefDirectoryIndex.exts = myExts;
                 if (!aDirectoryIndex)
                     aDirectoryIndex = &myDefDirectoryIndex;
                 string::size_type pos = myPath.rfind('/');

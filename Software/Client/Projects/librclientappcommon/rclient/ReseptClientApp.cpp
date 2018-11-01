@@ -36,8 +36,8 @@ namespace rclient
 
     struct ReseptClientApp::ReseptClientAppImpl
     {
-        std::auto_ptr<rclient::LoggerInitializer> loggerInitializer;
-        std::auto_ptr<ta::OpenSSLApp> openSSLAppPtr;
+        TA_UNIQUE_PTR<rclient::LoggerInitializer> loggerInitializer;
+        TA_UNIQUE_PTR<ta::OpenSSLApp> openSSLAppPtr;
         std::string provider;
         std::string service;
         std::string userid;

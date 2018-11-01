@@ -195,10 +195,10 @@ namespace rclient
             }
         }
 
-        std::auto_ptr<ta::TcpServer> initService()
+        TA_UNIQUE_PTR<ta::TcpServer> initService()
         {
             DEBUGLOG("Initializing...");
-            std::auto_ptr<ta::TcpServer> mySvr(new ta::TcpServer());
+            TA_UNIQUE_PTR<ta::TcpServer> mySvr(new ta::TcpServer());
             unsigned int myListenPort = mySvr->listen("127.0.0.1");
             DEBUGLOG(boost::format("Listening on 127.0.0.1:%u") % myListenPort);
             rclient::Settings::setReseptBrokerServicePort(myListenPort);
@@ -545,13 +545,13 @@ namespace rclient
 
             try
             {
-                std::auto_ptr<ta::TcpServer> mySvr = initService();
+                TA_UNIQUE_PTR<ta::TcpServer> mySvr = initService();
                 reportSvcStatus(SERVICE_RUNNING, NO_ERROR, 0);
 
                 // The worker loop
                 while (theServiceStatus.dwCurrentState == SERVICE_RUNNING)
                 {
-                    std::auto_ptr<ta::TcpClient> myConnection;
+                    TA_UNIQUE_PTR<ta::TcpClient> myConnection;
                     try
                     {
                         myConnection = mySvr->accept(AcceptTimeout);

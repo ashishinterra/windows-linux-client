@@ -35,6 +35,8 @@
 //----------------------------------------------------------------------------
 #pragma once
 
+#include "ta/common.h"
+
 #include "boost/thread/recursive_mutex.hpp"
 #include "boost/thread/tss.hpp"
 #include "boost/utility.hpp"
@@ -79,6 +81,6 @@ namespace rclient
         void deinit();
         static boost::thread_specific_ptr<QApplication> theQtAppPtr;
         static boost::recursive_mutex theMutex;
-        std::auto_ptr<boost::recursive_mutex::scoped_try_lock> theLock;
+        TA_UNIQUE_PTR<boost::recursive_mutex::scoped_try_lock> theLock;
     };
 }

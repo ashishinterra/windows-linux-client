@@ -76,63 +76,85 @@ public:
 
     void testSplit_MergeOff_PreserveEmptyTokens()
     {
-        std::vector<string> myExpectedRes = boost::assign::list_of("ab")("")("cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';'), myExpectedRes);
-        std::vector<char> mySeps = boost::assign::list_of(';');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab")("")("cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';'), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(';');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("whitespace")("-")("")("separated")("")("")("text")("")("");
-        mySeps = boost::assign::list_of(' ')('\t');
-        TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("whitespace")("-")("")("separated")("")("")("text")("")("");
+            const std::vector<char> mySeps = boost::assign::list_of(' ')('\t');
+            TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("ab;;cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':'), myExpectedRes);
-        mySeps = boost::assign::list_of(':');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab;;cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':'), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(':');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("");
-        TS_ASSERT_EQUALS(Strings::split("", ':'), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("");
+            TS_ASSERT_EQUALS(Strings::split("", ':'), myExpectedRes);
+        }
 
         TS_ASSERT_THROWS(Strings::split("", std::vector<char>()), std::logic_error);
     }
 
     void testSplit_MergeOn_PreserveEmptyTokens()
     {
-        std::vector<string> myExpectedRes = boost::assign::list_of("ab")("cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';', Strings::sepsMergeOn), myExpectedRes);
-        std::vector<char> mySeps = boost::assign::list_of(';');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab")("cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';', Strings::sepsMergeOn), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(';');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("whitespace")("-")("separated")("text")("");
-        mySeps = boost::assign::list_of(' ')('\t');
-        TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps, Strings::sepsMergeOn), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("whitespace")("-")("separated")("text")("");
+            const std::vector<char> mySeps = boost::assign::list_of(' ')('\t');
+            TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps, Strings::sepsMergeOn), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("ab;;cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':', Strings::sepsMergeOn), myExpectedRes);
-        mySeps = boost::assign::list_of(':');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab;;cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':', Strings::sepsMergeOn), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(':');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("");
-        TS_ASSERT_EQUALS(Strings::split("", ':', Strings::sepsMergeOn), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("");
+            TS_ASSERT_EQUALS(Strings::split("", ':', Strings::sepsMergeOn), myExpectedRes);
+        }
 
         TS_ASSERT_THROWS(Strings::split("", std::vector<char>(),  Strings::sepsMergeOn), std::logic_error);
     }
 
     void testSplit_MergeOff_DropEmptyTokens()
     {
-        std::vector<string> myExpectedRes = boost::assign::list_of("ab")("cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';', Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
-        std::vector<char> mySeps = boost::assign::list_of(';');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab")("cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';', Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(';');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("whitespace")("-")("separated")("text");
-        mySeps = boost::assign::list_of(' ')('\t');
-        TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps, Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("whitespace")("-")("separated")("text");
+            const std::vector<char> mySeps = boost::assign::list_of(' ')('\t');
+            TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps, Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("ab;;cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':', Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
-        mySeps = boost::assign::list_of(':');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab;;cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':', Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(':');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOff, Strings::emptyTokensDrop), myExpectedRes);
+        }
 
         TS_ASSERT_EQUALS(Strings::split("", ':', Strings::sepsMergeOff, Strings::emptyTokensDrop), std::vector<string>());
 
@@ -141,19 +163,25 @@ public:
 
     void testSplit_MergeOn_DropEmptyTokens()
     {
-        std::vector<string> myExpectedRes = boost::assign::list_of("ab")("cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';', Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
-        std::vector<char> mySeps = boost::assign::list_of(';');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab")("cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ';', Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(';');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("whitespace")("-")("separated")("text");
-        mySeps = boost::assign::list_of(' ')('\t');
-        TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps, Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("whitespace")("-")("separated")("text");
+            const std::vector<char> mySeps = boost::assign::list_of(' ')('\t');
+            TS_ASSERT_EQUALS(Strings::split("whitespace - \tseparated \t text\t ", mySeps, Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+        }
 
-        myExpectedRes = boost::assign::list_of("ab;;cd");
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':', Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
-        mySeps = boost::assign::list_of(':');
-        TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+        {
+            const ta::StringArray myExpectedRes = boost::assign::list_of("ab;;cd");
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", ':', Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+            const std::vector<char> mySeps = boost::assign::list_of(':');
+            TS_ASSERT_EQUALS(Strings::split("ab;;cd", mySeps, Strings::sepsMergeOn, Strings::emptyTokensDrop), myExpectedRes);
+        }
 
         TS_ASSERT_EQUALS(Strings::split("", ':', Strings::sepsMergeOn, Strings::emptyTokensDrop), std::vector<string>());
 
@@ -162,66 +190,75 @@ public:
 
     void testJoin()
     {
-        std::vector<string> myStrList = boost::assign::list_of("ab")("")("cd");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ','), "ab,,cd");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ',', Strings::emptyStringsSkip), "ab,cd");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ","), "ab,,cd");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ",", Strings::emptyStringsSkip), "ab,cd");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ", "), "ab, , cd");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ""), "abcd");
-        TS_ASSERT_EQUALS(Strings::join(std::vector<string>(), ""), "");
+        {
+            const ta::StringArray myStrList = boost::assign::list_of("ab")("")("cd");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ','), "ab,,cd");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ',', Strings::emptyStringsSkip), "ab,cd");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ","), "ab,,cd");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ",", Strings::emptyStringsSkip), "ab,cd");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ", "), "ab, , cd");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ""), "abcd");
+            TS_ASSERT_EQUALS(Strings::join(std::vector<string>(), ""), "");
+        }
 
-        myStrList = boost::assign::list_of("")("X");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ","), ",X");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ",", Strings::emptyStringsSkip), "X");
+        {
+            const ta::StringArray myStrList = boost::assign::list_of("")("X");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ","), ",X");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ",", Strings::emptyStringsSkip), "X");
+        }
 
-        myStrList = boost::assign::list_of("")("");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ','), ",");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ","), ",");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ",", Strings::emptyStringsSkip), "");
-        TS_ASSERT_EQUALS(Strings::join(myStrList, ""), "");
+        {
+            const ta::StringArray myStrList = boost::assign::list_of("")("");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ','), ",");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ","), ",");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ",", Strings::emptyStringsSkip), "");
+            TS_ASSERT_EQUALS(Strings::join(myStrList, ""), "");
+        }
 
+        {
+            const std::vector<int> myIntList = boost::assign::list_of(-1)(1)(2);
+            TS_ASSERT_EQUALS(Strings::join(myIntList, ','), "-1,1,2");
+            TS_ASSERT_EQUALS(Strings::join(myIntList, ","), "-1,1,2");
+            TS_ASSERT_EQUALS(Strings::join(myIntList, ", "), "-1, 1, 2");
+            TS_ASSERT_EQUALS(Strings::join(myIntList, ""), "-112");
+            TS_ASSERT_EQUALS(Strings::join(std::vector<int>(), ""), "");
+        }
 
-        std::vector<int> myIntList = boost::assign::list_of(-1)(1)(2);
-        TS_ASSERT_EQUALS(Strings::join(myIntList, ','), "-1,1,2");
-        TS_ASSERT_EQUALS(Strings::join(myIntList, ","), "-1,1,2");
-        TS_ASSERT_EQUALS(Strings::join(myIntList, ", "), "-1, 1, 2");
-        TS_ASSERT_EQUALS(Strings::join(myIntList, ""), "-112");
-        TS_ASSERT_EQUALS(Strings::join(std::vector<int>(), ""), "");
-
-        std::vector<unsigned int> myUintList = boost::assign::list_of(1)(2);
-        TS_ASSERT_EQUALS(Strings::join(myUintList, ','), "1,2");
-        TS_ASSERT_EQUALS(Strings::join(myUintList, ","), "1,2");
-        TS_ASSERT_EQUALS(Strings::join(myUintList, ", "), "1, 2");
-        TS_ASSERT_EQUALS(Strings::join(myUintList, ""), "12");
-        TS_ASSERT_EQUALS(Strings::join(std::vector<unsigned int>(), ""), "");
+        {
+            const std::vector<unsigned int> myUintList = boost::assign::list_of(1)(2);
+            TS_ASSERT_EQUALS(Strings::join(myUintList, ','), "1,2");
+            TS_ASSERT_EQUALS(Strings::join(myUintList, ","), "1,2");
+            TS_ASSERT_EQUALS(Strings::join(myUintList, ", "), "1, 2");
+            TS_ASSERT_EQUALS(Strings::join(myUintList, ""), "12");
+            TS_ASSERT_EQUALS(Strings::join(std::vector<unsigned int>(), ""), "");
+        }
     }
 
     void testSubstTemplate()
     {
         {
-            ta::StringDict myMappings;
+            const ta::StringDict myMappings;
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $(what1) and dislikes $(what2)", myMappings), "$(who) likes $(what1) and dislikes $(what2)");
         }
 
         {
-            ta::StringDict myMappings = boost::assign::map_list_of("who", "Jos")("what1", "PSV")("what2", "Ajax");
+            const ta::StringDict myMappings = boost::assign::map_list_of("who", "Jos")("what1", "PSV")("what2", "Ajax");
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $(what1) and hates $(what2)", myMappings), "Jos likes PSV and hates Ajax");
         }
 
         {
-            ta::StringDict myMappings = boost::assign::map_list_of("who", "Jos");
+            const ta::StringDict myMappings = boost::assign::map_list_of("who", "Jos");
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $(what)", myMappings), "Jos likes $(what)");
         }
 
         {
-            ta::StringDict myMappings = boost::assign::map_list_of("who", "Jos")("whatever", "Ajax");
+            const ta::StringDict myMappings = boost::assign::map_list_of("who", "Jos")("whatever", "Ajax");
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $(what)", myMappings), "Jos likes $(what)");
         }
 
         // Test that the function does not work recursively
         {
-            ta::StringDict myMappings = boost::assign::map_list_of("who", "$(what)")("what", "$(who)");
+            const ta::StringDict myMappings = boost::assign::map_list_of("who", "$(what)")("what", "$(who)");
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $(what)", myMappings), "$(what) likes $(who)");
         }
 
@@ -229,23 +266,23 @@ public:
         // Test quotation
         //
         {
-            ta::StringDict myMappings = boost::assign::list_of <ta::StringDict::value_type>("who", "Jos")("what1", "PSV");
+            const ta::StringDict myMappings = boost::assign::list_of <ta::StringDict::value_type>("who", "Jos")("what1", "PSV");
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $$(what1) and hates $$(what2)", myMappings), "Jos likes $(what1) and hates $$(what2)");
         }
 
         {
-            ta::StringDict myMappings = boost::assign::list_of <ta::StringDict::value_type>("who", "Jos")("what2", "Ajax");
+            const ta::StringDict myMappings = boost::assign::list_of <ta::StringDict::value_type>("who", "Jos")("what2", "Ajax");
             TS_ASSERT_EQUALS(Strings::substTemplate("$$(who) likes $(what1) and hates $(what2)", myMappings), "$(who) likes $(what1) and hates Ajax");
         }
 
         {
-            ta::StringDict myMappings = boost::assign::map_list_of("who", "$(who)")("what", "Ajax");
+            const ta::StringDict myMappings = boost::assign::map_list_of("who", "$(who)")("what", "Ajax");
             TS_ASSERT_EQUALS(Strings::substTemplate("$(who) likes $$(what)", myMappings), "$(who) likes $(what)");
         }
 
         // Test invalid keys
         {
-            ta::StringDict myMappings = boost::assign::map_list_of("$(who)", "Jos");
+            const ta::StringDict myMappings = boost::assign::map_list_of("$(who)", "Jos");
             TS_ASSERT_THROWS(Strings::substTemplate("$(who) likes $(what)", myMappings), std::invalid_argument);
         }
     }
@@ -347,7 +384,7 @@ public:
         TS_ASSERT(wildcardMatch("myfile.txt", "myfile.*"));
         TS_ASSERT(!wildcardMatch("myfile.txt", "?myfile.*"));
         TS_ASSERT(!wildcardMatch("myfile.txt", "*myfile.??"));
-        
+
     }
 
 };

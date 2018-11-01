@@ -15,6 +15,7 @@
 //----------------------------------------------------------------------------
 #pragma once
 
+#include "ta/common.h"
 #include "boost/utility.hpp"
 #include <memory>
 
@@ -87,7 +88,7 @@ namespace ta
         }
     private:
         HandleType theHandle;
-        std::auto_ptr<IResourceDeleter> theDeleter;
+        TA_UNIQUE_PTR<IResourceDeleter> theDeleter;
         const HandleType theInvalidHandle;
     };
 }

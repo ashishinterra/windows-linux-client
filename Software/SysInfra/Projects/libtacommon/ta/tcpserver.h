@@ -2,6 +2,7 @@
 
 #include "ta/tcpclient.h"
 #include "ta/tcpsocketutils.h"
+#include "ta/common.h"
 #include <stdexcept>
 #include <string>
 #include <memory>
@@ -80,7 +81,7 @@ namespace ta
           @throw TcpServerConnectionTimedOut if timeout reached while waiting for connection
           @return TCP connection socket
          */
-        virtual std::auto_ptr<TcpClient> accept(const int aTimeoutMsec = Infinity);
+        virtual TA_UNIQUE_PTR<TcpClient> accept(const int aTimeoutMsec = Infinity);
 
         /**
           Close TCP listen sockets

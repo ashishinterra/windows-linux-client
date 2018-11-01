@@ -1,0 +1,27 @@
+# Dockerfile to build and unittest KeyTalk client on Ubuntu 18.04
+
+FROM ubuntu:18.04
+
+# Install packages
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python-pip pylint python3 hdparm zip clang lsb-release tzdata
+RUN pip2 install lxml pyopenssl
+RUN a2enmod ssl
+
+# Install ip
+RUN apt -y install iproute2
+
+# Install ping
+RUN apt -y install iputils-ping
+
+RUN apt -y install default-jdk tomcat8 tomcat8-*
+RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
+RUN git clone https://github.com/kindkaktus/CcPy /ccpy
+
+# set time
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN touch /resept_linux_client_dev
+
+ENTRYPOINT ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_build_test.sh

@@ -501,7 +501,7 @@ public:
         TS_TRACE(("User-managed nameservers (original): " + ta::Strings::join(myOrigUserNameServers, ", ")).c_str());
 
         // given
-        ta::StringArray myNewNameServers = boost::assign::list_of("8.8.4.4")("2001:4860:4860::8888")("2001:4860:4860::8844");
+        ta::StringArray myNewNameServers = {"8.8.4.4", "2001:4860:4860::8888", "2001:4860:4860::8844"};
         // when
         applyUserNameServers(myNewNameServers);
         // then
@@ -510,14 +510,14 @@ public:
         // then
         TS_TRACE(("All nameservers (after change): " + ta::Strings::join(myActualNameServers, ", ")).c_str());
         TS_TRACE(("User-managed nameservers (after change): " + ta::Strings::join(myActualUserNameServers, ", ")).c_str());
-        foreach (const std::string& ns, myNewNameServers)
+        for (const std::string& ns: myNewNameServers)
         {
             TS_ASSERT(ta::isElemExist(ns, myActualNameServers));
         }
         TS_ASSERT(ta::equalIgnoreOrder(myActualUserNameServers, myNewNameServers));
 
         // given
-        myNewNameServers = boost::assign::list_of("8.8.4.4")("2001:4860:4860::8888")("8.8.4.4")("2001:4860:4860::8888");
+        myNewNameServers = {"8.8.4.4", "2001:4860:4860::8888", "8.8.4.4", "2001:4860:4860::8888"};
         // when (duplicate name servers)
         applyUserNameServers(myNewNameServers);
         // then
@@ -526,7 +526,7 @@ public:
         // then
         TS_TRACE(("All nameservers (after change): " + ta::Strings::join(myActualNameServers, ", ")).c_str());
         TS_TRACE(("User-managed nameservers (after change): " + ta::Strings::join(myActualUserNameServers, ", ")).c_str());
-        foreach (const std::string& ns, myNewNameServers)
+        for (const std::string& ns: myNewNameServers)
         {
             TS_ASSERT(ta::isElemExist(ns, myActualNameServers));
         }

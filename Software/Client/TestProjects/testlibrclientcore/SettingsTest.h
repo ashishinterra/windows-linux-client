@@ -781,7 +781,8 @@ public:
                                                                 "https://s3.com", // uri
                                                                  12, AllowOverwriteYes, // cert validity percentage
                                                                  DoUseClientOsLogonUser);
-        myReq.services = list_of(service1)(service2)(service3);
+        const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2)(service3);
+        myReq.services = myServices;
 
         // when
         bool myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml", "master.ini", "master.yaml");
@@ -871,7 +872,7 @@ public:
         myReq.commCaPem = ta::readData("commcacert.pem");
         myReq.pcaPem = ta::readData("pcacert.pem");
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
-        const Settings::RccdRequestData::Service service("s3",
+        const Settings::RccdRequestData::Service service1("s3",
                                                         "https://s3.com",
                                                         13, AllowOverwriteYes,
                                                         DontUseClientOsLogonUser,
@@ -880,7 +881,8 @@ public:
                                                         "https://s3.com",
                                                         13, AllowOverwriteYes,
                                                         DoUseClientOsLogonUser);
-        myReq.services = list_of(service)(service2);
+        const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2);
+        myReq.services = myServices;
 
         // when
         const bool myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml", "master.ini", "master.yaml");
@@ -905,7 +907,7 @@ public:
         TS_ASSERT_EQUALS(Settings::getLogLevel(), "DEBUG");
         TS_ASSERT_EQUALS(Settings::getReseptSvrAddress(), myReq.svrAddress);
 
-        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service.name)(service2.name));
+        TS_ASSERT_EQUALS(Settings::getServices(), list_of(service1.name)(service2.name));
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
@@ -939,7 +941,7 @@ public:
         myReq.commCaPem = ta::readData("commcacert.pem");
         myReq.pcaPem = ta::readData("pcacert.pem");
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
-        const Settings::RccdRequestData::Service service("s3",
+        const Settings::RccdRequestData::Service service1("s3",
                                                          "https://s3.com",
                                                           13, AllowOverwriteNo,
                                                           DontUseClientOsLogonUser,
@@ -948,7 +950,8 @@ public:
                                                          "https://s4.com",
                                                           13, AllowOverwriteNo,
                                                           DoUseClientOsLogonUser);
-        myReq.services = list_of(service)(service2);
+        const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2);
+        myReq.services = myServices;
 
          // given (no services)
         Settings::RccdRequestData myBadReq = myReq;
@@ -1002,7 +1005,8 @@ public:
                                                          "https://s3.com",
                                                          12, AllowOverwriteYes,
                                                          DoUseClientOsLogonUser);
-        myReq.services = list_of(service1)(service2)(service3);
+        const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2)(service3);
+        myReq.services = myServices;
 
         // when
         bool myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml");
@@ -1056,7 +1060,8 @@ public:
                                                          "https://s5.com",
                                                           13, AllowOverwriteYes,
                                                           DoUseClientOsLogonUser);
-        myReq.services = list_of(service4)(service5);
+        const std::vector<Settings::RccdRequestData::Service> myNewServices = list_of(service4)(service5);
+        myReq.services = myNewServices;
 
         // when
         myIsAdminRccd = Settings::generateConfigs(myReq, "user.ini", "user.yaml");

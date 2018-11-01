@@ -52,12 +52,6 @@ namespace rclient
     {
         namespace
         {
-            enum CertsRemovalOpt
-            {
-                certsRemoveAll,
-                certsRemoveInvalid
-            };
-
             enum StoreType
             {
                 _FirstStoreType,
@@ -162,7 +156,7 @@ namespace rclient
                 DWORD cbData;
                 if (!::CertGetCertificateContextProperty(aCertContextPtr, CERT_KEY_PROV_INFO_PROP_ID, NULL, &cbData))
                     TA_THROW_MSG(NativeCertStoreError, "::CertGetCertificateContextProperty (1) failed");
-                std::auto_ptr<CRYPT_KEY_PROV_INFO> myCryptKeyProvInfoPtr(static_cast<CRYPT_KEY_PROV_INFO*>(::operator new(cbData)));
+                TA_UNIQUE_PTR<CRYPT_KEY_PROV_INFO> myCryptKeyProvInfoPtr(static_cast<CRYPT_KEY_PROV_INFO*>(::operator new(cbData)));
                 if (!::CertGetCertificateContextProperty(aCertContextPtr, CERT_KEY_PROV_INFO_PROP_ID, myCryptKeyProvInfoPtr.get(), &cbData))
                     TA_THROW_MSG(NativeCertStoreError, "::CertGetCertificateContextProperty (2) failed");
                 if (!myCryptKeyProvInfoPtr->pwszContainerName)
@@ -220,7 +214,7 @@ namespace rclient
                     {
                         return boost::none;
                     }
-                    std::auto_ptr<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
+                    TA_UNIQUE_PTR<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
                     if (!::CertGetNameString(aCertContextPtr, CERT_NAME_SIMPLE_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, 0, myAttrVal.get(), myAttrValLen))
                     {
                         return boost::none;
@@ -235,7 +229,7 @@ namespace rclient
                     {
                         return boost::none;
                     }
-                    std::auto_ptr<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
+                    TA_UNIQUE_PTR<TCHAR> myAttrVal(static_cast<LPTSTR>(::operator new (myAttrValLen)));
                     if (!::CertGetNameString(aCertContextPtr, CERT_NAME_ATTR_TYPE, 0, szOID_COMMON_NAME, myAttrVal.get(), myAttrValLen))
                     {
                         return boost::none;
@@ -442,7 +436,7 @@ namespace rclient
                 }
 
                 //@return SHA-1 fingerprints of the certs removed
-                ta::StringArray removeCertKeys(const ta::StringArray& aCertSha1Fingerprints, CertsRemovalOpt aCertRemovelOpt, const string& aServiceNameHint)
+                ta::StringArray removeCertKeys(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint)
                 {
                     DEBUGLOG(boost::format("Deleting certificates from %s store for service %s.") % str(theStoreType) % aServiceNameHint);
                     if (theReadOnly)
@@ -464,31 +458,29 @@ namespace rclient
                                 DEBUGLOG(boost::format("Will not delete S/MIME certificate with fingerprint %s") % mySha1Fingerprint);
                                 continue;
                             }
-                            if (aCertRemovelOpt == certsRemoveAll || (aCertRemovelOpt == certsRemoveInvalid && !isCertValid(myCertCtx)))
+
+                            string myRsaPrivKeyTmpFileName;
+                            const bool myNeedCleanupRsaTempKeys = !isCA(myCertCtx);
+                            if (myNeedCleanupRsaTempKeys)
                             {
-                                string myRsaPrivKeyTmpFileName;
-                                const bool myNeedCleanupRsaTempKeys = !isCA(myCertCtx);
-                                if (myNeedCleanupRsaTempKeys)
-                                {
-                                    try {
-                                        myRsaPrivKeyTmpFileName = getRsaPrivKeyTmpFileName(myCertCtx);
-                                    }
-                                    catch (NativeCertStoreError& e) {
-                                        WARNLOG2("RSA temporary keys cleanup error.", e.what());
-                                    }
+                                try {
+                                    myRsaPrivKeyTmpFileName = getRsaPrivKeyTmpFileName(myCertCtx);
                                 }
-                                if (!::CertDeleteCertificateFromStore(::CertDuplicateCertificateContext(myCertCtx)))
-                                {
-                                    TA_THROW_MSG(NativeCertStoreDeleteError, "Failed to delete certificate");
+                                catch (NativeCertStoreError& e) {
+                                    WARNLOG2("RSA temporary keys cleanup error.", e.what());
                                 }
-                                if (myNeedCleanupRsaTempKeys && !myRsaPrivKeyTmpFileName.empty())
-                                {
-                                    DEBUGLOG("Cleaning up, removing: " + myRsaPrivKeyTmpFileName);
-                                    if (!::DeleteFile(myRsaPrivKeyTmpFileName.c_str()))
-                                        WARNLOG(boost::format("Failed to delete temp RSA container file (%s)") % myRsaPrivKeyTmpFileName);
-                                }
-                                myRemovedCertsSha1Fingerprints.push_back(*mySha1Fingerprint);
                             }
+                            if (!::CertDeleteCertificateFromStore(::CertDuplicateCertificateContext(myCertCtx)))
+                            {
+                                TA_THROW_MSG(NativeCertStoreDeleteError, "Failed to delete certificate");
+                            }
+                            if (myNeedCleanupRsaTempKeys && !myRsaPrivKeyTmpFileName.empty())
+                            {
+                                DEBUGLOG("Cleaning up, removing: " + myRsaPrivKeyTmpFileName);
+                                if (!::DeleteFile(myRsaPrivKeyTmpFileName.c_str()))
+                                    WARNLOG(boost::format("Failed to delete temp RSA container file (%s)") % myRsaPrivKeyTmpFileName);
+                            }
+                            myRemovedCertsSha1Fingerprints.push_back(*mySha1Fingerprint);
                         }
                     }
                     DEBUGLOG(boost::format("Deleted %d certificate(s) from %s store associated with service %s") % myRemovedCertsSha1Fingerprints.size() % str(theStoreType) % aServiceNameHint);
@@ -1013,7 +1005,7 @@ namespace rclient
                 }
 
                 //@return SHA-1 fingerprints of the certs removed
-                ta::StringArray removeCertKeys(const ta::StringArray& aCertSha1Fingerprints, CertsRemovalOpt aCertRemovelOpt, const string& aServiceNameHint)
+                ta::StringArray removeCertKeys(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint)
                 {
                     DEBUGLOG(boost::format("Deleting certificates from %s store for service %s") % str(theStoreType) % aServiceNameHint);
                     if (theReadOnly)
@@ -1036,12 +1028,9 @@ namespace rclient
                             }
                             if (ta::isElemExist(myCertInfo.sha1Fingerprint, aCertSha1Fingerprints))
                             {
-                                if (aCertRemovelOpt == certsRemoveAll || (aCertRemovelOpt == certsRemoveInvalid && !isCertValid(p.string(), myCertInfo)))
-                                {
-                                    fs::remove(p);
-                                    effectuateRemovedCertsInStore();
-                                    myRemovedCertsSha1Fingerprints.push_back(myCertInfo.sha1Fingerprint);
-                                }
+                                fs::remove(p);
+                                effectuateRemovedCertsInStore();
+                                myRemovedCertsSha1Fingerprints.push_back(myCertInfo.sha1Fingerprint);
                             }
                         }
                     }
@@ -1422,7 +1411,7 @@ namespace rclient
                 const ta::StringArray myCertFingerprints = Settings::getImportedUserCertFingerprints();
 
                 Store myStore(storePersonal);
-                const ta::StringArray myRemovedCertsSha1Fingerprints = myStore.removeCertKeys(myCertFingerprints, certsRemoveAll, myServiceName);
+                const ta::StringArray myRemovedCertsSha1Fingerprints = myStore.removeCertKeys(myCertFingerprints, myServiceName);
                 Settings::removeImportedUserCertFingerprints(myRemovedCertsSha1Fingerprints);
                 return myRemovedCertsSha1Fingerprints.size();
 

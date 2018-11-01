@@ -31,7 +31,7 @@ namespace ta
         DWORD mySize = ::GetFileVersionInfoSize(thePath.c_str(), &myHandle);
         if (mySize == 0)
             TA_THROW_MSG(std::exception, boost::format("::GetFileVersionInfoSize failed for file '%s'") % thePath);
-        std::auto_ptr<unsigned char> myData(static_cast<unsigned char*>(::operator new (mySize + 1)));
+        TA_UNIQUE_PTR<unsigned char> myData(static_cast<unsigned char*>(::operator new (mySize + 1)));
         ::ZeroMemory(myData.get(), mySize+1);
         if (!::GetFileVersionInfo(thePath.c_str(), myHandle, mySize, myData.get()))
             TA_THROW_MSG(std::exception, boost::format("::GetFileVersionInfo failed for file '%s'") % thePath);

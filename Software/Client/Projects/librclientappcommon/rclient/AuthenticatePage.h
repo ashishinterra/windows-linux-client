@@ -73,7 +73,7 @@ namespace rclient
         ResponseName2LineEditMap theResponseName2LineEditMap;
         rclient::AuthRequirements theAuthReqs;
         rclient::AuthResponse theAuthResponse;
-        std::auto_ptr<rclient::RcdpHandler> theRcdpClient;
+        TA_UNIQUE_PTR<rclient::RcdpHandler> theRcdpClient;
         bool theExecuteSync;
     };
 }

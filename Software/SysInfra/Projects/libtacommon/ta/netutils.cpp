@@ -799,7 +799,7 @@ namespace ta
         {
             string myRetVal;
 #ifdef _WIN32
-            std::auto_ptr<IP_ADAPTER_INFO> myAdapterInfo(static_cast<IP_ADAPTER_INFO*>(::operator new(sizeof(IP_ADAPTER_INFO))));
+            TA_UNIQUE_PTR<IP_ADAPTER_INFO> myAdapterInfo(static_cast<IP_ADAPTER_INFO*>(::operator new(sizeof(IP_ADAPTER_INFO))));
             ULONG myOutBufLen = sizeof(IP_ADAPTER_INFO);
             DWORD myErrCode = ::GetAdaptersInfo(myAdapterInfo.get(),&myOutBufLen);
             if (myErrCode == ERROR_BUFFER_OVERFLOW)
@@ -1019,7 +1019,7 @@ namespace ta
         Ifaces getMyIpv4faces()
         {
             Ifaces myIfaces;
-            std::auto_ptr<IP_ADAPTER_INFO> myAdapterInfo(static_cast<IP_ADAPTER_INFO*>(::operator new(sizeof(IP_ADAPTER_INFO))));
+            TA_UNIQUE_PTR<IP_ADAPTER_INFO> myAdapterInfo(static_cast<IP_ADAPTER_INFO*>(::operator new(sizeof(IP_ADAPTER_INFO))));
             ULONG myOutBufLen = sizeof(IP_ADAPTER_INFO);
             //@note ::GetAdaptersInfo does not retrieve loobback interfaces
             DWORD myErrCode = ::GetAdaptersInfo(myAdapterInfo.get(),&myOutBufLen);

@@ -33,7 +33,7 @@ private:
     void initLogger();
     void initOpenSSL();
 private:
-    std::auto_ptr<rclient::QtExclusiveApp> theQtAppPtr;
-    std::auto_ptr<rclient::LoggerInitializer> theLoggerInitializer;
-    std::auto_ptr<ta::OpenSSLApp> theOpenSSLAppPtr;
+    TA_UNIQUE_PTR<rclient::QtExclusiveApp> theQtAppPtr;
+    TA_UNIQUE_PTR<rclient::LoggerInitializer> theLoggerInitializer;
+    TA_UNIQUE_PTR<ta::OpenSSLApp> theOpenSSLAppPtr;
 };

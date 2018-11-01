@@ -349,7 +349,7 @@ namespace ta
     }
 
 
-    std::auto_ptr<TcpClient> TcpServer::accept(const int aTimeoutMsec)
+    TA_UNIQUE_PTR<TcpClient> TcpServer::accept(const int aTimeoutMsec)
     {
         assert(theImplPtr);
         list<SOCKET> myListenSockets;
@@ -374,7 +374,7 @@ namespace ta
             myConnectionSocket = ::accept(theImplPtr->listenIpv4Sock, NULL, NULL);
         if (myConnectionSocket == INVALID_SOCKET)
             TA_THROW_MSG(TcpServerError, boost::format("accept(2) failed. %1%") % NetUtils::getLastErrorStr());
-        return std::auto_ptr<TcpClient>(new TcpClient(myConnectionSocket));
+        return TA_UNIQUE_PTR<TcpClient>(new TcpClient(myConnectionSocket));
     }
 
     void TcpServer::close(TcpSocketUtils::Shutdown aShutDown)

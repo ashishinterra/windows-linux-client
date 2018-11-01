@@ -1331,36 +1331,64 @@ public:
 
     void testIsSmimeCert()
     {
-        // Test correct
-        std::vector<unsigned char> myCertBufCorrect = ta::readData("CA/smime_cert_possibly_correct.pem");
-        TS_ASSERT(ta::CertUtils::isSmimeCert(ta::vec2Str(myCertBufCorrect)));
+        using std::string;
 
-        // Test no pub key
-        std::vector<unsigned char> myCertBufNoPub = ta::readData("CA/smime_cert_no_pub.pem");
-        TS_ASSERT_THROWS_ANYTHING(ta::CertUtils::isSmimeCert(ta::vec2Str(myCertBufNoPub)));
-        // Test email address
-        std::vector<unsigned char> myCertBufNoEmail = ta::readData("CA/smime_cert_no_email.pem");
-        TS_ASSERT(!ta::CertUtils::isSmimeCert(ta::vec2Str(myCertBufNoEmail)));
-        // Test no (email address in) SAN (but email address present in subject)
-        std::vector<unsigned char> myCertBufNoSAN = ta::readData("CA/smime_cert_globalsign_no_san.pem");
-        TS_ASSERT(!ta::CertUtils::isSmimeCert(ta::vec2Str(myCertBufNoSAN)));
-        // Test key usage
-        std::vector<unsigned char> myCertBufNoKeyUsage = ta::readData("CA/smime_cert_no_keyusage.pem");
-        TS_ASSERT(!ta::CertUtils::isSmimeCert(ta::vec2Str(myCertBufNoKeyUsage)));
-        // Test extended key usage
-        std::vector<unsigned char> myCertBufNoExtendedKeyUsage = ta::readData("CA/smime_cert_no_extendedkeyusage.pem");
-        TS_ASSERT(!ta::CertUtils::isSmimeCert(ta::vec2Str(myCertBufNoExtendedKeyUsage)));
+        {
+            const string myCertBufCorrect = ta::readData("CA/smime_cert_possibly_correct.pem");
+            TS_ASSERT(ta::CertUtils::isSmimeCert(myCertBufCorrect));
+        }
+
+        {
+            // Test no pub key
+            const string myCertBufNoPub = ta::readData("CA/smime_cert_no_pub.pem");
+            TS_ASSERT_THROWS(ta::CertUtils::isSmimeCert(myCertBufNoPub), std::exception);
+        }
+
+        {
+            // Test email address
+            string myReasonWhenNotSmimeCert;
+            const string myCert = ta::readData("CA/smime_cert_no_email.pem");
+            TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+        }
+
+        {
+            // Test no (email address in) SAN (but email address present in subject)
+            string myReasonWhenNotSmimeCert;
+            const string myCert = ta::readData("CA/smime_cert_globalsign_no_san.pem");
+            TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+        }
+
+        {
+            // Test key usage
+            string myReasonWhenNotSmimeCert;
+            const string myCert = ta::readData("CA/smime_cert_no_keyusage.pem");
+            TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+        }
+
+        {
+            // Test extended key usage
+            string myReasonWhenNotSmimeCert;
+            const string myCert = ta::readData("CA/smime_cert_no_extendedkeyusage.pem");
+            TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+        }
     }
 
     void testGetMailFromSmime()
     {
-        // Test correct
-        std::vector<unsigned char> myCertBufCorrect = ta::readData("CA/smime_cert_possibly_correct.pem");
-        TS_ASSERT_EQUALS(ta::CertUtils::getEmailFromSmime(ta::vec2Str(myCertBufCorrect)), "key@talk.co");
+        {
+            const std::string myCert = ta::readData("CA/smime_cert_possibly_correct.pem");
+            TS_ASSERT_EQUALS(ta::CertUtils::getEmailFromSmime(myCert), "key@talk.co");
+        }
 
-        // Test no email address
-        std::vector<unsigned char> myCertBufNoEmail = ta::readData("CA/smime_cert_no_email.pem");
-        TS_ASSERT_THROWS(ta::CertUtils::getEmailFromSmime(ta::vec2Str(myCertBufNoEmail)), std::invalid_argument);
+        {
+            // Test no email address
+            const std::string myCert = ta::readData("CA/smime_cert_no_email.pem");
+            TS_ASSERT_THROWS(ta::CertUtils::getEmailFromSmime(myCert), std::exception);
+        }
     }
 
     void testCreatePEM()

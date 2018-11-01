@@ -8,7 +8,6 @@
 #include "scopedresource.hpp"
 #include "opensslwrappers.h"
 #include "common.h"
-#include "ta/logger.h"
 
 #ifdef _WIN32
 #include <Ws2tcpip.h>
@@ -1585,22 +1584,20 @@ namespace ta
 
         bool hasDerCert(const vector<unsigned char>& aBuf)
         {
-            string myErrorMsg;
-            return hasDerCertEx(aBuf, myErrorMsg);
-        }
-
-        bool hasDerCertEx(const vector<unsigned char>& aBuf, string& anErrorMsg)
-        {
             try
             {
                 getCertInfo(aBuf, DER);
                 return true;
             }
-            catch(std::exception& e)
+            catch (...)
             {
-                anErrorMsg = e.what();
                 return false;
             }
+        }
+
+        bool hasDerCert(const std::string& aBuf)
+        {
+            return hasDerCert(ta::str2Vec<unsigned char>(aBuf));
         }
 
         bool fileHasPemPrivKey(const string& aFilePath, string* aParsedKeysBuf)
@@ -2691,25 +2688,31 @@ namespace ta
             return isCertFileRevokedImpl(myCert, getCertInfoFile(aCertPath, isPemCertFile(aCertPath) ? PEM : DER).crlDistributionPoints, aWarnings);
         }
 
-        bool isSmimeCert(const string& aCertificate)
+        bool isSmimeCert(const string& aPemCert, string* aReasonWhenNot)
         {
-            if (!hasPemCert(aCertificate))
+            if (!hasPemCert(aPemCert))
             {
                 TA_THROW_MSG(std::invalid_argument, "Not a S/MIME Certificate: Input is not a certificate.");
             }
 
-            const CertInfo myCertInfo = getCertInfo(aCertificate);
+            const CertInfo myCertInfo = getCertInfo(aPemCert);
             string mySAN;
             if (!ta::findValueByKey(SN_subject_alt_name, myCertInfo.optionalExtensions, mySAN) || !doesSANContainKey(mySAN, "email"))
             {
-                DEBUGLOG("Not a S/MIME Certificate: Email missing, email should be present in SAN. With SAN: " + mySAN);
+                if (aReasonWhenNot)
+                {
+                    *aReasonWhenNot = "Email missing, email should be present in SAN. With SAN: " + mySAN;
+                }
                 return false;
             }
             if (!myCertInfo.keyUsage.empty())
             {
                 if (!ta::isElemExist(keyusageNonRepudiation, myCertInfo.keyUsage) && !ta::isElemExist(keyusageDigitalSignature, myCertInfo.keyUsage))
                 {
-                    DEBUGLOG("Not a S/MIME Certificate: Certificate contains keyUsage, but misses required bits.");
+                    if (aReasonWhenNot)
+                    {
+                        *aReasonWhenNot = "Certificate contains keyUsage, but misses required KUs.";
+                    }
                     return false;
                 }
             }
@@ -2717,7 +2720,10 @@ namespace ta
             {
                 if (!ta::isElemExist(ekuAnyExtendedKeyUsage, myCertInfo.extKeyUsage) && !ta::isElemExist(ekuSecureEmail, myCertInfo.extKeyUsage))
                 {
-                    DEBUGLOG("Not a S/MIME Certificate: Certificate contains extendedKeyUsage, but misses required bits.");
+                    if (aReasonWhenNot)
+                    {
+                        *aReasonWhenNot = "Certificate contains extendedKeyUsage, but misses required EKUs.";
+                    }
                     return false;
                 }
             }
@@ -2727,9 +2733,10 @@ namespace ta
 
         string getEmailFromSmime(const string& aCertificate)
         {
-            if (!isSmimeCert(aCertificate))
+            string myReasonWhenNotSmimeCert;
+            if (!isSmimeCert(aCertificate, &myReasonWhenNotSmimeCert))
             {
-                TA_THROW_MSG(std::invalid_argument, "Certificate is not S/MIME");
+                TA_THROW_MSG(std::invalid_argument, "Certificate is not S/MIME. " + myReasonWhenNotSmimeCert);
             }
 
             const string myNotFoundError = "Certificate is S/MIME, but email could not be found. This could indicate an error in the 'is S/MIME certificate' check.";

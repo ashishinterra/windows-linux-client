@@ -5,6 +5,7 @@ OSTYPE := $(shell uname | tr "[:upper:]" "[:lower:]")
 ifneq ($(wildcard /resept_server_dev),)
   RESEPT_SERVER := 1
   EXTRA_CFLAGS +=-DRESEPT_SERVER
+  CXX_STANDARD_CFLAGS = -std=c++14
 endif
 
 # We build KeyTalk Client if /resept_linux_client_dev exists

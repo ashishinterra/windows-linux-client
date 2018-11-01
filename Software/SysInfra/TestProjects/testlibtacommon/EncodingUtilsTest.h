@@ -93,12 +93,10 @@ public:
     {
         using namespace ta::EncodingUtils;
 
-        // given
-        vector<string> myArray;
         // when-then
-        TS_ASSERT_EQUALS(toStringArray(toTree(myArray)), myArray);
+        TS_ASSERT_EQUALS(toStringArray(toTree(ta::StringArray())), ta::StringArray());
         // given
-        myArray = boost::assign::list_of("one")("object.member")("!;, []<>\t$? три поросенка");
+        const ta::StringArray myArray = boost::assign::list_of("one")("object.member")("!;, []<>\t$? три поросенка");
         // when-then
         TS_ASSERT_EQUALS(toStringArray(toTree(myArray)), myArray);
 
@@ -145,13 +143,11 @@ public:
     {
         using namespace ta::EncodingUtils;
 
-        // given
-        vector<string> myArray;
         // when-then
-        TS_ASSERT_EQUALS(jsonToStringArray(toJson(myArray)), myArray);
-        TS_ASSERT_EQUALS(jsonToStringArray(toJson(toTree(myArray))), myArray);
+        TS_ASSERT_EQUALS(jsonToStringArray(toJson(ta::StringArray())), ta::StringArray());
+        TS_ASSERT_EQUALS(jsonToStringArray(toJson(toTree(ta::StringArray()))), ta::StringArray());
         // given
-        myArray = boost::assign::list_of("один")("two")("!;, []<>/\t$? три");
+        const ta::StringArray myArray = boost::assign::list_of("один")("two")("!;, []<>/\t$? три");
         // when-then
         TS_ASSERT_EQUALS(jsonToStringArray(toJson(myArray)), myArray);
         TS_ASSERT_EQUALS(jsonToStringArray(toJson(toTree(myArray))), myArray);

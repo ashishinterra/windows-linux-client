@@ -199,7 +199,7 @@ namespace ta
 #ifdef WIN32
             if (_isnan(aNumber))
 #else
-            if (isnan(aNumber))
+            if (std::isnan(aNumber))
 #endif
                 myOs << 0;
             else

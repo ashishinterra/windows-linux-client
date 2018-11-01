@@ -1,12 +1,14 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
-server-5.4.1, 25 October 2018
+server-5.4.1, 2 November 2018
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.4.1, v4.6.0 and v4.6.2
-    - ADDED REST API authentication connector (KEYTALK-478)
+    - ADDED: REST API authentication connector (KEYTALK-478)
+    - ADDED: Cluster administrator role (KEYTALK-491)
+    - CHANGED: Try storing S/MIME certificate to LDAP as a real user first falling back to LDAP service user if one defined
     - FIXED: Do not renew GlobalSign orders expired more than 7 days ago
 
     CHANGED shared Db schema:

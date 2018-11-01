@@ -260,7 +260,7 @@ namespace ta
         bool hasPemCertEx(const std::vector<unsigned char>& aPemBuf, std::string& anErrorMsg, std::string* aParsedCertsBuf = NULL);
 
         bool hasDerCert(const std::vector<unsigned char>& aBuf);
-        bool hasDerCertEx(const std::vector<unsigned char>& aBuf, std::string& anErrorMsg);
+        bool hasDerCert(const std::string& aBuf);
 
         /**
           Checks whether the given source contains at least one valid PEM-encoded private key and retrieves them
@@ -517,11 +517,11 @@ namespace ta
         // @param [in] aCRLs list of DER (ASN1) or PEM-encoded CRLs
         bool isCertFileRevokedForCrl(const std::string& aCertPath, const std::vector<std::vector<unsigned char> >& aCRLs);
 
-        // Check whether the given Certificate is S/MIME compatible as per RFC 3850:
+        // Check whether the given PEM certificate is S/MIME compatible as per RFC 3850:
         // The certificate contains email in Subject Alternative Name
         // KU, when non-empty, should include digitalSignature and/or nonRepudiation
         // EKU, when non-empty, should include emailProtection and/or anyExtendedKeyUsage
-        bool isSmimeCert(const std::string& aCertificate);
+        bool isSmimeCert(const std::string& aPemCert, std::string* aReasonWhenNot = NULL);
         // Get email address from S/MIME Certificate
         std::string getEmailFromSmime(const std::string& aCertificate);
     }

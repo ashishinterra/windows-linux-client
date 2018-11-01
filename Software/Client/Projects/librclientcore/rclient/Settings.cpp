@@ -377,7 +377,7 @@ namespace rclient
 
             vector<string> getArraySettingFromReseptConfig(const string& aSettingName)
             {
-                std::auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+                TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
                 if (myConfigPtr->exists(aSettingName))
                 {
                     return SettingsImpl::getArrayValue<vector<string> >(*myConfigPtr, aSettingName);
@@ -390,7 +390,7 @@ namespace rclient
 
             void addArrayElemToReseptConfig(const string& aVal, const string& aSettingName)
             {
-                std::auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+                TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
                 vector<string> myCurrentArrayVal;
                 if (myConfigPtr->exists(aSettingName))
                 {
@@ -413,7 +413,7 @@ namespace rclient
 
         string getReseptInstallDir()
         {
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
             string myRetVal;
             if (!myConfigPtr->lookupValue(ReseptInstallDir, myRetVal))
                 TA_THROW_MSG(SettingsError, boost::format("%s setting does not exist in the resept config or it is not a string") % ReseptInstallDir);
@@ -421,7 +421,7 @@ namespace rclient
         }
         void setReseptInstallDir(const string& aDir)
         {
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
             if (!myConfigPtr->exists(ReseptInstallDir))
                 TA_THROW_MSG(SettingsError, boost::format("%s setting does not exist in the resept config") % ReseptInstallDir);
             libconfig::Setting& mySetting = myConfigPtr->lookup(ReseptInstallDir);
@@ -432,7 +432,7 @@ namespace rclient
         }
         unsigned int getReseptBrokerServicePort()
         {
-            std::auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
             int myRetVal;
             if (!myConfigPtr->lookupValue(ReseptBrokerServicePort, myRetVal))
                 TA_THROW_MSG(SettingsError, boost::format("%s setting does not exist in the resept config or is not a number") % ReseptBrokerServicePort);
@@ -442,7 +442,7 @@ namespace rclient
         }
         void setReseptBrokerServicePort(unsigned int aPort)
         {
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
             if (!myConfigPtr->exists(ReseptBrokerServicePort))
                 TA_THROW_MSG(SettingsError, boost::format("%s setting does not exist in the resept config") % ReseptBrokerServicePort);
             libconfig::Setting& mySetting = myConfigPtr->lookup(ReseptBrokerServicePort);
@@ -453,12 +453,12 @@ namespace rclient
         }
         vector<string> getInstalledProviders()
         {
-            std::auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
             return SettingsImpl::getArrayValue<vector<string> >(*myConfigPtr, ReseptInstalledProviders);
         }
         void addInstalledProvider(const string& aProviderName)
         {
-            std::auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
             vector<string> myInstalledProviders = SettingsImpl::getArrayValue<vector<string> >(*myConfigPtr, ReseptInstalledProviders);
             if (ta::isElemExist(aProviderName, myInstalledProviders))
                 return;
@@ -468,7 +468,7 @@ namespace rclient
         }
         void removeInstalledProvider(const string& aProviderName)
         {
-            std::auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(reseptConfig);
 
             vector<string> myInstalledProviders = SettingsImpl::getArrayValue<vector<string> >(*myConfigPtr, ReseptInstalledProviders);
             vector<string>::iterator it = std::find(myInstalledProviders.begin(), myInstalledProviders.end(), aProviderName);
@@ -549,7 +549,7 @@ namespace rclient
 
         string getLatestProvider()
         {
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
             string myProviderName;
             if (!myConfigPtr->lookupValue(LatestProvider, myProviderName))
                 TA_THROW_MSG(SettingsError, boost::format("%s setting does not exist in the user config or is not a string") % LatestProvider);
@@ -559,7 +559,7 @@ namespace rclient
         }
         string getLatestService()
         {
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
             string myServiceName;
             if (!myConfigPtr->lookupValue(LatestService, myServiceName))
                 TA_THROW_MSG(SettingsError, boost::format("%s setting does not exist in the user config or is not a string") % LatestService);
@@ -577,7 +577,7 @@ namespace rclient
             if (!ta::isElemExist(aServiceName, getServices(aProviderName, userConfig)))
                 TA_THROW_MSG(SettingsError, boost::format("Service '%s' does not exist for provider '%s' in the user config") % aServiceName % aProviderName);
 
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
 
             if (!myConfigPtr->exists(LatestProvider))
                 myConfigPtr->getRoot().add(LatestProvider, libconfig::Setting::TypeString);
@@ -645,7 +645,7 @@ namespace rclient
                 }
             }
 
-            auto_ptr<libconfig::Config> myUserConfigPtr = load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myUserConfigPtr = load(userConfig);
 
             const unsigned int myNumProviders = SettingsImpl::getListSize(*myUserConfigPtr, ProviderList);
             for (unsigned int i=0; i < myNumProviders; ++i)
@@ -820,7 +820,7 @@ namespace rclient
             // Retrieve provider name
             const string myProvider0NameSettingName = SettingsImpl::getProviderSettingPath(0, ProviderName);
 
-            auto_ptr<libconfig::Config> mySrcUserConfigPtr = SettingsImpl::load(aUserConfigPath);
+            TA_UNIQUE_PTR<libconfig::Config> mySrcUserConfigPtr = SettingsImpl::load(aUserConfigPath);
             string myProviderName;
             if (!mySrcUserConfigPtr->lookupValue(myProvider0NameSettingName, myProviderName))
                 TA_THROW_MSG(SettingsError, boost::format("No %s setting exist in %s or it is not a string") %  myProvider0NameSettingName % aUserConfigPath);
@@ -828,7 +828,7 @@ namespace rclient
                 TA_THROW_MSG(SettingsError, boost::format("More than one provider exists in the source user config %s. Only one provider is allowed.") % aUserConfigPath);
             setClientOsLogonUser(*mySrcUserConfigPtr.get(), myProviderName, aUsername);
 
-            auto_ptr<libconfig::Config> mySrcMasterConfigPtr;
+            TA_UNIQUE_PTR<libconfig::Config> mySrcMasterConfigPtr;
             if (anIsAdminInstall)
             {
                 // check provider name and content version match for user and master configs
@@ -853,7 +853,7 @@ namespace rclient
             }
 
             // Update user config in memory
-            auto_ptr<libconfig::Config> myTargetUserConfigPtr;
+            TA_UNIQUE_PTR<libconfig::Config> myTargetUserConfigPtr;
             if (ta::isFileExist(getUserConfigPath()))
             {
                 myTargetUserConfigPtr = SettingsImpl::load(userConfig);
@@ -864,12 +864,16 @@ namespace rclient
             }
             else
             {
+#if (__cplusplus >= 201103L)
+                myTargetUserConfigPtr = std::move(mySrcUserConfigPtr);
+#else
                 myTargetUserConfigPtr = mySrcUserConfigPtr;
+#endif
             }
             assert(myTargetUserConfigPtr.get());
 
             // Update master config in memory if required
-            auto_ptr<libconfig::Config> myTargetMasterConfigPtr;
+            TA_UNIQUE_PTR<libconfig::Config> myTargetMasterConfigPtr;
             if (anIsAdminInstall)
             {
                 if (ta::isFileExist(Settings::getMasterConfigPath()))
@@ -882,7 +886,11 @@ namespace rclient
                 }
                 else
                 {
+#if (__cplusplus >= 201103L)
+                    myTargetMasterConfigPtr = std::move(mySrcMasterConfigPtr);
+#else
                     myTargetMasterConfigPtr = mySrcMasterConfigPtr;
+#endif
                 }
                 // remove users from master config as these are not supported anymore since RCCD v2.0.2
                 removeUsersFromMasterConfig(*myTargetMasterConfigPtr.get(), myProviderName);
@@ -1272,7 +1280,7 @@ namespace rclient
                 TA_THROW_MSG(SettingsError, boost::format("Service '%s' does not exist for provider '%s'") % aServiceName % aProviderName);
 
             aFromMasterConfig = SettingsImpl::isServiceValExist<vector<string> >(ServiceUserList, aProviderName, aServiceName, masterConfig);
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
 
             vector<string> myUsers;
             for (unsigned int iProvider=0; iProvider < myProviders.size(); ++iProvider)
@@ -1323,7 +1331,7 @@ namespace rclient
             if (ta::isElemExist(aUserName, getUsers(aProviderName, aServiceName)))
                 TA_THROW_MSG(SettingsError, boost::format("User '%s' already exists in the user config at for provider '%s service '%s'") % aUserName % aProviderName % aServiceName);
 
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
             const string myUserListPath = SettingsImpl::getServiceSettingPath(myProviderIdx, myServiceIdx, ServiceUserList);
             libconfig::Setting& myUserListSetting = myConfigPtr->exists(myUserListPath) ? myConfigPtr->lookup(myUserListPath)
                                                     : myConfigPtr->lookup(SettingsImpl::getServicePath(myProviderIdx, myServiceIdx)).add(ServiceUserList, libconfig::Setting::TypeArray);
@@ -1350,7 +1358,7 @@ namespace rclient
                 TA_THROW_MSG(SettingsError, boost::format("Service '%s' does not exist for provider '%s' in the user config") % aServiceName % aProviderName);
             const unsigned int myServiceIdx = myServiceIt - myServices.begin();
 
-            auto_ptr<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
+            TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = SettingsImpl::load(userConfig);
             const string myUserListPath = SettingsImpl::getServiceSettingPath(myProviderIdx, myServiceIdx, ServiceUserList);
             if (!myConfigPtr->exists(myUserListPath))
                 return;

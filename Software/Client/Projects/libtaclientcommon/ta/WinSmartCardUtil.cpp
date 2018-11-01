@@ -22,7 +22,6 @@ namespace ta
     {
         using std::string;
         using std::vector;
-        using std::auto_ptr;
 
         struct ScopedCryptProvider
         {
@@ -98,7 +97,7 @@ namespace ta
             return myNameEncoded;
         }
 
-        auto_ptr<CERT_PUBLIC_KEY_INFO> doCryptExportPublicKeyInfo(const HCRYPTPROV& aCryptProv)
+        TA_UNIQUE_PTR<CERT_PUBLIC_KEY_INFO> doCryptExportPublicKeyInfo(const HCRYPTPROV& aCryptProv)
         {
             DWORD myPublicKeyInfoLength;
             if (!CryptExportPublicKeyInfo(
@@ -113,7 +112,7 @@ namespace ta
                              " Errorcode: %d") % GetLastError());
             }
 
-            auto_ptr<CERT_PUBLIC_KEY_INFO> myPublicKeyInfo(static_cast<CERT_PUBLIC_KEY_INFO*>(::operator new(myPublicKeyInfoLength)));
+            TA_UNIQUE_PTR<CERT_PUBLIC_KEY_INFO> myPublicKeyInfo(static_cast<CERT_PUBLIC_KEY_INFO*>(::operator new(myPublicKeyInfoLength)));
 
             if (!CryptExportPublicKeyInfo(
                         aCryptProv,            //i  Provider handle
@@ -275,7 +274,7 @@ namespace ta
             }
             ScopedCryptProvider myCryptProvScoped(myCryptProv);
 
-            auto_ptr<CERT_PUBLIC_KEY_INFO> myPublicKeyInfo = doCryptExportPublicKeyInfo(myCryptProv);
+            TA_UNIQUE_PTR<CERT_PUBLIC_KEY_INFO> myPublicKeyInfo = doCryptExportPublicKeyInfo(myCryptProv);
             myCertReqInfo.SubjectPublicKeyInfo = *myPublicKeyInfo.get();
 
             const unsigned int myKeySizeBits = doGetKeySize(*myPublicKeyInfo);

@@ -200,5 +200,5 @@ private slots:
 private:
     QTabWidget* theTabWidget;
     QDialogButtonBox* theButtonBox;
-    std::auto_ptr<ta::OpenSSLApp> theOpenSSLAppPtr;
+    TA_UNIQUE_PTR<ta::OpenSSLApp> theOpenSSLAppPtr;
 };

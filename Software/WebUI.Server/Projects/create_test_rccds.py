@@ -1,27 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Script will create test RCCDs
 # usage ./$0 [keytalk-server-ip]
 
 import sys
-IS_PYTHON2 = sys.version_info < (3, 0)
-
-# Make up common aliases for Python2 and 3
-
-if IS_PYTHON2:
-    from urllib2 import build_opener, HTTPCookieProcessor, Request
-    from urllib import urlencode
-    from urlparse import urljoin
-    from cookielib import CookieJar
-else:
-    from urllib.request import build_opener, HTTPCookieProcessor, Request
-    from urllib.parse import urljoin, urlencode
-    from http.cookiejar import CookieJar
 import os
-
-import re
 import os.path
+import re
+from urllib.request import build_opener, HTTPCookieProcessor, Request
+from urllib.parse import urljoin, urlencode
+from http.cookiejar import CookieJar
 
 # THIS IS DIRTY MONKEY PATCHING to bypass server SSL certificate verification
 import ssl
@@ -71,7 +60,7 @@ class RccdRequestor:
 
     def _parse_serialized_rccd_request(self, html_contents):
         result = re.search(
-            r'input\s*type="hidden"\s*name="serialized_rccd_request_input"\s*value="(.*?)">',
+            rb'input\s*type="hidden"\s*name="serialized_rccd_request_input"\s*value="(.*?)">',
             html_contents,
             re.MULTILINE | re.DOTALL)
         if result:

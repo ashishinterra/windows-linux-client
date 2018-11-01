@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ta/opensslapp.h"
+#include "ta/common.h"
+
 #include <string>
 #include <memory>
 
@@ -29,5 +31,5 @@ private:
     static bool downgradeConfirmationPrompt(const std::string& aMsgText, void* aCookie);
 
 private:
-    std::auto_ptr<ta::OpenSSLApp> theOpenSSLAppPtr;
+    TA_UNIQUE_PTR<ta::OpenSSLApp> theOpenSSLAppPtr;
 };

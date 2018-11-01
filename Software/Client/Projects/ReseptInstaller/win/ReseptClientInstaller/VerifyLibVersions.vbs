@@ -5,8 +5,8 @@
 ' these libs from the new msi package after successful removal of the existing ones
 '
 
-' LIBRARY VERSIONS CAN EITHER EITHER STAY THE SAME OR GROW FOR NEW KEYTALK INSTALLERS.
-' SHOULD BUT NEVER GO DOWN!
+' LIBRARY VERSIONS CAN EITHER STAY THE SAME OR GROW FOR NEW KEYTALK INSTALLERS.
+' THEY SHOULD NEVER GO DOWN!
 QtLibs = Array("Qt5Core.dll", "Qt5Gui.dll", "Qt5Widgets.dll", "platforms\qwindows.dll")
 IcuLibs = Array("icudt54.dll", "icuin54.dll", "icuuc54.dll")
 VcRuntimeLibs = Array("msvcr120.dll", "msvcp120.dll", "vccorlib120.dll")

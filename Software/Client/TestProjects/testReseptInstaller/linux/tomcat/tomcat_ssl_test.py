@@ -57,8 +57,8 @@ class TestTomcatSsl(unittest.TestCase):
         # then
         out, err = p.communicate()
         self.assertEquals(p.returncode, 0, "Stdout: {}, Stderr: {}".format(out, err))
-        # sleep for at least 2 seconds to renew certificates and restart tomcat
-        time.sleep(2)
+        # wait to renew certificates and restart tomcat
+        time.sleep(10)
         print("Checking {host}:{port}, renew enabled: {renew_enabled}".format(**host))
         conn = urllib2.urlopen('https://{host}:{port}'.format(**host))
         html_contents = conn.read()
@@ -73,8 +73,8 @@ class TestTomcatSsl(unittest.TestCase):
         host['x509'] = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
 
         print("Renewing valid Tomcat SSL certificates")
-        # sleep for at least a second to notice certificate time difference
-        time.sleep(1)
+        # wait a bit to notice certificate time difference
+        time.sleep(2)
         p = Popen(renew_ssl_cert_cmd, stdout=PIPE, stderr=PIPE, shell=True)
         # then we expect no certificates get renewed because they are still valid
         out, err = p.communicate()
@@ -93,14 +93,14 @@ class TestTomcatSsl(unittest.TestCase):
         self.assertEquals(x509.get_notAfter(), host['x509'].get_notAfter())
 
         print("Forcibly renewing Tomcat SSL certificates")
-        # sleep for at least a second to notice certificate time difference
-        time.sleep(1)
+        # wait a bit to notice certificate time difference
+        time.sleep(2)
         p = Popen(force_renew_ssl_cert_cmd, stdout=PIPE, stderr=PIPE, shell=True)
         # then we expect the certificates will be renewed because we enforce that
         out, err = p.communicate()
         self.assertEquals(p.returncode, 0, "Stdout: {}, Stderr: {}".format(out, err))
-        # sleep for at least 2 seconds to renew certificates and restart tomcat
-        time.sleep(2)
+        # wait a bit to renew certificates and restart tomcat
+        time.sleep(10)
         print("Checking {host}:{port}, renew enabled: {renew_enabled}".format(**host))
         conn = urllib2.urlopen('https://{host}:{port}'.format(**host))
         html_contents = conn.read()

@@ -1,0 +1,15 @@
+# Dockerfile to test the pre-built Ubuntu 18.04 KeyTalk client by installing it
+
+FROM ubuntu:18.04
+
+# Install packages
+RUN apt-get update
+RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release python
+RUN a2enmod ssl
+RUN apt -y install default-jdk tomcat8 tomcat8-*
+
+# set time
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENTRYPOINT ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh

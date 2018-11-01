@@ -149,7 +149,7 @@ namespace rclient
                 }
 
                 // Fwd declarations
-                auto_ptr<libconfig::Config> updateUserConfigFromMaster();
+                TA_UNIQUE_PTR<libconfig::Config> updateUserConfigFromMaster();
 
                 string getProviderPath(unsigned int aProviderIdx)
                 {
@@ -696,7 +696,7 @@ namespace rclient
                 // Open and load the settings file from the specified location
                 // @throw SettingsOpenError, SettingsError
                 //
-                auto_ptr<libconfig::Config> load(const string& aConfigFilePath)
+                TA_UNIQUE_PTR<libconfig::Config> load(const string& aConfigFilePath)
                 {
                     ta::ScopedResource<FILE*> myFd(fopen(aConfigFilePath.c_str(), "rt"), fclose);
                     if (!myFd)
@@ -707,7 +707,7 @@ namespace rclient
                     //libconfig does not understand UTF-8 signatures, lets help it with it
                     skipUtf8Sig(myFd);
 
-                    auto_ptr<libconfig::Config> myConfigPtr;
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr;
                     try
                     {
                         myConfigPtr.reset(new libconfig::Config());
@@ -736,7 +736,7 @@ namespace rclient
                 // 1. If the aConfigFilePath does not exist or cannot be parsed, it will be recovered from the master config
                 // 2. All providers/services of the master config which do not exist in user config will be added to the user config
                 // 3. All settings which exist in the master config will overwrite the ones in the user config except for 'defaultUri' which will be copied to 'uri' of the one does not exist in the user config.
-                auto_ptr<libconfig::Config> load(ConfigType aConfigType)
+                TA_UNIQUE_PTR<libconfig::Config> load(ConfigType aConfigType)
                 {
                     if (aConfigType == userConfig && isMasterConfigExist())
                         return updateUserConfigFromMaster();
@@ -751,7 +751,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
 
                     vector<string> myProviders;
@@ -791,7 +791,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
                         TA_THROW_MSG(SettingsError, boost::format("No providers exist in the %s config") % (aConfigType==userConfig?"user":"master"));
@@ -818,7 +818,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
                         TA_THROW_MSG(SettingsError, boost::format("No providers exist in the %s config") % (aConfigType==userConfig?"user":"master"));
@@ -850,7 +850,7 @@ namespace rclient
                     if (aConfigType == masterConfig && !isMasterConfigExist())
                         return false;
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
 
                     for (unsigned int i=0; i < myNumProviders; ++i)
@@ -887,7 +887,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
                         TA_THROW_MSG(SettingsError, boost::format("No providers exist in the %s config")  % (aConfigType==userConfig?"user":"master"));
@@ -924,7 +924,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
 
                     const vector<string> myProviders = getProviders(aConfigType);
                     vector<string> myServices;
@@ -977,7 +977,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
 
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
@@ -1020,7 +1020,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
 
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
@@ -1119,7 +1119,7 @@ namespace rclient
                     if (aConfigType == masterConfig && !isMasterConfigExist())
                         return false;
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     return isServiceValExist<T>(*myConfigPtr.get(), aServiceKey, aProviderName, aServiceName);
                 }
 
@@ -1134,7 +1134,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
                         TA_THROW_MSG(SettingsError, boost::format("No providers exist in the %s config")  % (aConfigType==userConfig?"user":"master"));
@@ -1184,7 +1184,7 @@ namespace rclient
                     if (aConfigType != userConfig && aConfigType != masterConfig)
                         TA_THROW_MSG(SettingsError, boost::format("Unexpected confguration type %d") % aConfigType);
 
-                    auto_ptr<libconfig::Config> myConfigPtr = load(aConfigType);
+                    TA_UNIQUE_PTR<libconfig::Config> myConfigPtr = load(aConfigType);
                     const unsigned int myNumProviders = getListSize(*myConfigPtr, ProviderList);
                     if (myNumProviders == 0)
                     {
@@ -1474,11 +1474,11 @@ namespace rclient
                 }
 
                 //@return user config
-                auto_ptr<libconfig::Config> updateUserConfigFromMaster()
+                TA_UNIQUE_PTR<libconfig::Config> updateUserConfigFromMaster()
                 {
                     // Load/init configs. Notice that we never call load(userConfig) neither explicitly or implicitly to avoid infinite recursion
-                    const auto_ptr<libconfig::Config> myMasterConfig = load(masterConfig);
-                    auto_ptr<libconfig::Config> myUserConfig;
+                    const TA_UNIQUE_PTR<libconfig::Config> myMasterConfig = load(masterConfig);
+                    TA_UNIQUE_PTR<libconfig::Config> myUserConfig;
                     const string myConfigFilePath = getConfigFilePath(userConfig);
                     try
                     {

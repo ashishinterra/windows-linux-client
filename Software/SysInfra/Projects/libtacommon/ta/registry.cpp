@@ -118,7 +118,7 @@ namespace ta
                 ::RegCloseKey(myKeyHandle);
                 TA_THROW_MSG(RegistryError, myError);
             }
-            std::auto_ptr<char> myVal(static_cast<char*>(::operator new (mySize)));
+            TA_UNIQUE_PTR<char> myVal(static_cast<char*>(::operator new (mySize)));
             myErrorCode = ::RegQueryValueEx(myKeyHandle, aValName.c_str(), NULL, &aValType, (LPBYTE) myVal.get(),(LPDWORD) &mySize);
             if (myErrorCode != ERROR_SUCCESS)
             {

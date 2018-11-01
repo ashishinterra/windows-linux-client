@@ -1,0 +1,3 @@
+[MASTER]
+# we realized that pylint sometimes does not respect 'sys.path.append' provided in the source files, but it does respect it when supplied in .pylintrc
+init-hook='import sys; sys.path.append("/usr/local/bin/keytalk"); sys.path.append("/usr/local/lib/keytalk")'
