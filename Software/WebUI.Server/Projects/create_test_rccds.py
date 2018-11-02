@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Script will create test RCCDs
-# usage ./$0 [keytalk-server-ip]
+# usage ./$0 [keytalk-server-address=localhost]
 
 import sys
 import os
@@ -12,29 +12,20 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urljoin, urlencode
 from http.cookiejar import CookieJar
 
-# THIS IS DIRTY MONKEY PATCHING to bypass server SSL certificate verification
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-
 
 class RccdRequestor:
 
-    def __init__(self, keytalk_svr_ip=None):
+    def __init__(self, keytalk_svr_address=None):
         self._cookie_jar = CookieJar()
         self._username = 'admin'
         self._password = 'change!'
-        if keytalk_svr_ip is not None:
-            self._keytalk_svr_ip = keytalk_svr_ip
+        if keytalk_svr_address is not None:
+            self._keytalk_svr_login_url = 'https://' + keytalk_svr_address + ':3000/login'
         else:
-            self._keytalk_svr_ip = RccdRequestor._retrieve_self_ip()
-            os.system('service lighttpd restart && sleep 1')
-        self._keytalk_svr_ip_login_url = 'https://' + self._keytalk_svr_ip + ':3000/login'
-
-    @staticmethod
-    def _retrieve_self_ip():
-        ip = os.popen(
-            r"ifconfig | grep 'inet addr' | grep -v '127.0.0.1' -m 1 | awk '{ print $2 }' | awk -F: '{ print $2 }'").read().strip()
-        return ip
+            # THIS IS DIRTY MONKEY PATCHING to bypass (local) server SSL certificate verification
+            import ssl
+            ssl._create_default_https_context = ssl._create_unverified_context
+            self._keytalk_svr_login_url = 'https://localhost:3000/login'
 
     def _initiate_rccd_creation_request(self, services):
         post_params = {
@@ -53,9 +44,9 @@ class RccdRequestor:
                                                   provider_name,
                                                   ('admin' if is_admin else 'user'),
                                                   ('.' + suffix if suffix else ''))
-        f = open(rccd_path, 'wb')
-        f.write(contents)
-        f.close()
+        with open(rccd_path, 'wb') as f:
+            f.write(contents)
+
         return rccd_path
 
     def _parse_serialized_rccd_request(self, html_contents):
@@ -88,7 +79,7 @@ class RccdRequestor:
                        'login_password_input': self._password,
                        'login_submit_btn.x': '0'}
 
-        req = Request(self._keytalk_svr_ip_login_url, urlencode(post_params).encode('utf-8'))
+        req = Request(self._keytalk_svr_login_url, urlencode(post_params).encode('utf-8'))
 
         conn = opener.open(req)
         self._cookie_jar.extract_cookies(conn, req)
@@ -97,10 +88,10 @@ class RccdRequestor:
     def _open_page(self, page_path, **post_params):
         opener = build_opener(HTTPCookieProcessor(self._cookie_jar))
         if post_params:
-            req = Request(urljoin(self._keytalk_svr_ip_login_url, page_path),
+            req = Request(urljoin(self._keytalk_svr_login_url, page_path),
                           urlencode(post_params).encode('utf-8'))
         else:
-            req = Request(urljoin(self._keytalk_svr_ip_login_url, page_path))
+            req = Request(urljoin(self._keytalk_svr_login_url, page_path))
 
         conn = opener.open(req)
         self._cookie_jar.extract_cookies(conn, req)
@@ -133,8 +124,8 @@ class RccdRequestor:
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        keytalk_svr_ip = sys.argv[1]
-        rccdRequestor = RccdRequestor(keytalk_svr_ip)
+        keytalk_svr_address = sys.argv[1]
+        rccdRequestor = RccdRequestor(keytalk_svr_address)
     else:
         rccdRequestor = RccdRequestor()
 
