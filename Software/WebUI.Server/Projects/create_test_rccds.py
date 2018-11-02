@@ -12,6 +12,13 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urljoin, urlencode
 from http.cookiejar import CookieJar
 
+try:
+    # THIS IS DIRTY MONKEY PATCHING to bypass (local) server SSL certificate verification
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+except AttributeError:
+     # Legacy Python that doesn't verify HTTPS certificates by default
+    pass
 
 class RccdRequestor:
 
@@ -22,9 +29,6 @@ class RccdRequestor:
         if keytalk_svr_address is not None:
             self._keytalk_svr_login_url = 'https://' + keytalk_svr_address + ':3000/login'
         else:
-            # THIS IS DIRTY MONKEY PATCHING to bypass (local) server SSL certificate verification
-            import ssl
-            ssl._create_default_https_context = ssl._create_unverified_context
             self._keytalk_svr_login_url = 'https://localhost:3000/login'
 
     def _initiate_rccd_creation_request(self, services):
