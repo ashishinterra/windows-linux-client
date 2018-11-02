@@ -94,6 +94,7 @@ function test_build()
        --workdir=${worker_testdir} \
        --hostname ktclient-dev \
        --add-host=demo.keytalkdemo.com:192.168.33.111 \
+       --add-host=keytalkadmin.keytalkdemo.com:192.168.33.111 \
        --name ${container_name} \
         --net=host \
        ${image_name}
@@ -125,6 +126,7 @@ function test_installation()
        --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/installer:rw \
        --workdir=${worker_testdir} \
        --add-host=demo.keytalkdemo.com:192.168.33.111 \
+       --add-host=keytalkadmin.keytalkdemo.com:192.168.33.111 \
        --name ${container_name} \
         --net=host \
        ${image_name}

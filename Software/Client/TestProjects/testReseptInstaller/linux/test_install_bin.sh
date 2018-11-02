@@ -21,7 +21,6 @@ elif [ $# -eq 2 ]; then
     LOGS_BACKUP_DIR="$2"
 fi
 
-KT_SVR_WEBUI_IP="192.168.33.111"
 INSTALLER_TGZ_PATH=${INSTALLER_DIR}/KeyTalkClient-${CLIENT_VERSION}-$(get_client_platform_file_suffix).tgz
 SUCCEEDED_TESTS=0
 PID=$$
@@ -151,7 +150,7 @@ function setup_test()
 
     # generate test RCCDs
     pushd ../../../../WebUI.Server/Projects/ > /dev/null
-    ./create_test_rccds.py ${KT_SVR_WEBUI_IP}
+    ./create_test_rccds.py keytalkadmin.keytalkdemo.com
     cp -f Export/*.rccd ${INSTALLER_TEMP_DIR}/${PACKAGE_DIR_NAME}/
     popd > /dev/null
 }
