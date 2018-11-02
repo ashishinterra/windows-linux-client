@@ -218,10 +218,12 @@ def process_host(
                 'Errors during validation of Host "{}, {}".'.format(
                     current_host_string, current_host_name))
 
-        if force_renew_certs or is_cert_renewal_needed(current_site):
-            shell_cmd = '/usr/local/bin/keytalk/tomcat.sh {} {}'.format(
-                keystore_password, keystore_location)
-            subprocess.call([shell_cmd], shell=True)
+        if not os.path.isfile(keystore_location) or\
+           force_renew_certs or\
+           is_cert_renewal_needed(current_site):
+            get_cert(current_site)
+            util.run_cmd(
+                '/usr/local/bin/keytalk/tomcat.sh {} {}'.format(keystore_password, keystore_location), Logger)
 
     except Exception as e:
         # Log error, but continue processing the next Host
@@ -256,6 +258,10 @@ def main():
 
         force_renew_certs = len(sys.argv) == 2 and sys.argv[1] == force_arg
 
+        Logger.debug(
+            "Starting Tomcat SSL certificate renewal script. Force renewal: {}".format(
+                'yes' if force_renew_certs else 'no'))
+
         with open(CONFIG_FILE_PATH) as f:
             config = util.strip_json_comments(f.read())
             try:
@@ -272,11 +278,7 @@ def main():
             current_host_name = site.get('ServerName', '')
             keystore_password = site.get('KeystorePassword', '')
             keystore_location = site.get('KeystoreLocation', '')
-            if not os.path.isfile(keystore_location):
-                shell_cmd = '/usr/local/bin/keytalk/tomcat.sh {} {}'.format(
-                    keystore_password, keystore_location)
-                get_cert(site)
-                subprocess.call([shell_cmd], shell=True)
+
             process_host(
                 site,
                 current_host_string,

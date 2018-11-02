@@ -435,6 +435,10 @@ def main():
 
         force_renew_certs = len(sys.argv) == 2 and sys.argv[1] == force_arg
 
+        Logger.debug(
+            "Starting Tomcat SSL certificate renewal script. Force renewal: {}".format(
+                'yes' if force_renew_certs else 'no'))
+
         with open(CONFIG_FILE_PATH) as f:
             config = util.strip_json_comments(f.read())
             try:
