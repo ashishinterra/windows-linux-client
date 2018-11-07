@@ -139,8 +139,21 @@ public:
         TS_ASSERT(!ta::isValidEmail(""));
         TS_ASSERT(!ta::isValidEmail("abcdef"));
         TS_ASSERT(!ta::isValidEmail("user@domain"));
+
         TS_ASSERT(ta::isValidEmail("user@domain.com"));
     }
+
+    void testValidatePhoneNumber()
+    {
+        TS_ASSERT(!ta::isValidPhoneNumber(""));
+        TS_ASSERT(!ta::isValidPhoneNumber("06450330000"));
+        TS_ASSERT(!ta::isValidPhoneNumber("+31645633000X"));
+        TS_ASSERT(!ta::isValidPhoneNumber("+316456330000112233445566"));
+
+        TS_ASSERT(ta::isValidPhoneNumber("+316456330000"));
+        TS_ASSERT(ta::isValidPhoneNumber("+31-64-563-300-00"));
+    }
+
     void testFileExist()
     {
 #ifdef _WIN32

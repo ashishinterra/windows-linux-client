@@ -6,6 +6,7 @@
 #include "boost/format.hpp"
 #include "boost/regex.hpp"
 #include "boost/filesystem/operations.hpp"
+#include "boost/range/algorithm_ext/erase.hpp"
 #include "boost/algorithm/string.hpp"
 #include "boost/uuid/uuid_generators.hpp"
 #include <locale>
@@ -74,15 +75,38 @@ namespace ta
 
     bool isValidEmail(const string& aEmail)
     {
-        string myEmail = boost::trim_copy(aEmail);
+        const string myEmail = boost::trim_copy(aEmail);
+
         if (myEmail.empty())
+        {
             return false;
+        }
+
         try
         {
-            boost::regex myRegEx("([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})");
-            if (!regex_match(myEmail, myRegEx))
-                return false;
-            return true;
+            const boost::regex myRegEx("([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})");
+            return regex_match(myEmail, myRegEx);
+        }
+        catch (std::exception&)
+        {
+            return false;
+        }
+    }
+
+    bool isValidPhoneNumber(const string& aPhone)
+    {
+        string myPhone = aPhone;
+        boost::remove_erase_if(myPhone, boost::is_any_of(" -"));
+
+        if (myPhone.empty())
+        {
+            return false;
+        }
+
+        try
+        {
+            const boost::regex myRegEx("\\+\\d{9,15}");
+            return regex_match(myPhone, myRegEx);
         }
         catch (std::exception&)
         {

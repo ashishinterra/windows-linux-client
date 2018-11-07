@@ -48,12 +48,11 @@ namespace ta
     template <class T> void writeData(const std::string& aFileName, const std::basic_string<T>& aData);
 
 
-    /**
-      Validate email address
 
-      @param[in] aEmail email address to be checked
-     */
     bool isValidEmail(const std::string& aEmail);
+
+    // pretty much lean&mean international phone number validation
+    bool isValidPhoneNumber(const std::string& aPhone);
 
     /**
       Validate if file exist

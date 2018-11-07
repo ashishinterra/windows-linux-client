@@ -20,6 +20,7 @@ except AttributeError:
      # Legacy Python that doesn't verify HTTPS certificates by default
     pass
 
+
 class RccdRequestor:
 
     def __init__(self, keytalk_svr_address=None):

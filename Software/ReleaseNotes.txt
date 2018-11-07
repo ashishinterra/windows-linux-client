@@ -1,6 +1,14 @@
 Release Notes of KeyTalk
 =================================================================
 
+server-5.4.2, in development
+----------------------
+Support upgrades from v5.2.1 and higher
+Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
+Support import of settings created in v5.2.0-v5.4.2, v4.6.0 and v4.6.2
+    - FIXED: Tolerate errors storing alt-security-identity (KEYTALK-493)
+
+
 server-5.4.1, 2 November 2018
 ----------------------
 Support upgrades from v5.2.1 and higher
