@@ -2692,7 +2692,7 @@ namespace ta
         {
             if (!hasPemCert(aPemCert))
             {
-                TA_THROW_MSG(std::invalid_argument, "Not a S/MIME Certificate: Input is not a certificate.");
+                TA_THROW_MSG(std::invalid_argument, "Not a S/MIME Certificate. Input is not a PEM certificate.");
             }
 
             const CertInfo myCertInfo = getCertInfo(aPemCert);
@@ -2701,7 +2701,7 @@ namespace ta
             {
                 if (aReasonWhenNot)
                 {
-                    *aReasonWhenNot = "Email missing, email should be present in SAN. With SAN: " + mySAN;
+                    *aReasonWhenNot = "Email missing, email should be present in SAN.";
                 }
                 return false;
             }
@@ -2711,7 +2711,7 @@ namespace ta
                 {
                     if (aReasonWhenNot)
                     {
-                        *aReasonWhenNot = "Certificate contains keyUsage, but misses required KUs.";
+                        *aReasonWhenNot = "Certificate contains keyUsage, but lacks obligatory KUs.";
                     }
                     return false;
                 }
@@ -2722,7 +2722,7 @@ namespace ta
                 {
                     if (aReasonWhenNot)
                     {
-                        *aReasonWhenNot = "Certificate contains extendedKeyUsage, but misses required EKUs.";
+                        *aReasonWhenNot = "Certificate contains extendedKeyUsage, but lacks obligatory EKUs.";
                     }
                     return false;
                 }

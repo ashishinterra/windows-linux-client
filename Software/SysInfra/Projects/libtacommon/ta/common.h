@@ -529,6 +529,30 @@ namespace ta
         return myResult;
     }
 
+    template<typename TK, typename TV>
+    std::vector<TK> extractDictKeys(std::map<TK, TV> const& aDict)
+    {
+        std::vector<TK> retval;
+        typedef std::pair<TK, TV> value_type;
+        foreach (const value_type& elem, aDict)
+        {
+            retval.push_back(elem.first);
+        }
+        return retval;
+    }
+
+    template<typename TK, typename TV>
+    std::vector<TV> extractDictValues(std::map<TK, TV> const& aDict)
+    {
+        std::vector<TV> retval;
+        typedef std::pair<TK, TV> value_type;
+        foreach (const value_type& elem, aDict)
+        {
+            retval.push_back(elem.second);
+        }
+        return retval;
+    }
+
 
     struct KeyPair
     {

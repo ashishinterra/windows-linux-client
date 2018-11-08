@@ -96,7 +96,7 @@ namespace ta
     bool isValidPhoneNumber(const string& aPhone)
     {
         string myPhone = aPhone;
-        boost::remove_erase_if(myPhone, boost::is_any_of(" -"));
+        boost::remove_erase_if(myPhone, boost::is_any_of(" \t-"));
 
         if (myPhone.empty())
         {
@@ -105,7 +105,7 @@ namespace ta
 
         try
         {
-            const boost::regex myRegEx("\\+\\d{9,15}");
+            const boost::regex myRegEx("\\+(\\d){8,15}");
             return regex_match(myPhone, myRegEx);
         }
         catch (std::exception&)

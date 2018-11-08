@@ -146,11 +146,18 @@ public:
     void testValidatePhoneNumber()
     {
         TS_ASSERT(!ta::isValidPhoneNumber(""));
+        // not in international format
         TS_ASSERT(!ta::isValidPhoneNumber("06450330000"));
+        // NaNs
         TS_ASSERT(!ta::isValidPhoneNumber("+31645633000X"));
-        TS_ASSERT(!ta::isValidPhoneNumber("+316456330000112233445566"));
+        // too long
+        TS_ASSERT(!ta::isValidPhoneNumber("+3164563300000001"));
+        // too short
+        TS_ASSERT(!ta::isValidPhoneNumber("+3164563"));
 
+        TS_ASSERT(ta::isValidPhoneNumber("+316456330"));
         TS_ASSERT(ta::isValidPhoneNumber("+316456330000"));
+        TS_ASSERT(ta::isValidPhoneNumber("+316456330000000"));
         TS_ASSERT(ta::isValidPhoneNumber("+31-64-563-300-00"));
     }
 
