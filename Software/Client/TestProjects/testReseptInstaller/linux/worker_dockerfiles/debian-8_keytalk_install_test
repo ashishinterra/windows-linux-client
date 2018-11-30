@@ -4,9 +4,10 @@ FROM debian:jessie
 
 # Install packages
 RUN apt-get update
-RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release python3
+RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release curl python3
 RUN a2enmod ssl
 RUN apt -y install default-jdk tomcat7 tomcat7-*
+RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
 
 # set time
 ENV TZ=UTC

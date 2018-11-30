@@ -75,6 +75,9 @@ namespace ta
 
     bool isValidEmail(const string& aEmail)
     {
+        // This validation covers 99.99% cases from RFC 5322
+        // Leave the remaining 0.01% of invalid emails to be tackled by mail servers.
+
         const string myEmail = boost::trim_copy(aEmail);
 
         if (myEmail.empty())
@@ -84,7 +87,9 @@ namespace ta
 
         try
         {
-            const boost::regex myRegEx("([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})");
+            static const string myEmailPartRegexStr = str(boost::format("[a-zA-Z0-9%1%]+(\\.[a-zA-Z0-9%1%]+)*") % regexEscapeStr("!#$%&'*+/=?^_`{|}~-"));
+            static const string myDomainPartRegexStr = "((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})";
+            const boost::regex myRegEx(myEmailPartRegexStr + "@" + myDomainPartRegexStr);
             return regex_match(myEmail, myRegEx);
         }
         catch (std::exception&)
@@ -221,6 +226,11 @@ namespace ta
                 myEscapedStr += str(boost::format("\\%c") % c);
         }
         return myEscapedStr;
+    }
+
+    string shellEscapeStr(const string& anStr)
+    {
+        return "'" + boost::replace_all_copy(anStr, "'", "'\\''") + "'";
     }
 
     string genUuid()

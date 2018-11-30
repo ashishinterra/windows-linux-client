@@ -32,7 +32,7 @@ public:
 
 	void test_tpm_vsc_has_smartcard()
 	{
-		if (getOsVersion() == 10)
+		if (getOsVersion() == 10) // Windows 10
 		{
 			TS_TRACE("Testing has Smart card");
 			TS_ASSERT(ta::WinSmartCardUtil::hasSmartCard());
@@ -45,13 +45,16 @@ public:
 
 	void test_request_csr()
 	{
-		if (getOsVersion() == 10)
+		if (getOsVersion() == 10) // Windows 10
 		{
+			// given
 			unsigned int unusedExitCode = 0; // Ignore exit code
 			ta::Process::shellExecAsync(enterPinPath, unusedExitCode);
-
-			std::string result = ta::WinSmartCardUtil::requestCsr("DemoUser", "NL", "NB", "Eindhoven", "KeyTalk", "KeyTalk", "test@keytalk.com", 2048);
-			TS_ASSERT(ta::CertUtils::isValidCsr(result));
+			// when
+			const std::string csr = ta::WinSmartCardUtil::requestCsr("DemoUser", "NL", "NB", "Eindhoven", "KeyTalk", "KeyTalk", "test@keytalk.com", 2048);
+			// then
+			TS_ASSERT_EQUALS(ta::CertUtils::parseSignedCSR(csr).subject,
+				             ta::CertUtils::Subject("DemoUser", "NL", "NB", "Eindhoven", "KeyTalk", "KeyTalk", "test@keytalk.com"));
 		}
 		else
 		{
@@ -61,7 +64,7 @@ public:
 
 	void test_request_csr_with_incorrect_key_size()
 	{
-		if (getOsVersion() == 10)
+		if (getOsVersion() == 10) // Windows 10
 		{
 			TS_ASSERT_THROWS(ta::WinSmartCardUtil::requestCsr("DemoUser", "NL", "NB", "Eindhoven", "KeyTalk", "KeyTalk", "test@keytalk.com", 1024), std::exception);
 		}

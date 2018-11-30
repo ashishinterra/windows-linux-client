@@ -1135,13 +1135,13 @@ public:
         TS_ASSERT_EQUALS(parseKeyUsages(myKUStrs), myKUs);
     }
 
-    void testIsValidCsr()
+    void test_validate_csr()
     {
-        using namespace ta::CertUtils;
         const std::string myCsr = ta::readData("CA/csr_test.pem");
         const std::string myPem = ta::readData("CA/cert.pem");
-        TS_ASSERT(ta::CertUtils::isValidCsr(myCsr));
-        TS_ASSERT(!ta::CertUtils::isValidCsr(myPem));
+
+        TS_ASSERT_THROWS_NOTHING(ta::CertUtils::parseSignedCSR(myCsr));
+        TS_ASSERT_THROWS(ta::CertUtils::parseSignedCSR(myPem), std::exception);
     }
 
     void testCreateCSR()
@@ -1166,7 +1166,6 @@ public:
                 // then
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                TS_ASSERT(isValidCsr(myCsrPem));
                 const CsrInfo myCsrInfo = parseSignedCSR(myCsrPem);
                 TS_ASSERT_EQUALS(myCsrInfo.subject, mySubj);
                 TS_ASSERT_EQUALS(myCsrInfo.signatureAlgorithm.nid, ta::SignUtils::digest2Nid(mySigningAlgorithm));
@@ -1196,7 +1195,6 @@ public:
                 // then
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                TS_ASSERT(isValidCsr(myCsrPem));
                 const CsrInfo myCsrInfo = parseSignedCSR(myCsrPem);
                 TS_ASSERT_EQUALS(myCsrInfo.subject, mySubj);
                 TS_ASSERT_EQUALS(myCsrInfo.signatureAlgorithm.nid, ta::SignUtils::digest2Nid(mySigningAlgorithm));
@@ -1226,7 +1224,6 @@ public:
                 // then
                 TS_ASSERT(myCsr);
                 const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                TS_ASSERT(isValidCsr(myCsrPem));
                 const CsrInfo myCsrInfo = parseSignedCSR(myCsrPem);
                 TS_ASSERT_EQUALS(myCsrInfo.subject, mySubj);
                 TS_ASSERT_EQUALS(myCsrInfo.signatureAlgorithm.nid, ta::SignUtils::digest2Nid(mySigningAlgorithm));
@@ -1249,9 +1246,6 @@ public:
                                          X509_REQ_free);
                 // then
                 TS_ASSERT(myCsr);
-                const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                TS_ASSERT(!isValidCsr(myCsrPem));
-                TS_ASSERT_THROWS(parseSignedCSR(myCsrPem), std::exception);
             }
             {
                 TS_TRACE(str(boost::format("Create non-signed CSR with %d bit key") % keyBits).c_str());
@@ -1261,9 +1255,6 @@ public:
                                          X509_REQ_free);
                 // then
                 TS_ASSERT(myCsr);
-                const std::string myCsrPem = convX509_REQ_2Pem(myCsr);
-                TS_ASSERT(!isValidCsr(myCsrPem));
-                TS_ASSERT_THROWS(parseSignedCSR(myCsrPem), std::exception);
             }
         }
 
@@ -1334,14 +1325,20 @@ public:
         using std::string;
 
         {
-            const string myCertBufCorrect = ta::readData("CA/smime_cert_possibly_correct.pem");
-            TS_ASSERT(ta::CertUtils::isSmimeCert(myCertBufCorrect));
+            const string myCert = ta::readData("CA/smime_cert_possibly_correct.pem");
+            TS_ASSERT(ta::CertUtils::isSmimeCert(myCert));
+            TS_ASSERT(ta::CertUtils::isSmimeCertForEmail(myCert, "key@talk.co"));
+            string myReasonWhenNotSmimeCert;
+            TS_ASSERT(!ta::CertUtils::isSmimeCertForEmail(myCert, "other@talk.co", &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
         }
 
         {
             // Test no pub key
-            const string myCertBufNoPub = ta::readData("CA/smime_cert_no_pub.pem");
-            TS_ASSERT_THROWS(ta::CertUtils::isSmimeCert(myCertBufNoPub), std::exception);
+            const string myCertNoPub = ta::readData("CA/smime_cert_no_pub.pem");
+            TS_ASSERT_THROWS(ta::CertUtils::isSmimeCert(myCertNoPub), std::exception);
+            TS_ASSERT_THROWS(ta::CertUtils::isSmimeCertForEmail(myCertNoPub, "key@talk.co"), std::exception);
+
         }
 
         {
@@ -1349,6 +1346,9 @@ public:
             string myReasonWhenNotSmimeCert;
             const string myCert = ta::readData("CA/smime_cert_no_email.pem");
             TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+            myReasonWhenNotSmimeCert = "";
+            TS_ASSERT(!ta::CertUtils::isSmimeCertForEmail(myCert, "key@talk.co", &myReasonWhenNotSmimeCert));
             TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
         }
 
@@ -1358,6 +1358,9 @@ public:
             const string myCert = ta::readData("CA/smime_cert_globalsign_no_san.pem");
             TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
             TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+            myReasonWhenNotSmimeCert = "";
+            TS_ASSERT(!ta::CertUtils::isSmimeCertForEmail(myCert, "key@talk.co", &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
         }
 
         {
@@ -1366,6 +1369,9 @@ public:
             const string myCert = ta::readData("CA/smime_cert_no_keyusage.pem");
             TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
             TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+            myReasonWhenNotSmimeCert = "";
+            TS_ASSERT(!ta::CertUtils::isSmimeCertForEmail(myCert, "key@talk.co", &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
         }
 
         {
@@ -1373,6 +1379,9 @@ public:
             string myReasonWhenNotSmimeCert;
             const string myCert = ta::readData("CA/smime_cert_no_extendedkeyusage.pem");
             TS_ASSERT(!ta::CertUtils::isSmimeCert(myCert, &myReasonWhenNotSmimeCert));
+            TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
+            myReasonWhenNotSmimeCert = "";
+            TS_ASSERT(!ta::CertUtils::isSmimeCertForEmail(myCert, "key@talk.co", &myReasonWhenNotSmimeCert));
             TS_ASSERT(!myReasonWhenNotSmimeCert.empty());
         }
     }

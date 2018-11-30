@@ -296,17 +296,23 @@ namespace ta
                 TA_THROW_MSG(std::invalid_argument, boost::format("Signature algorithm not supported for signature algorithm: %s") % str(aSigningAlg));
                 break;
             }
-            CRYPT_OBJID_BLOB Parameters = {};
-            mySigAlg.Parameters = Parameters;
+            CRYPT_OBJID_BLOB params = {};
+            mySigAlg.Parameters = params;
 
             const string myCsr = doCryptSignAndEncodeCertificate(myCryptProv, myCertReqInfo, mySigAlg);
-            if (!ta::CertUtils::isValidCsr(myCsr))
+
+            ta::CertUtils::CsrInfo myCsrInfo;
+            try
             {
-                TA_THROW_MSG(std::runtime_error, boost::format("Invalid CSR generated with CSR: %s") % myCsr);
+                myCsrInfo = ta::CertUtils::parseSignedCSR(myCsr);
             }
-            if (ta::CertUtils::parseSignedCSR(myCsr).pubKeyBits != aKeySize)
+            catch (std::exception& e)
             {
-                TA_THROW_MSG(std::runtime_error, boost::format("Invalid KeySize for CSR. Expected keySize %d, got %d") % aKeySize % ta::CertUtils::parseSignedCSR(myCsr).pubKeyBits);
+                TA_THROW_MSG(std::runtime_error, boost::format("Cannot parse CSR created by the Smart Card. %s. CSR: %s") % e.what() % myCsr);
+            }
+            if (myCsrInfo.pubKeyBits != aKeySize)
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Invalid key size in the CSR created by the SmartCard. Actual %d bit, expected %d bit") % myCsrInfo.pubKeyBits % aKeySize);
             }
             return myCsr;
         } // End of requestCsr

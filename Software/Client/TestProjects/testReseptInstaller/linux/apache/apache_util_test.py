@@ -9,6 +9,7 @@ import shutil
 
 sys.path.insert(0, '/usr/local/bin/keytalk')
 import apache_util
+import util
 
 
 class TestApacheUtil(unittest.TestCase):
@@ -38,16 +39,16 @@ class TestApacheUtil(unittest.TestCase):
         apache_config = "\n".join(
             [
                 "<IfModule mod_ssl.c>",
-                "	<VirtualHost _default_:3003>",
+                "   <VirtualHost _default_:3003>",
                 "      ServerName a.example.com",
-                "		DocumentRoot /var/www/html",
-                "		ErrorLog ${APACHE_LOG_DIR}/error.log",
-                "		CustomLog ${APACHE_LOG_DIR}/access.log combined",
-                "		SSLEngine on",
-                "		SSLCertificateFile	/etc/ssl/certs/keytalk-test-3000-ssl.pem",
-                "		SSLCertificateKeyFile /etc/ssl/private/keytalk-test-3000-ssl.key",
+                "       DocumentRoot /var/www/html",
+                "       ErrorLog ${APACHE_LOG_DIR}/error.log",
+                "       CustomLog ${APACHE_LOG_DIR}/access.log combined",
+                "       SSLEngine on",
+                "       SSLCertificateFile  /etc/ssl/certs/keytalk-test-3000-ssl.pem",
+                "       SSLCertificateKeyFile /etc/ssl/private/keytalk-test-3000-ssl.key",
                 "        # note: SSLCertificateChainFile became obsolete with Apache-2.4.8 in favor of SSLCertificateFile",
-                "	</VirtualHost>",
+                "   </VirtualHost>",
                 "</IfModule>"])
 
         conf = apache_util.parse_apache_config(apache_config, '<test content>')
@@ -74,26 +75,26 @@ class TestApacheUtil(unittest.TestCase):
         apache_config = "\n".join(
             [
                 "<IfModule mod_ssl.c>",
-                "	<VirtualHost _default_:3003>",
+                "   <VirtualHost _default_:3003>",
                 "      ServerName a.example.com",
-                "		DocumentRoot /var/www/html",
-                "		ErrorLog ${APACHE_LOG_DIR}/error.log",
-                "		CustomLog ${APACHE_LOG_DIR}/access.log combined",
-                "		SSLEngine on",
-                "		SSLCertificateFile	/etc/ssl/certs/keytalk-test-3003-ssl-a.example.com.pem",
-                "		SSLCertificateKeyFile /etc/ssl/private/keytalk-test-3003-ssl-a.example.com.key",
+                "       DocumentRoot /var/www/html",
+                "       ErrorLog ${APACHE_LOG_DIR}/error.log",
+                "       CustomLog ${APACHE_LOG_DIR}/access.log combined",
+                "       SSLEngine on",
+                "       SSLCertificateFile  /etc/ssl/certs/keytalk-test-3003-ssl-a.example.com.pem",
+                "       SSLCertificateKeyFile /etc/ssl/private/keytalk-test-3003-ssl-a.example.com.key",
                 "        # note: SSLCertificateChainFile became obsolete with Apache-2.4.8 in favor of SSLCertificateFile",
-                "	</VirtualHost>",
-                "	<VirtualHost _default_:3004>",
+                "   </VirtualHost>",
+                "   <VirtualHost _default_:3004>",
                 "        ServerName b.example.com",
-                "		DocumentRoot /var/www/html",
-                "		ErrorLog ${APACHE_LOG_DIR}/error.log",
-                "		CustomLog ${APACHE_LOG_DIR}/access.log combined",
-                "		SSLEngine on",
-                "		SSLCertificateFile	/etc/ssl/certs/keytalk-test-3004-ssl-b.example.com.pem",
-                "		SSLCertificateKeyFile /etc/ssl/private/keytalk-test-3004-ssl-b.example.com.key",
+                "       DocumentRoot /var/www/html",
+                "       ErrorLog ${APACHE_LOG_DIR}/error.log",
+                "       CustomLog ${APACHE_LOG_DIR}/access.log combined",
+                "       SSLEngine on",
+                "       SSLCertificateFile  /etc/ssl/certs/keytalk-test-3004-ssl-b.example.com.pem",
+                "       SSLCertificateKeyFile /etc/ssl/private/keytalk-test-3004-ssl-b.example.com.key",
                 "        # note: SSLCertificateChainFile became obsolete with Apache-2.4.8 in favor of SSLCertificateFile",
-                "	</VirtualHost>",
+                "   </VirtualHost>",
                 "</IfModule>"])
 
         conf = apache_util.parse_apache_config(apache_config, '<test content>')
@@ -134,39 +135,63 @@ class TestApacheUtil(unittest.TestCase):
         self.assertEqual([int(s.text) for s in conf.xpath(
             'IfModule/VirtualHost[ServerName/text()="b.example.com"]/ServerName/EndLine')], [13])
 
-    def test_get_enabled_apache_config_files(self):
-        expected_enabled_apache_config_files = [
-            '/etc/apache2/sites-enabled/keytalk-test-3000-ssl.conf',
-            '/etc/apache2/sites-enabled/keytalk-test-3001-ssl.conf',
-            '/etc/apache2/sites-enabled/keytalk-test-3002-ssl.conf',
-            '/etc/apache2/sites-enabled/keytalk-test-3003-a.example.com-ssl.conf',
-            '/etc/apache2/sites-enabled/keytalk-test-3003-b.example.com-ssl.conf']
-        self.assertEqual(
-            apache_util.get_enabled_apache_config_files(),
-            expected_enabled_apache_config_files)
-
     def test_get_available_apache_config_files(self):
-        import os
-        if os.system('apache2 -v | grep -q "Server version: Apache/2.2"') == 0:
-            # lagacy Apache v2.2
-            expected_available_apache_config_files = [
-                '/etc/apache2/sites-available/default',
-                '/etc/apache2/sites-available/default-ssl']
-        else:
-            # (presumably) modern Apache 2.4+
-            expected_available_apache_config_files = [
-                '/etc/apache2/sites-available/000-default.conf',
-                '/etc/apache2/sites-available/default-ssl.conf']
+        if util.has_executable('apache2'):
+            import os
+            if os.system('apache2 -v | grep -q "Server version: Apache/2.2"') == 0:
+                # legacy Apache v2.2
+                expected_available_apache_config_files = [
+                    '/etc/apache2/sites-available/default',
+                    '/etc/apache2/sites-available/default-ssl']
+            else:
+                # (presumably) modern Apache 2.4+
+                expected_available_apache_config_files = [
+                    '/etc/apache2/sites-available/000-default.conf',
+                    '/etc/apache2/sites-available/default-ssl.conf']
 
-        expected_available_apache_config_files += [
-            '/etc/apache2/sites-available/keytalk-test-3000-ssl.conf',
-            '/etc/apache2/sites-available/keytalk-test-3001-ssl.conf',
-            '/etc/apache2/sites-available/keytalk-test-3002-ssl.conf',
-            '/etc/apache2/sites-available/keytalk-test-3003-a.example.com-ssl.conf',
-            '/etc/apache2/sites-available/keytalk-test-3003-b.example.com-ssl.conf']
+            expected_available_apache_config_files += [
+                '/etc/apache2/sites-available/keytalk-test-3000-ssl.conf',
+                '/etc/apache2/sites-available/keytalk-test-3001-ssl.conf',
+                '/etc/apache2/sites-available/keytalk-test-3002-ssl.conf',
+                '/etc/apache2/sites-available/keytalk-test-3003-a.example.com-ssl.conf',
+                '/etc/apache2/sites-available/keytalk-test-3003-b.example.com-ssl.conf']
+
+        elif util.has_executable('httpd'):
+            expected_available_apache_config_files = [
+                '/etc/httpd/conf.d/keytalk-test-3000-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3001-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3002-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3003-a.example.com-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3003-b.example.com-ssl.conf']
+
+        else:
+            self.fail("No Apache installation detected")
+
         self.assertEqual(
             apache_util.get_available_apache_config_files(),
             expected_available_apache_config_files)
+
+    def test_get_enabled_apache_config_files(self):
+        if util.has_executable('apache2'):
+            expected_enabled_apache_config_files = [
+                '/etc/apache2/sites-enabled/keytalk-test-3000-ssl.conf',
+                '/etc/apache2/sites-enabled/keytalk-test-3001-ssl.conf',
+                '/etc/apache2/sites-enabled/keytalk-test-3002-ssl.conf',
+                '/etc/apache2/sites-enabled/keytalk-test-3003-a.example.com-ssl.conf',
+                '/etc/apache2/sites-enabled/keytalk-test-3003-b.example.com-ssl.conf']
+        elif util.has_executable('httpd'):
+            expected_enabled_apache_config_files = [
+                '/etc/httpd/conf.d/keytalk-test-3000-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3001-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3002-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3003-a.example.com-ssl.conf',
+                '/etc/httpd/conf.d/keytalk-test-3003-b.example.com-ssl.conf']
+        else:
+            self.fail("No Apache installation detected")
+
+        self.assertEqual(
+            apache_util.get_enabled_apache_config_files(),
+            expected_enabled_apache_config_files)
 
     def test_get_apache_vhost_directive(self):
         conf_files = glob.glob('./keytalk-test-*.conf')

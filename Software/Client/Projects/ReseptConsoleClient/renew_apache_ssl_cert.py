@@ -45,7 +45,7 @@ def is_cert_renewal_needed(site):
     if (not os.path.isfile(apache_util.get_apache_ssl_cert_path(vhost, server_name))) or (
             not os.path.isfile(apache_util.get_apache_ssl_key_path(vhost, server_name))):
         Logger.info(
-            "Certificate for {} {} does not exist and needs renewal".format(
+            "Certificate for {0} {1} does not exist and needs renewal".format(
                 vhost, server_name or ''))
         return True
 
@@ -54,25 +54,28 @@ def is_cert_renewal_needed(site):
         pem_cert = ssl.get_server_certificate((host, port))
     except socket.error as e:
         raise Exception(
-            'Could not retrieve server certificate from "{}:{}": {}'.format(host, port, e))
+            'Could not retrieve server certificate from "{0}:{1}": {2}'.format(host, port, e))
 
     # Check whether the cert is expired
     cert_expired, cert_expiration_utc = util.is_cert_expired(
         pem_cert, vhost, site['KeyTalkProvider'], site['KeyTalkService'], Logger)
     if cert_expired:
-        Logger.info("Certificate for {} {} effectively expires at {} UTC and needs renewal".format(
-            vhost, server_name or '', cert_expiration_utc))
+        Logger.info(
+            "Certificate for {0} {1} effectively expires at {2} UTC and needs renewal".format(
+                vhost,
+                server_name or '',
+                cert_expiration_utc))
         return True
 
     # Check whether the cert is revoked
     if util.is_cert_revoked(pem_cert, Logger):
-        Logger.info("Certificate for {} {} has been revoked and needs renewal".format(
+        Logger.info("Certificate for {0} {1} has been revoked and needs renewal".format(
             vhost, server_name or ''))
         return True
 
     # The cert doesn't need renewal
     Logger.info(
-        "Certificate for {} {} effectively expires at {} UTC and does not require renewal (run with {} to renew anyway)".format(
+        "Certificate for {0} {1} effectively expires at {2} UTC and does not require renewal (run with {3} to renew anyway)".format(
             vhost,
             server_name or '',
             cert_expiration_utc,
@@ -96,21 +99,21 @@ def get_cert(site):
     except util.CmdFailedException as ex:
         if ex.retval == util.AUTH_DELAY:
             raise Exception(
-                'Authentication to service "{}" of provider "{}" unsuccessful. Invalid credentials, delay before reattempt possible, message: "{}" "{}"'.format(
+                'Authentication to service "{0}" of provider "{1}" unsuccessful. Invalid credentials, delay before reattempt possible, message: "{2}" "{3}"'.format(
                     site['KeyTalkService'],
                     site['KeyTalkProvider'],
                     ex.stderr,
                     ex.stdout))
         elif ex.retval == util.AUTH_USER_LOCKED:
             raise Exception(
-                'Authentication to service "{}" of provider "{}" unsuccessful. User locked out, message: "{}" "{}"'.format(
+                'Authentication to service "{0}" of provider "{1}" unsuccessful. User locked out, message: "{2}" "{3}"'.format(
                     site['KeyTalkService'],
                     site['KeyTalkProvider'],
                     ex.stderr,
                     ex.stdout))
         elif ex.retval == util.PASSWD_EXPIRED:
             raise Exception(
-                'Authentication to service "{}" of provider "{}" unsuccessful. Password expired, message: "{}" "{}"'.format(
+                'Authentication to service "{0}" of provider "{1}" unsuccessful. Password expired, message: "{2}" "{3}"'.format(
                     site['KeyTalkService'],
                     site['KeyTalkProvider'],
                     ex.stderr,
@@ -133,7 +136,7 @@ def reload_apache():
                 raise
         util.run_cmd('service apache2 reload', Logger)
 
-    if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
+    elif OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
         try:
             util.run_cmd('service httpd status', Logger)
         except util.CmdFailedException as ex:
@@ -155,21 +158,21 @@ def install_apache_ssl_cert(pem_cert_key_path, site, restart_apache=False):
     certs = util.parse_certs(pem_cert_key_path, Logger)
     if not certs:
         raise Exception(
-            "No X.509 certs found in {} received by KeyTalk client".format(pem_cert_key_path))
+            "No X.509 certs found in {0} received by KeyTalk client".format(pem_cert_key_path))
     keys = util.parse_keys(pem_cert_key_path, Logger)
     if not keys:
         raise Exception(
-            "No X.509 keys found in {} received by KeyTalk client".format(pem_cert_key_path))
+            "No X.509 keys found in {0} received by KeyTalk client".format(pem_cert_key_path))
     cas = util.parse_cas(Logger)
 
     if util.same_file(ssl_cert_path, ssl_key_path):
         Logger.debug(
-            "Saving SSL certificate with key and {} CAs to {}".format(
+            "Saving SSL certificate with key and {0} CAs to {1}".format(
                 len(cas), ssl_cert_path))
         util.save_to_file('\n'.join(certs + keys + cas), ssl_cert_path)
     else:
         Logger.debug(
-            "Saving SSL certificates (serial: {}) and {} CAs to {}".format(
+            "Saving SSL certificates (serial: {0}) and {1} CAs to {2}".format(
                 OpenSSL.crypto.load_certificate(
                     OpenSSL.crypto.FILETYPE_PEM,
                     certs[0]).get_serial_number(),
@@ -187,8 +190,8 @@ def install_apache_ssl_cert(pem_cert_key_path, site, restart_apache=False):
 def update_apache_config(site):
     vhost = site['VHost']
     server_name = site['ServerName']
-    Logger.info('Updating Apache configuration for virtual host at {}{}'.format(
-        vhost, ', {}'.format(server_name) if server_name else ''))
+    Logger.info('Updating Apache configuration for virtual host at {0}{1}'.format(
+        vhost, ', {0}'.format(server_name) if server_name else ''))
     default_cert_path = apache_util.get_apache_ssl_cert_path(vhost, server_name)
     default_key_path = apache_util.get_apache_ssl_key_path(vhost, server_name)
     current_cert_path = apache_util.get_apache_vhost_directive(
@@ -264,10 +267,10 @@ def validate_site_configuration(site, valid_vhosts):
         if vhost not in valid_vhosts:
             if OS_NAME in ["Debian", "Ubuntu"]:
                 validation_errors.append(
-                    'Apache VHost "{}:{}" not found. Please check with "apache2ctl -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
+                    'Apache VHost "{0}:{1}" not found. Please check with "apache2ctl -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
             if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
                 validation_errors.append(
-                    'Apache VHost "{}:{}" not found. Please check with "httpd -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
+                    'Apache VHost "{0}:{1}" not found. Please check with "httpd -t -D DUMP_VHOSTS".'.format(vhost[0], vhost[1]))
 
     keytalk_provider = site['KeyTalkProvider']
     keytalk_service = site['KeyTalkService']
@@ -303,21 +306,21 @@ def email_results(site):
             LOG_FILE_PATH,
             KTCLIENT_LOG_PATH,
             CRON_LOG_FILE_PATH] if os.path.isfile(path)]
-    message += 'Server hostname: {}\r\n'.format(platform.node())
-    message += 'Apache VHost: {}\r\n'.format(site['VHost'])
-    message += 'Apache VHost ServerName: {}\r\n'.format(site['ServerName'] or '<None>')
+    message += 'Server hostname: {0}\r\n'.format(platform.node())
+    message += 'Apache VHost: {0}\r\n'.format(site['VHost'])
+    message += 'Apache VHost ServerName: {0}\r\n'.format(site['ServerName'] or '<None>')
     message += '\r\n'
     if error_messages:
-        message += '== Errors ==\r\n{}'.format('\r\n'.join(error_messages))
+        message += '== Errors ==\r\n{0}'.format('\r\n'.join(error_messages))
     if warning_messages:
         message += '\r\n\r\n'
-        message += '== Warnings ==\r\n{}'.format('\r\n'.join(warning_messages))
+        message += '== Warnings ==\r\n{0}'.format('\r\n'.join(warning_messages))
     message += '\r\n\r\nMore information can be found in the attached log file cutouts.'
     message += '\r\nFor full logs, please see the following files:\r\n\t'
     message += '\r\n\t'.join(log_files)
 
-    subject = '{}: {} (VHost {}{})'.format(
-        site['EmailSubject'], status, site['VHost'] or '<unknown>', ', {}'.format(
+    subject = '{0}: {1} (VHost {2}{3})'.format(
+        site['EmailSubject'], status, site['VHost'] or '<unknown>', ', {0}'.format(
             site['ServerName']) if site['ServerName'] else '')
     server = site['EmailServer']
     try:
@@ -336,17 +339,26 @@ def email_results(site):
             message,
             attachments)
     except Exception as e:
-        log_error('Could not send e-mail summary for VHost "{}, {}": {} {} {}'.format(site.get('VHost', '<unknown>'),
-                                                                                      site.get(
-                                                                                          'ServerName', ''),
-                                                                                      type(e),
-                                                                                      e,
-                                                                                      util.format_traceback()),
-                  'Could not send e-mail summary for VHost "{}, {}": {} {}'.format(site.get('VHost', '<unknown>'),
-                                                                                   site.get(
-                                                                                       'ServerName', ''),
-                                                                                   type(e),
-                                                                                   e))
+        log_error(
+            'Could not send e-mail summary for VHost "{0}, {1}": {2} {3} {4}'.format(
+                site.get(
+                    'VHost',
+                    '<unknown>'),
+                site.get(
+                    'ServerName',
+                    ''),
+                type(e),
+                e,
+                util.format_traceback()),
+            'Could not send e-mail summary for VHost "{0}, {1}": {2} {3}'.format(
+                site.get(
+                    'VHost',
+                    '<unknown>'),
+                site.get(
+                    'ServerName',
+                    ''),
+                type(e),
+                e))
         return False
     return True
 
@@ -379,7 +391,7 @@ def process_vhost(
                                                     current_vhost_string)
             log_error(message)
             raise Exception(
-                'Errors during validation of VHost "{}, {}".'.format(
+                'Errors during validation of VHost "{0}, {1}".'.format(
                     current_vhost_string, current_vhost_name))
 
         # Processing
@@ -394,7 +406,7 @@ def process_vhost(
                 return True
             else:
                 raise Exception(
-                    'Apache is not running, skipping certificate update for VHost {} {}.'.format(
+                    'Apache is not running, skipping certificate update for VHost {0} {1}.'.format(
                         current_vhost_string, current_vhost_name))
 
         update_apache_config(current_site)
@@ -404,13 +416,13 @@ def process_vhost(
     except Exception as e:
         # Log error, but continue processing the next VHost
         log_error(
-            'VHost "{}, {}": {} {} {}'.format(
+            'VHost "{0}, {1}": {2} {3} {4}'.format(
                 current_vhost_string,
                 current_vhost_name,
                 type(e),
                 e,
                 util.format_traceback()),
-            'VHost "{}, {}": {} {}'.format(
+            'VHost "{0}, {1}": {2} {3}'.format(
                 current_vhost_string,
                 current_vhost_name,
                 type(e),
@@ -427,7 +439,7 @@ def process_vhost(
 def main():
     try:
         if os.geteuid() != 0:
-            Logger.error('{} must be run as root.'.format(sys.argv[0]))
+            Logger.error('{0} must be run as root.'.format(sys.argv[0]))
             sys.exit(1)
 
         current_vhost_string = None
@@ -436,7 +448,7 @@ def main():
         force_renew_certs = len(sys.argv) == 2 and sys.argv[1] == force_arg
 
         Logger.debug(
-            "Starting Tomcat SSL certificate renewal script. Force renewal: {}".format(
+            "Starting Apache SSL certificate renewal script. Force renewal: {0}".format(
                 'yes' if force_renew_certs else 'no'))
 
         with open(CONFIG_FILE_PATH) as f:
@@ -445,7 +457,7 @@ def main():
                 sites = json.loads(config)
             except Exception as ex:
                 raise Exception(
-                    'Could not parse configuration file "{}": {}'.format(
+                    'Could not parse configuration file "{0}": {1}'.format(
                         CONFIG_FILE_PATH, ex))
 
         apache_vhosts = apache_util.get_apache_vhosts()
@@ -456,7 +468,7 @@ def main():
 
         for site_index, site in enumerate(sites):
             current_vhost_string = site.get(
-                'VHost', 'VHost configuration number {}'.format(
+                'VHost', 'VHost configuration number {0}'.format(
                     site_index + 1))
             current_vhost_name = site.get('ServerName', '')
             process_vhost(
@@ -471,13 +483,13 @@ def main():
 
     except Exception as e:
         log_error(
-            'VHost "{}, {}": {} {} {}'.format(
+            'VHost "{0}, {1}": {2} {3} {4}'.format(
                 current_vhost_string,
                 current_vhost_name,
                 type(e),
                 e,
                 util.format_traceback()),
-            'VHost "{}, {}": {} {}'.format(
+            'VHost "{0}, {1}": {2} {3}'.format(
                 current_vhost_string,
                 current_vhost_name,
                 type(e),

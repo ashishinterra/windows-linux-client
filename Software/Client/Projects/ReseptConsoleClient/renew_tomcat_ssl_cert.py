@@ -50,31 +50,34 @@ def is_cert_renewal_needed(site):
             pem_cert = ssl.get_server_certificate((hostname, port), ssl_version=ssl.PROTOCOL_TLSv1)
         except socket.error as e:
             raise Exception(
-                'Could not retrieve server certificate from "{}:{}": {}'.format(hostname, port, e))
+                'Could not retrieve server certificate from "{0}:{1}": {2}'.format(
+                    hostname, port, e))
     else:
         try:
             pem_cert = ssl.get_server_certificate((hostname, port))
         except socket.error as e:
             raise Exception(
-                'Could not retrieve server certificate from "{}:{}": {}'.format(hostname, port, e))
+                'Could not retrieve server certificate from "{0}:{1}": {2}'.format(
+                    hostname, port, e))
 
     # Check whether the cert is expired
     cert_expired, cert_expiration_utc = util.is_cert_expired(
         pem_cert, host, site['KeyTalkProvider'], site['KeyTalkService'], Logger)
     if cert_expired:
-        Logger.info("Certificate for {} {} effectively expires at {} UTC and needs renewal".format(
-            host, server_name or '', cert_expiration_utc))
+        Logger.info(
+            "Certificate for {0} {1} effectively expires at {2} UTC and needs renewal".format(
+                host, server_name or '', cert_expiration_utc))
         return True
 
     # Check whether the cert is revoked
     if util.is_cert_revoked(pem_cert, Logger):
-        Logger.info("Certificate for {} {} has been revoked and needs renewal".format(
+        Logger.info("Certificate for {0} {1} has been revoked and needs renewal".format(
             host, server_name or ''))
         return True
 
     # The cert doesn't need renewal
     Logger.info(
-        "Certificate for {} {} effectively expires at {} UTC and does not require renewal (run with {} to renew anyway)".format(
+        "Certificate for {0} {1} effectively expires at {2} UTC and does not require renewal (run with {3} to renew anyway)".format(
             host,
             server_name or '',
             cert_expiration_utc,
@@ -98,21 +101,21 @@ def get_cert(site):
     except tomcat_util.CmdFailedException as ex:
         if ex.retval == tomcat_util.AUTH_DELAY:
             raise Exception(
-                'Authentication to service "{}" of provider "{}" unsuccessful. Invalid credentials, delay before reattempt possible, message: "{}" "{}"'.format(
+                'Authentication to service "{0}" of provider "{1}" unsuccessful. Invalid credentials, delay before reattempt possible, message: "{2}" "{3}"'.format(
                     site['KeyTalkService'],
                     site['KeyTalkProvider'],
                     ex.stderr,
                     ex.stdout))
         elif ex.retval == tomcat_util.AUTH_USER_LOCKED:
             raise Exception(
-                'Authentication to service "{}" of provider "{}" unsuccessful. User locked out, message: "{}" "{}"'.format(
+                'Authentication to service "{0}" of provider "{1}" unsuccessful. User locked out, message: "{2}" "{3}"'.format(
                     site['KeyTalkService'],
                     site['KeyTalkProvider'],
                     ex.stderr,
                     ex.stdout))
         elif ex.retval == tomcat_util.PASSWD_EXPIRED:
             raise Exception(
-                'Authentication to service "{}" of provider "{}" unsuccessful. Password expired, message: "{}" "{}"'.format(
+                'Authentication to service "{0}" of provider "{1}" unsuccessful. Password expired, message: "{2}" "{3}"'.format(
                     site['KeyTalkService'],
                     site['KeyTalkProvider'],
                     ex.stderr,
@@ -171,10 +174,10 @@ def validate_site_configuration(site, valid_vhosts):
         if host not in valid_vhosts:
             if OS_NAME in ["Debian", "Ubuntu"]:
                 validation_errors.append(
-                    'Tomcat Host "{}:{}" not found.'.format(host[0], host[1]))
+                    'Tomcat Host "{0}:{1}" not found.'.format(host[0], host[1]))
             if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
                 validation_errors.append(
-                    'Tomcat Host "{}:{}" not found.'.format(host[0], host[1]))
+                    'Tomcat Host "{0}:{1}" not found.'.format(host[0], host[1]))
 
     keytalk_provider = site['KeyTalkProvider']
     keytalk_service = site['KeyTalkService']
@@ -215,7 +218,7 @@ def process_host(
                                                     current_host_string)
             log_error(message)
             raise Exception(
-                'Errors during validation of Host "{}, {}".'.format(
+                'Errors during validation of Host "{0}, {1}".'.format(
                     current_host_string, current_host_name))
 
         if not os.path.isfile(keystore_location) or\
@@ -223,18 +226,18 @@ def process_host(
            is_cert_renewal_needed(current_site):
             get_cert(current_site)
             util.run_cmd(
-                '/usr/local/bin/keytalk/tomcat.sh {} {}'.format(keystore_password, keystore_location), Logger)
+                '/usr/local/bin/keytalk/tomcat.sh {0} {1}'.format(keystore_password, keystore_location), Logger)
 
     except Exception as e:
         # Log error, but continue processing the next Host
         log_error(
-            'Host "{}, {}": {} {} {}'.format(
+            'Host "{0}, {1}": {2} {3} {4}'.format(
                 current_host_string,
                 current_host_name,
                 type(e),
                 e,
                 util.format_traceback()),
-            'Host "{}, {}": {} {}'.format(
+            'Host "{0}, {1}": {2} {3}'.format(
                 current_host_string,
                 current_host_name,
                 type(e),
@@ -250,7 +253,7 @@ def process_host(
 def main():
     try:
         if os.geteuid() != 0:
-            Logger.error('{} must be run as root.'.format(sys.argv[0]))
+            Logger.error('{0} must be run as root.'.format(sys.argv[0]))
             sys.exit(1)
 
         current_host_string = None
@@ -259,7 +262,7 @@ def main():
         force_renew_certs = len(sys.argv) == 2 and sys.argv[1] == force_arg
 
         Logger.debug(
-            "Starting Tomcat SSL certificate renewal script. Force renewal: {}".format(
+            "Starting Tomcat SSL certificate renewal script. Force renewal: {0}".format(
                 'yes' if force_renew_certs else 'no'))
 
         with open(CONFIG_FILE_PATH) as f:
@@ -268,12 +271,12 @@ def main():
                 sites = json.loads(config)
             except Exception as ex:
                 raise Exception(
-                    'Could not parse configuration file "{}": {}'.format(
+                    'Could not parse configuration file "{0}": {1}'.format(
                         CONFIG_FILE_PATH, ex))
 
         for site_index, site in enumerate(sites):
             current_host_string = site.get(
-                'Host', 'Host configuration number {}'.format(
+                'Host', 'Host configuration number {0}'.format(
                     site_index + 1))
             current_host_name = site.get('ServerName', '')
             keystore_password = site.get('KeystorePassword', '')
@@ -289,13 +292,13 @@ def main():
 
     except Exception as e:
         log_error(
-            'Host "{}, {}": {} {} {}'.format(
+            'Host "{0}, {1}": {2} {3} {4}'.format(
                 current_host_string,
                 current_host_name,
                 type(e),
                 e,
                 util.format_traceback()),
-            'Host "{}, {}": {} {}'.format(
+            'Host "{0}, {1}": {2} {3}'.format(
                 current_host_string,
                 current_host_name,
                 type(e),

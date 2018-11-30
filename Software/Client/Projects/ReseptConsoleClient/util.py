@@ -69,7 +69,7 @@ class CmdFailedException(Exception):
         super(
             CmdFailedException,
             self).__init__(
-            u"{} finished with code {}. Stdout: {}. Stderr: {}".format(
+            u"{0} finished with code {1}. Stdout: {2}. Stderr: {3}".format(
                 cmd,
                 retval,
                 stdout,
@@ -96,7 +96,7 @@ def _parse_log_level(aLevelNameStr):
     for lev in [logging.CRITICAL, logging.ERROR, logging.WARNING, logging.INFO, logging.DEBUG]:
         if logging.getLevelName(lev) == aLevelNameStr:
             return lev
-    raise Exception("%s is not a valid logging level" % aLevelNameStr)
+    raise Exception("{} is not a valid logging level".format(aLevelNameStr))
 
 
 def format_traceback():
@@ -128,11 +128,11 @@ def init_logger(
     myFileHandler.setFormatter(logging.Formatter('%(asctime)s <' +
                                                  str(os.getpid()) +
                                                  '> [%(levelname)s] %(funcName)s: %(message)s'))
-    myFileHandler.setLevel(aFileLogLevelStr)
+    myFileHandler.setLevel(_parse_log_level(aFileLogLevelStr))
 
     myConsoleHandler = logging.StreamHandler()
     myConsoleHandler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s'))
-    myConsoleHandler.setLevel(aConsoleLogLevelStr)
+    myConsoleHandler.setLevel(_parse_log_level(aConsoleLogLevelStr))
 
     myLogger.addHandler(myFileHandler)
     myLogger.addHandler(myConsoleHandler)
@@ -172,12 +172,12 @@ def run_cmd(cmd, logger=None, censored_text_list=None):
     try:
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except Exception as e:
-        raise Exception("Failed to execute {}. {}".format(censored_cmd, e))
+        raise Exception("Failed to execute {0}. {1}".format(censored_cmd, e))
 
     try:
         retval = p.wait()
     except Exception as e:
-        raise Exception("Failed to wait for {} finishes. {}".format(censored_cmd, e))
+        raise Exception("Failed to wait for {0} finishes. {1}".format(censored_cmd, e))
 
     stdout = p.stdout.read().decode('utf-8').strip()
     stderr = p.stderr.read().decode('utf-8').strip()
@@ -198,14 +198,14 @@ def save_to_file(data, target_file, backup=False):
     if backup and os.path.isfile(target_file):
         now = time.time()
         time_string = datetime.datetime.fromtimestamp(now).strftime('%Y%m%d-%H%M%S')
-        backup_file = '{}.orig.{}'.format(target_file, time_string)
+        backup_file = '{0}.orig.{1}'.format(target_file, time_string)
         shutil.copy(target_file, backup_file)
 
         # Remove old backup files (only keep max_backup_count)
         max_backup_count = 10
         backup_files = sorted(
             glob.glob(
-                '{}.orig.*'.format(target_file)),
+                '{0}.orig.*'.format(target_file)),
             key=lambda x: time.ctime(
                 os.path.getctime(x)))
         old_files = backup_files[:-max_backup_count]
@@ -216,12 +216,12 @@ def save_to_file(data, target_file, backup=False):
 
 
 def get_keytalk_providers(logger=None):
-    stdout = run_cmd("{} provider list".format(KT_CONFIG_TOOL_PATH), logger)
+    stdout = run_cmd("{0} provider list".format(KT_CONFIG_TOOL_PATH), logger)
     return [provider.strip() for provider in stdout.splitlines() if provider.strip() != '']
 
 
 def get_keytalk_services(provider, logger=None):
-    stdout = run_cmd('{} service list "{}"'.format(KT_CONFIG_TOOL_PATH, provider), logger)
+    stdout = run_cmd('{0} service list "{1}"'.format(KT_CONFIG_TOOL_PATH, provider), logger)
     return [provider.strip() for provider in stdout.splitlines() if provider.strip() != '']
 
 
@@ -235,11 +235,11 @@ def parse_certs(pem_file, logger=None):
                 pem,
                 re.DOTALL)
             if logger:
-                logger.debug("{} certificates found in {}".format(len(certs), pem_file))
+                logger.debug("{0} certificates found in {1}".format(len(certs), pem_file))
             return [cert.strip() for cert in certs]
     except Exception:
         if logger:
-            logger.debug("No certificates found in {}".format(pem_file))
+            logger.debug("No certificates found in {0}".format(pem_file))
         return []
 
 
@@ -254,11 +254,11 @@ def parse_keys(pem_file, logger=None):
                     pem,
                     re.DOTALL)]
             if logger:
-                logger.debug("{} keys found in {}".format(len(keys), pem_file))
+                logger.debug("{0} keys found in {1}".format(len(keys), pem_file))
             return [key.strip() for key in keys]
     except Exception:
         if logger:
-            logger.debug("No keys found in {}".format(pem_file))
+            logger.debug("No keys found in {0}".format(pem_file))
         return []
 
 
@@ -299,7 +299,7 @@ def same_file(path1, path2):
 
 def get_cert_validity_percentage(provider, service, logger=None):
     stdout = run_cmd(
-        "{} service getparam {} {} CertValidPercent".format(
+        "{0} service getparam {1} {2} CertValidPercent".format(
             KT_CONFIG_TOOL_PATH,
             provider,
             service),
@@ -313,11 +313,21 @@ def is_cert_revoked(pem_cert, logger):
         pem_cert_path = os.path.join(temp_dir, "ssl.pem")
         write_file(pem_cert_path, pem_cert)
         stdout = run_cmd(
-            "{} cert is-revoked {}".format(KT_CONFIG_TOOL_PATH, pem_cert_path), logger)
+            "{0} cert is-revoked {1}".format(KT_CONFIG_TOOL_PATH, pem_cert_path), logger)
         return stdout == "revoked"
     finally:
         if temp_dir is not None:
             shutil.rmtree(temp_dir)
+
+
+def _cert_duration_seconds(not_after, not_before):
+    cert_duration = not_after - not_before
+    try:
+        return cert_duration.total_seconds()
+    except AttributeError:
+        # python prior to 2.7
+        return float(cert_duration.microseconds + (cert_duration.seconds + \
+                     cert_duration.days * 24 * 3600) * 10**6) / float(10**6)
 
 
 def is_cert_expired(pem_cert, vhost, provider, service, logger):
@@ -326,12 +336,11 @@ def is_cert_expired(pem_cert, vhost, provider, service, logger):
     not_before = datetime.datetime.strptime(x509.get_notBefore(), "%Y%m%d%H%M%SZ")
     not_after = datetime.datetime.strptime(x509.get_notAfter(), "%Y%m%d%H%M%SZ")
     logger.debug(
-        "Certificate validity for {} : {} UTC -> {} UTC".format(vhost, not_before, not_after))
+        "Certificate validity for {0} : {1} UTC -> {2} UTC".format(vhost, not_before, not_after))
 
-    cert_duration = not_after - not_before
     cert_valididy_percentage = get_cert_validity_percentage(provider, service, logger)
     cert_validity_margin_seconds = int(
-        (float(cert_valididy_percentage) / 100) * (cert_duration.total_seconds()))
+        (float(cert_valididy_percentage) / 100) * _cert_duration_seconds(not_after, not_before))
     cert_expiration_utc = not_after - datetime.timedelta(seconds=cert_validity_margin_seconds)
 
     cert_expired = cert_expiration_utc <= datetime.datetime.utcnow()
@@ -369,7 +378,7 @@ def send_email(smtp_server_addr, sender, recipients, subject, message, attachmen
         server.sendmail(sender, recipients, msg.as_string())
     except smtplib.SMTPException as ex:
         raise Exception(
-            'Could not send email to "{}" via SMTP server "{}": {}'.format(
+            'Could not send email to "{0}" via SMTP server "{1}": {2}'.format(
                 recipients, smtp_server_addr, ex))
     finally:
         server.quit()
@@ -410,7 +419,7 @@ def validate_unknown_settings(settings, scheme):
     for setting in settings.keys():
         if setting not in known_settings:
             validation_errors.append(
-                'Unknown setting "{}" encountered". Known settings: {}'.format(
+                'Unknown setting "{0}" encountered". Known settings: {1}'.format(
                     setting, known_settings))
     return validation_errors
 
@@ -471,22 +480,22 @@ def validate_setting_dependencies(settings, scheme):
             if setting_name in settings and settings[
                     setting_name] is not None and not dependency_met:
                 validation_errors.append(
-                    'Setting "{}" is required when using "{}".'.format(
+                    'Setting "{0}" is required when using "{1}".'.format(
                         dependency, setting_name))
 
         if props['required'] and (setting_name not in settings or settings[setting_name] is None):
             if not props['dependencies']:
-                validation_errors.append('Required setting "{}" not found.'.format(setting_name))
+                validation_errors.append('Required setting "{0}" not found.'.format(setting_name))
             elif props['dependencies'] and dependencies_met:
                 validation_errors.append(
-                    'The current configuration requires setting "{}".'.format(setting_name))
+                    'The current configuration requires setting "{0}".'.format(setting_name))
 
     return validation_errors
 
 
 def has_executable(executable_name):
     try:
-        run_cmd('which {}'.format(pipes.quote(executable_name)))
+        run_cmd('which {0}'.format(pipes.quote(executable_name)))
     except Exception:
         return False
 

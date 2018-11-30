@@ -298,6 +298,17 @@ function copy_keytalk_logs_to()
     fi
 }
 
+# usage: configure_apache $site_config_path
+function create_apache_ssl_cert_key()
+{
+    local site_config_path="$1"
+
+    local certs_file_path=$(grep -E '^\s+SSLCertificateFile\s+' ${site_config_path} | awk '{print $2}')
+    local key_file_path=$(grep -E '^\s+SSLCertificateKeyFile\s+' ${site_config_path} | awk '{print $2}')
+    cat apache/localhost-ssl-cert/cert.pem apache/localhost-ssl-cert/cas.pem > ${certs_file_path}
+    cp -f apache/localhost-ssl-cert/key.pem ${key_file_path}
+}
+
 # usage: configure_apache $cas-dir
 function configure_apache()
 {
@@ -305,6 +316,8 @@ function configure_apache()
 
     local cas_dir="$1"
 
+    cp apache/apache.ini /etc/keytalk/
+    cat ${cas_dir}/signingcacert.pem ${cas_dir}/pcacert.pem > apache/localhost-ssl-cert/cas.pem
 
     if ! grep -q a.example.com /etc/hosts; then
         echo "127.0.0.1 a.example.com" >> /etc/hosts
@@ -312,49 +325,118 @@ function configure_apache()
     if ! grep -q b.example.com /etc/hosts; then
         echo "127.0.0.1 b.example.com" >> /etc/hosts
     fi
-    if ! grep -q "NameVirtualHost \*:3003" /etc/apache2/apache2.conf; then
-        echo "NameVirtualHost *:3003" >> /etc/apache2/apache2.conf
-    fi
 
-    cp apache/apache.ini /etc/keytalk/
-    cat ${cas_dir}/signingcacert.pem ${cas_dir}/pcacert.pem > apache/localhost-ssl-cert/cas.pem
+    if which apache2 > /dev/null 2>&1 ; then
+        # Apache2
 
-    # ignore non-existing sites
-    a2dissite default 000-default default-ssl || true > /dev/null
+        if ! grep -q "NameVirtualHost \*:3003" /etc/apache2/apache2.conf; then
+            echo "NameVirtualHost *:3003" >> /etc/apache2/apache2.conf
+        fi
 
-    local newline=$'\n'
-    local ports_conf="<IfModule ssl_module>"
-    for port in 3000 3001 3002 ; do
-        ports_conf+="${newline}Listen ${port}"
-        local site_config_path=/etc/apache2/sites-available/keytalk-test-${port}-ssl.conf
-        sed -E "s/\{\{LISTEN_PORT\}\}/${port}/" apache/ssl.conf.templ > ${site_config_path}
-        sed -i -E "s/\{\{SERVER_NAME_DIRECTIVE\}\}//" ${site_config_path}
-        sed -i -E "s/\{\{DASH_SERVER_NAME\}\}//" ${site_config_path}
-        a2ensite keytalk-test-${port}-ssl.conf > /dev/null
-        local certs_file_path=$(grep -E '^\s+SSLCertificateFile\s+' ${site_config_path} | awk '{print $2}')
-        local key_file_path=$(grep -E '^\s+SSLCertificateKeyFile\s+' ${site_config_path} | awk '{print $2}')
-        cat apache/localhost-ssl-cert/cert.pem apache/localhost-ssl-cert/cas.pem > ${certs_file_path}
-        cp -f apache/localhost-ssl-cert/key.pem ${key_file_path}
-    done
-    ports_conf+="${newline}Listen 3003"
-    ports_conf+="${newline}</IfModule>"
-    echo "${ports_conf}" > /etc/apache2/ports.conf
 
-    for server_name in "a.example.com" "b.example.com" ; do
-        local site_config_path=/etc/apache2/sites-available/keytalk-test-3003-${server_name}-ssl.conf
-        sed -E "s/\{\{LISTEN_PORT\}\}/3003/" apache/ssl.conf.templ > ${site_config_path}
-        sed -i -E "s/\{\{SERVER_NAME_DIRECTIVE\}\}/ServerName $server_name/" ${site_config_path}
-        sed -i -E "s/\{\{DASH_SERVER_NAME\}\}/-$server_name/" ${site_config_path}
-        a2ensite keytalk-test-3003-${server_name}-ssl.conf > /dev/null
-        local certs_file_path=$(grep -E '^\s+SSLCertificateFile\s+' ${site_config_path} | awk '{print $2}')
-        local key_file_path=$(grep -E '^\s+SSLCertificateKeyFile\s+' ${site_config_path} | awk '{print $2}')
-        cat apache/localhost-ssl-cert/cert.pem apache/localhost-ssl-cert/cas.pem > ${certs_file_path}
-        cp -f apache/localhost-ssl-cert/key.pem ${key_file_path}
-    done
+        # disable sites we don't need
+        a2dissite default 000-default default-ssl || true > /dev/null
 
-    if ! service apache2 restart ; then
-        echo "ERROR restarting Apache. Recent apache error log:"
-        tail -n 50 /var/log/apache2/error.log
+        # setup listen ports
+        local newline=$'\n'
+        local ports_conf="<IfModule ssl_module>"
+        for port in 3000 3001 3002 3003 ; do
+            ports_conf+="${newline}Listen ${port}"
+        done
+        ports_conf+="${newline}</IfModule>"
+        echo "${ports_conf}" > /etc/apache2/ports.conf
+
+        # setup port-based virtual hosts on ports 3000, 3001 and 3002
+        for port in 3000 3001 3002 ; do
+            local site_config_path=/etc/apache2/sites-available/keytalk-test-${port}-ssl.conf
+            sed -E "s/\{\{LISTEN_PORT\}\}/${port}/" apache/ssl.conf.templ > ${site_config_path}
+            sed -i -E "s/\{\{SERVER_NAME_DIRECTIVE\}\}//" ${site_config_path}
+            sed -i -E "s/\{\{DASH_SERVER_NAME\}\}//" ${site_config_path}
+            sed -i -E "s/\{\{CERTS_DIR\}\}/\/etc\/ssl\/certs/" ${site_config_path}
+            sed -i -E "s/\{\{KEYS_DIR\}\}/\/etc\/ssl\/private/" ${site_config_path}
+            a2ensite keytalk-test-${port}-ssl.conf > /dev/null
+            create_apache_ssl_cert_key ${site_config_path}
+        done
+
+        # setup name-based virtual hosts on port 3003
+        for server_name in "a.example.com" "b.example.com" ; do
+            local site_config_path=/etc/apache2/sites-available/keytalk-test-3003-${server_name}-ssl.conf
+            sed -E "s/\{\{LISTEN_PORT\}\}/3003/" apache/ssl.conf.templ > ${site_config_path}
+            sed -i -E "s/\{\{SERVER_NAME_DIRECTIVE\}\}/ServerName $server_name/" ${site_config_path}
+            sed -i -E "s/\{\{DASH_SERVER_NAME\}\}/-$server_name/" ${site_config_path}
+            sed -i -E "s/\{\{CERTS_DIR\}\}/\/etc\/ssl\/certs/" ${site_config_path}
+            sed -i -E "s/\{\{KEYS_DIR\}\}/\/etc\/ssl\/private/" ${site_config_path}
+            a2ensite keytalk-test-3003-${server_name}-ssl.conf > /dev/null
+            create_apache_ssl_cert_key ${site_config_path}
+        done
+
+        # effectuate changes
+        if ! service apache2 restart ; then
+            echo "ERROR restarting Apache. Recent apache error log:"
+            tail -n 50 /var/log/apache2/error.log || true
+            return 1
+        fi
+
+    elif which httpd > /dev/null 2>&1 ; then
+        # httpd
+
+
+        # cleanup
+        rm -f /etc/httpd/conf.d/README /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/keytalk-test-*.conf.orig.*
+
+        # enable SSL
+        echo "LoadModule ssl_module modules/mod_ssl.so" >> /etc/httpd/conf/httpd.conf
+        # setup listen ports
+        sed -E -i "s/^Listen[[:space:]]+[[:digit:]]+$//" /etc/httpd/conf/httpd.conf
+        echo "<IfModule mod_ssl.c>" >> /etc/httpd/conf/httpd.conf
+        for port in 3000 3001 3002 3003 ; do
+            echo "Listen ${port}" >> /etc/httpd/conf/httpd.conf
+        done
+        echo "</IfModule>" >> /etc/httpd/conf/httpd.conf
+
+        # setup Named virtual hosts
+        if ! grep -q "NameVirtualHost \*:3003" /etc/httpd/conf/httpd.conf; then
+            echo "NameVirtualHost *:3003" >> /etc/httpd/conf/httpd.conf
+        fi
+
+        # setup port-based virtual hosts on ports 3000, 3001 and 3002
+        for port in 3000 3001 3002 ; do
+            local site_config_path=/etc/httpd/conf.d/keytalk-test-${port}-ssl.conf
+            sed -E "s/\{\{LISTEN_PORT\}\}/${port}/" apache/ssl.conf.templ > ${site_config_path}
+            sed -i -E "s/\{\{SERVER_NAME_DIRECTIVE\}\}//" ${site_config_path}
+            sed -i -E "s/\{\{DASH_SERVER_NAME\}\}//" ${site_config_path}
+            sed -i -E "s/\{\{CERTS_DIR\}\}/\/etc\/pki\/tls\/certs/" ${site_config_path}
+            sed -i -E "s/\{\{KEYS_DIR\}\}/\/etc\/pki\/tls\/private/" ${site_config_path}
+            create_apache_ssl_cert_key ${site_config_path}
+        done
+
+        # setup name-based virtual hosts on port 3003
+        for server_name in "a.example.com" "b.example.com" ; do
+            local site_config_path=/etc/httpd/conf.d/keytalk-test-3003-${server_name}-ssl.conf
+            sed -E "s/\{\{LISTEN_PORT\}\}/3003/" apache/ssl.conf.templ > ${site_config_path}
+            sed -i -E "s/\{\{SERVER_NAME_DIRECTIVE\}\}/ServerName $server_name/" ${site_config_path}
+            sed -i -E "s/\{\{DASH_SERVER_NAME\}\}/-$server_name/" ${site_config_path}
+            sed -i -E "s/\{\{CERTS_DIR\}\}/\/etc\/pki\/tls\/certs/" ${site_config_path}
+            sed -i -E "s/\{\{KEYS_DIR\}\}/\/etc\/pki\/tls\/private/" ${site_config_path}
+            create_apache_ssl_cert_key ${site_config_path}
+        done
+
+        # Include SSL configs created
+        sed -E -i "s/^Include[[:space:]]+$//" /etc/httpd/conf/httpd.conf
+        echo "Include conf.d/*.conf" >> /etc/httpd/conf/httpd.conf
+
+        # create test page
+        cp -f apache/index.html /var/www/html/
+
+        # effectuate changes
+        if ! service httpd restart ; then
+            echo "ERROR restarting Apache. Recent apache error log:"
+            tail -n 50 /var/log/httpd/error.log || true
+            return 1
+        fi
+
+    else
+        echo "ERROR No Apache installation detected"
         return 1
     fi
 }

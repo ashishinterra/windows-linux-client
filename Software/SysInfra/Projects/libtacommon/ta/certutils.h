@@ -61,6 +61,11 @@ namespace ta
             // enough for now
             _lastExtendedKeyUsage = ekuAnyExtendedKeyUsage
         };
+        const std::string ExtendedKeyUsageStrs[] = { "clientAuth", "serverAuth", "emailProtection", "" };
+        inline std::string str(const ExtendedKeyUsage anExtendedKeyUsage)
+        {
+            return ExtendedKeyUsageStrs[anExtendedKeyUsage];
+        }
 
         enum CaFlag
         {
@@ -494,8 +499,6 @@ namespace ta
         };
         CsrInfo parseSignedCSR(const std::string& aCsrPem);
 
-        bool isValidCsr(const std::string& aCsr);
-
         void validateSAN(const std::string& aSAN);
 
         std::string serializeSAN(const ta::StringArray& aSAN);
@@ -522,6 +525,7 @@ namespace ta
         // KU, when non-empty, must include digitalSignature and/or nonRepudiation
         // EKU, when non-empty, must include emailProtection and/or anyExtendedKeyUsage
         bool isSmimeCert(const std::string& aPemCert, std::string* aReasonWhenNot = NULL);
+        bool isSmimeCertForEmail(const std::string& aPemCert, const std::string& aEmail, std::string* aReasonWhenNot = NULL);
         // Get email address from S/MIME Certificate
         std::string getEmailFromSmime(const std::string& aCertificate);
     }

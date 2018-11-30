@@ -40,7 +40,7 @@ class CmdFailedException(Exception):
         super(
             CmdFailedException,
             self).__init__(
-            u"{} finished with code {}. Stdout: {}. Stderr: {}".format(
+            u"{0} finished with code {1}. Stdout: {2}. Stderr: {3}".format(
                 cmd,
                 retval,
                 stdout,

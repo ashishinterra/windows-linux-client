@@ -139,8 +139,12 @@ public:
         TS_ASSERT(!ta::isValidEmail(""));
         TS_ASSERT(!ta::isValidEmail("abcdef"));
         TS_ASSERT(!ta::isValidEmail("user@domain"));
+        // email address can't begin with dot .
+        TS_ASSERT(!ta::isValidEmail(".user@domain.com"));
 
         TS_ASSERT(ta::isValidEmail("user@domain.com"));
+        TS_ASSERT(ta::isValidEmail("andrei.korostlev@domain.com"));
+        TS_ASSERT(ta::isValidEmail("109c+bbA02899{4}23f0c27e7?-8bf6a11_709b@email.nl"));
     }
 
     void testValidatePhoneNumber()

@@ -2490,20 +2490,6 @@ namespace ta
                            myPubKey.bit);
         }
 
-        bool isValidCsr(const string& aCsr)
-        {
-            ScopedResource<X509_REQ*> myReqPtr;
-            try
-            {
-                myReqPtr.assign(convPEM_2X509_REQ(aCsr), X509_REQ_free);
-            }
-            catch (std::exception)
-            {
-                return false;
-            }
-            return myReqPtr != NULL;
-        }
-
         // "DNS:example.com" => ("DNS", "example.com")
         boost::tuple<string, string> parseSingleSAN(const string& aSAN)
         {
@@ -2729,6 +2715,31 @@ namespace ta
             }
 
             return true;
+        }
+
+        bool isSmimeCertForEmail(const string& aPemCert, const string& aEmail, string* aReasonWhenNot)
+        {
+            if (isSmimeCert(aPemCert, aReasonWhenNot))
+            {
+                const string myEmailFromCert = boost::trim_copy(getEmailFromSmime(aPemCert));
+                const string myEmailExpected = boost::trim_copy(aEmail);
+                if (boost::iequals(myEmailFromCert, myEmailExpected))
+                {
+                    return true;
+                }
+                else
+                {
+                    if (aReasonWhenNot)
+                    {
+                        *aReasonWhenNot = str(boost::format("Certificate is S/MIME certificate for email address %s, which differs from %s") % myEmailFromCert % myEmailExpected);
+                    }
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         string getEmailFromSmime(const string& aCertificate)

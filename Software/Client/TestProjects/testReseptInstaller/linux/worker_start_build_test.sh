@@ -13,6 +13,8 @@ REPO_DIR=${INITIAL_PWD}/src
 RESULT_DIR=${INITIAL_PWD}/result
 LOG_DIR=${INITIAL_PWD}/log
 
+OS_SPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-x64
+
 function cleanup()
 {
     pushd ${REPO_DIR} > /dev/null
@@ -24,7 +26,15 @@ function cleanup()
 function setup_test()
 {
     echo "Setting up tests"
-    cp ${REPO_DIR}/Software/ContinuousIntegration/cc.py/rlinuxclient.worker/*.conf /etc/
+    pushd ${REPO_DIR}/Software/ContinuousIntegration/cc.py/rlinuxclient.worker/ > /dev/null
+    cp ccpyd.conf /etc/
+    if [[ "${OS_SPEC}" == "centos6-x64" || "${OS_SPEC}" == "rhel6-x64" ]]; then
+        # Skip code checks on legacy platforms because too ancient tooling
+        cp ccpy.conf.nocodechecks /etc/ccpy.conf
+    else
+        cp ccpy.conf /etc/ccpy.conf
+    fi
+    popd > /dev/null
 }
 
 function run_test()
@@ -62,9 +72,8 @@ function run_test()
         done
 
         if [[ "${ccpy_state}" == "OK" ]]; then
-            local osspec=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-x64
             local client_version=$(cut -d '=' -f 2 ${REPO_DIR}/Software/Client/version)
-            local app_package=KeyTalkClient-${client_version}-${osspec}.tgz
+            local app_package=KeyTalkClient-${client_version}-${OS_SPEC}.tgz
             local python_demo_package=KeyTalkClient-${client_version}.python.demo.tgz
             local apache_remote_deployment_package=KeyTalkClient-${client_version}.linux.apache-remote-deployment.tgz
             local tomcat_remote_deployment_package=KeyTalkClient-${client_version}.linux.tomcat-remote-deployment.tgz

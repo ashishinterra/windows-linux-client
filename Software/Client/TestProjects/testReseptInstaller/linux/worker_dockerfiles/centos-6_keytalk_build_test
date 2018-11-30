@@ -1,0 +1,36 @@
+# Dockerfile to build and unittest KeyTalk client on Debian 8
+
+FROM centos:centos6
+
+# Install packages
+RUN yum -y update
+RUN yum -y groupinstall "Development Tools"
+
+# Install epel (needed for python3)
+RUN yum -y install epel-release
+
+RUN yum -y install gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python-pip python34 redhat-lsb-core gdb vim git ntp ntpdate curl expect libtool pandoc zlib-devel tmux hdparm zip unzip clang wget bind-utils
+RUN yum -y install httpd mod_ssl
+RUN yum -y install pyOpenSSL python-lxml
+RUN yum -y install tomcat6 tomcat6-*
+
+RUN wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+RUN tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
+RUN mv wkhtmltox/bin/wkhtmlto* /usr/bin
+
+# Install devtoolset (we need at g++ 4.8 at least)
+RUN wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo
+RUN yum -y install devtoolset-2-gcc-c++ devtoolset-2-binutils
+
+RUN update-ca-trust enable
+
+RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
+RUN git clone https://github.com/kindkaktus/CcPy /ccpy
+
+# set time
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN touch /resept_linux_client_dev
+
+ENTRYPOINT scl enable devtoolset-2 ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_build_test.sh

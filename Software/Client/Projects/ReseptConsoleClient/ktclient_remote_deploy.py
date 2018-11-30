@@ -32,7 +32,7 @@ def run_cmd(cmd, logger=None):
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         retval = proc.wait()
     except Exception as ex:
-        raise Exception("Failed to execute {}. {}".format(cmd, ex))
+        raise Exception("Failed to execute {0}. {1}".format(cmd, ex))
 
     stdout = proc.stdout.read().decode('utf-8').strip()
     stderr = proc.stderr.read().decode('utf-8').strip()
@@ -49,7 +49,7 @@ class CmdFailedException(Exception):
         super(
             CmdFailedException,
             self).__init__(
-            u"{} finished with code {}. Stdout: {}. Stderr: {}".format(
+            u"{0} finished with code {1}. Stdout: {2}. Stderr: {3}".format(
                 cmd,
                 retval,
                 stdout,
@@ -65,25 +65,29 @@ class CmdFailedException(Exception):
             lines += [line]
         lines += ['    Stderr:']
         for line in self.stderr.splitlines():
-            lines += ['        {}'.format(line)]
+            lines += ['        {0}'.format(line)]
         lines += ['    Stdout:']
         for line in self.stdout.splitlines():
-            lines += ['        {}'.format(line)]
+            lines += ['        {0}'.format(line)]
         return '\n'.join(lines)
 
 
 def run_remote_cmd(host, command, connect_timeout=5, only_stdout=False):
-    return run_cmd('ssh -o ConnectTimeout={} {} {}{}'.format(int(connect_timeout),
-                                                             quote(host), quote(command), ' 2>&1' if only_stdout else ''))
+    return run_cmd(
+        'ssh -o ConnectTimeout={0} {1} {2}{3}'.format(
+            int(connect_timeout),
+            quote(host),
+            quote(command),
+            ' 2>&1' if only_stdout else ''))
 
 
 def print_usage():
     print('Usage:')
     print(
-        '    {} install <vhosts_config.ini> <keytalk_installer.tgz> <ktclient.rccd>'.format(
+        '    {0} install <vhosts_config.ini> <keytalk_installer.tgz> <ktclient.rccd>'.format(
             sys.argv[0]))
-    print('    {} remove <root@remotehost> [<root@remotehost2>, ...]'.format(sys.argv[0]))
-    print('    {} remove <vhosts_config.ini>'.format(sys.argv[0]))
+    print('    {0} remove <root@remotehost> [<root@remotehost2>, ...]'.format(sys.argv[0]))
+    print('    {0} remove <vhosts_config.ini>'.format(sys.argv[0]))
 
 
 def parse_install_args():
@@ -95,14 +99,14 @@ def parse_install_args():
     installer_path = sys.argv[3]
     rccd_path = sys.argv[4]
     if not os.path.exists(config_path):
-        raise Exception('Specified config path "{}" does not exist.'.format(config_path))
+        raise Exception('Specified config path "{0}" does not exist.'.format(config_path))
 
     if not os.path.exists(installer_path) or INSTALLER_DIR_PREFIX not in run_cmd(
-            'tar tfv {}'.format(quote(installer_path))):
-        raise Exception('Specified installer "{}" does not exist.'.format(installer_path))
+            'tar tfv {0}'.format(quote(installer_path))):
+        raise Exception('Specified installer "{0}" does not exist.'.format(installer_path))
 
     if not os.path.exists(rccd_path):
-        raise Exception('Specified RCCD path "{}" does not exist.'.format(rccd_path))
+        raise Exception('Specified RCCD path "{0}" does not exist.'.format(rccd_path))
 
     try:
         with zipfile.ZipFile(rccd_path, 'r') as z:
@@ -146,7 +150,7 @@ def parse_args():
     elif command == 'remove':
         return parse_remove_args()
     else:
-        raise Exception('Unknown command: "{}".'.format(command))
+        raise Exception('Unknown command: "{0}".'.format(command))
 
 
 def validate_sites(sites, util, tomcat_util, config_path):
@@ -158,10 +162,10 @@ def validate_sites(sites, util, tomcat_util, config_path):
                                         'dependencies': []}
         for site_index, site in enumerate(sites):
             _, errors = util.parse_settings(site, known_settings)
-            vhost = site.get('Host', 'Host number {}'.format(site_index + 1))
+            vhost = site.get('Host', 'Host number {0}'.format(site_index + 1))
             server_name = site.get('ServerName', '')
             if errors:
-                error_messages.append('Errors in Host {} {}:'.format(vhost, server_name))
+                error_messages.append('Errors in Host {0} {1}:'.format(vhost, server_name))
                 for error in errors:
                     error_messages.append('    ' + error)
     elif os.path.basename(config_path) == "apache.ini":
@@ -170,10 +174,10 @@ def validate_sites(sites, util, tomcat_util, config_path):
                                         'dependencies': []}
         for site_index, site in enumerate(sites):
             _, errors = util.parse_settings(site, known_settings)
-            vhost = site.get('VHost', 'VHost number {}'.format(site_index + 1))
+            vhost = site.get('VHost', 'VHost number {0}'.format(site_index + 1))
             server_name = site.get('ServerName', '')
             if errors:
-                error_messages.append('Errors in Host {} {}:'.format(vhost, server_name))
+                error_messages.append('Errors in Host {0} {1}:'.format(vhost, server_name))
                 for error in errors:
                     error_messages.append('    ' + error)
 
@@ -243,19 +247,19 @@ def deploy_site_config(ssh_host, site_config_path, installer_path, rccd_path, co
                             os.path.basename(configfile_path))), only_stdout=True)
 
     except CmdFailedException as ex:
-        return ex.format_indented_message('Could not deploy to {}:'.format(ssh_host))
+        return ex.format_indented_message('Could not deploy to {0}:'.format(ssh_host))
     return None
 
 
 def remote_uninstall(ssh_host):
     """:returns: An error message upon failure or None on success."""
-    print('Uninstalling client on {}'.format(ssh_host))
+    print('Uninstalling client on {0}'.format(ssh_host))
     sys.stdout.flush()
     try:
         run_remote_cmd(ssh_host, '/usr/local/bin/keytalk/uninstall_keytalk', only_stdout=True)
     except CmdFailedException as ex:
         print('ERROR')
-        return ex.format_indented_message('Could not uninstall on {}:'.format(ssh_host))
+        return ex.format_indented_message('Could not uninstall on {0}:'.format(ssh_host))
     print('OK')
     return None
 
@@ -279,7 +283,7 @@ def print_errors(errors):
     if errors:
         print('The configuration file contains the following errors:')
         for message in errors:
-            print('    {}'.format(message))
+            print('    {0}'.format(message))
 
 
 def strip_json_comments(s):
@@ -298,7 +302,7 @@ def parse_sites_per_remote_host(config_path, util, tomcat_util):
             sites = json.loads(config)
         except Exception as ex:
             raise Exception(
-                'Could not parse configuration template "{}": {}'.format(
+                'Could not parse configuration template "{0}": {1}'.format(
                     config_path, ex))
 
     errors = validate_sites(sites, util, tomcat_util, config_path)
@@ -322,12 +326,12 @@ def remote_deploy(config_path, installer_path, rccd_path):
     errors = []
     temp_dir = tempfile.mkdtemp()
     try:
-        run_cmd('tar xfv {} -C {}'.format(quote(installer_path), quote(temp_dir)))
-        installer_dir = glob.glob('{}/{}*'.format(temp_dir, INSTALLER_DIR_PREFIX))[0]
-        util = imp.load_source('ktinstaller_util', '{}/util.py'.format(installer_dir))
+        run_cmd('tar xfv {0} -C {1}'.format(quote(installer_path), quote(temp_dir)))
+        installer_dir = glob.glob('{0}/{1}*'.format(temp_dir, INSTALLER_DIR_PREFIX))[0]
+        util = imp.load_source('ktinstaller_util', '{0}/util.py'.format(installer_dir))
         tomcat_util = imp.load_source(
             'ktinstaller_util',
-            '{}/tomcat_util.py'.format(installer_dir))
+            '{0}/tomcat_util.py'.format(installer_dir))
     finally:
         shutil.rmtree(temp_dir)
 
@@ -336,7 +340,7 @@ def remote_deploy(config_path, installer_path, rccd_path):
 
     # deploy sites per remote host
     for remote_host, host_sites in remote_host_sites.iteritems():
-        print('Deploying sites for {}'.format(remote_host))
+        print('Deploying sites for {0}'.format(remote_host))
         sys.stdout.flush()
         # Generate based on the "raw" (but validated) site instead of a parsed/populated one
         # Reason: prevent introduction of null values in the JSON file
@@ -389,7 +393,7 @@ def remote_uninstall_from_config(config_path):
             sites = json.loads(config)
         except Exception as ex:
             raise Exception(
-                'Could not parse vhosts configuration file "{}": {}'.format(
+                'Could not parse vhosts configuration file "{0}": {1}'.format(
                     config_path, ex))
 
     remote_hosts = []

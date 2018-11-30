@@ -91,11 +91,14 @@ namespace ta
 
     /**
       Escape all non-alphanumeric characters in the string to let the string to be used in regex
-
-      @param[in] anStr String to be escaped
-      @return Escaped string
      */
     std::string regexEscapeStr(const std::string& anStr);
+
+
+    /**
+      Escape string to be safely used in POSIX shell
+     */
+    std::string shellEscapeStr(const std::string& anStr);
 
     /**
         Return lower-case hex representation of 16-byte UUID

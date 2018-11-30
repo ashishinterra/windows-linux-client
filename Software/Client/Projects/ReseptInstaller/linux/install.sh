@@ -276,12 +276,10 @@ function install_apache_cert_renewal_prerequisities()
 
 function install_tomcat_cert_renewal_prerequisities()
 {
-
     if ! check_tomcat_installed ; then
         echo "NOTICE: KeyTalk Tomcat SSL certificate renewal will not be installed because no Tomcat installation detected."
         return 0
     fi
-
 
     if [ -f /etc/debian_version ]; then
         apt-get -qq -y install cron python python-lxml python-openssl

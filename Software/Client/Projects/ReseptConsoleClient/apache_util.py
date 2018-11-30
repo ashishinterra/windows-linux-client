@@ -74,7 +74,7 @@ def parse_apache_config(config_string, file_path_hint):
         match = re_section_end.match(line)
         if match:
             if element_stack and element_stack[-1] != match.group("name"):
-                raise Exception('{}:{}: Section mismatch: "{}" should be "{}"'.format(
+                raise Exception('{0}:{1}: Section mismatch: "{2}" should be "{3}"'.format(
                     file_path_hint or '<unknown file>', line_number, match.group("name"), element_stack[-1]))
             etree.SubElement(element, 'EndLine').text = str(line_number)
             element = element.getparent()
@@ -91,12 +91,13 @@ def parse_apache_config(config_string, file_path_hint):
 
 def get_available_apache_config_files():
     if util.has_executable('apache2'):
-        return sorted([file_path for file_path in glob.glob(
-            '/etc/apache2/sites-available/*') if not util.is_backup_file_path(file_path)])
+        pattern = '/etc/apache2/sites-available/*'
     elif util.has_executable('httpd'):
-        return sorted(glob.glob('/etc/httpd/conf.d/*'))
+        pattern = '/etc/httpd/conf.d/*'
     else:
         raise Exception('Unable to find available apache config files')
+    return sorted([config_path for config_path in glob.glob(
+        pattern) if not util.is_backup_file_path(config_path)])
 
 
 def is_backup_file_path(path):
@@ -105,7 +106,7 @@ def is_backup_file_path(path):
 
 def get_enabled_apache_config_files():
     if util.has_executable('apache2'):
-        return sorted(glob.glob('/etc/apache2/sites-enabled/*'))
+        return sorted(glob.glob('/etc/apache2/sites-enabled/*.conf'))
     elif util.has_executable('httpd'):
         return sorted(glob.glob('/etc/httpd/conf.d/*.conf'))
     else:
@@ -152,7 +153,7 @@ def get_apache_vhost_directive(
         config_files = set([d.xpath('ancestor::ConfigFile/Path')
                             [0].text for d in directive_elements])
         raise Exception(
-            'Expected exactly 1 occurrence of directive "{}" in VHost "{}", found {} occurrences in configuration file(s) {}.'.format(
+            'Expected exactly 1 occurrence of directive "{0}" in VHost "{1}", found {2} occurrences in configuration file(s) {3}.'.format(
                 directive,
                 vhost,
                 len(directive_elements),
@@ -160,7 +161,7 @@ def get_apache_vhost_directive(
     directive = directive_elements[0]
     if directive is not None:
         return directive.text
-    raise Exception('No directive "{}" found for vhost "{}"'.format(directive, vhost))
+    raise Exception('No directive "{0}" found for vhost "{1}"'.format(directive, vhost))
 
 
 def set_apache_vhost_directive(
@@ -179,15 +180,15 @@ def set_apache_vhost_directive(
     """
     vhost_config = get_vhost_config(config_files, vhost, server_name)
     if vhost_config is None:
-        raise Exception('No VHost "{}" found'.format(vhost))
+        raise Exception('No VHost "{0}" found'.format(vhost))
 
-    new_line_content = '\t\t{} {}\n'.format(directive, new_value)
+    new_line_content = '\t\t{0} {1}\n'.format(directive, new_value)
     directive_elements = vhost_config.xpath(directive)
     if len(directive_elements) > 1:
         config_files = set([d.xpath('ancestor::ConfigFile/Path')
                             [0].text for d in directive_elements])
         raise Exception(
-            'Expected at most 1 occurrence of directive "{}" in VHost "{}", found {} occurrences in configuration file(s) {}.'.format(
+            'Expected at most 1 occurrence of directive "{0}" in VHost "{1}", found {2} occurrences in configuration file(s) {3}.'.format(
                 directive,
                 vhost,
                 len(directive_elements),
@@ -232,13 +233,13 @@ def get_vhost_config(config_files, vhost, server_name=None):
 
     if not results:
         raise Exception(
-            'Vhost "{}", with name "{}" not found in configuration files {}'.format(
+            'Vhost "{0}", with name "{1}" not found in configuration files {2}'.format(
                 vhost, server_name, ', '.join(config_files)))
     elif len(results) != 1:
         config_files_with_matches = set(
             [v.xpath('ancestor::ConfigFile/Path')[0].text for v in results])
         raise Exception(
-            'Expected exactly 1 occurrence of VHost "{}, {}". Found {} occurrences in configuration file(s) {}. If these are named VHosts, please specify the ServerName.'.format(
+            'Expected exactly 1 occurrence of VHost "{0}, {1}". Found {2} occurrences in configuration file(s) {3}. If these are named VHosts, please specify the ServerName.'.format(
                 vhost,
                 server_name,
                 len(results),
@@ -250,18 +251,18 @@ def get_vhost_config(config_files, vhost, server_name=None):
 def get_apache_ssl_cert_path(vhost, server_name):
     if OS_NAME in ["Debian", "Ubuntu"]:
         if server_name:
-            return '/etc/ssl/certs/keytalk-apache-{}-{}-ssl.pem'.format(
+            return '/etc/ssl/certs/keytalk-apache-{0}-{1}-ssl.pem'.format(
                 parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
-            return '/etc/ssl/certs/keytalk-apache-{}-ssl.pem'.format(
+            return '/etc/ssl/certs/keytalk-apache-{0}-ssl.pem'.format(
                 parse_connection_address_from_vhost(vhost)[1])
 
     if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
         if server_name:
-            return '/etc/pki/tls/certs/keytalk-apache-{}-{}-ssl.pem'.format(
+            return '/etc/pki/tls/certs/keytalk-apache-{0}-{1}-ssl.pem'.format(
                 parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
-            return '/etc/pki/tls/certs/keytalk-apache-{}-ssl.pem'.format(
+            return '/etc/pki/tls/certs/keytalk-apache-{0}-ssl.pem'.format(
                 parse_connection_address_from_vhost(vhost)[1])
 
 
@@ -284,18 +285,18 @@ def is_apache_running():
 def get_apache_ssl_key_path(vhost, server_name):
     if OS_NAME in ["Debian", "Ubuntu"]:
         if server_name:
-            return '/etc/ssl/private/keytalk-apache-{}-{}-ssl.key'.format(
+            return '/etc/ssl/private/keytalk-apache-{0}-{1}-ssl.key'.format(
                 parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
-            return '/etc/ssl/private/keytalk-apache-{}-ssl.key'.format(
+            return '/etc/ssl/private/keytalk-apache-{0}-ssl.key'.format(
                 parse_connection_address_from_vhost(vhost)[1])
 
     if OS_NAME in ["RedHatEnterpriseServer", "CentOS"]:
         if server_name:
-            return '/etc/pki/tls/private/keytalk-apache-{}-{}-ssl.key'.format(
+            return '/etc/pki/tls/private/keytalk-apache-{0}-{1}-ssl.key'.format(
                 parse_connection_address_from_vhost(vhost)[1], server_name)
         else:
-            return '/etc/pki/tls/private/keytalk-apache-{}-ssl.key'.format(
+            return '/etc/pki/tls/private/keytalk-apache-{0}-ssl.key'.format(
                 parse_connection_address_from_vhost(vhost)[1])
 
 

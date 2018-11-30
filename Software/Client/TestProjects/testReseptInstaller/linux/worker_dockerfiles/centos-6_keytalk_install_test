@@ -1,0 +1,24 @@
+# Dockerfile to test the pre-built CentOS 6 KeyTalk client by installing it
+
+FROM centos:centos6
+
+# Install packages
+RUN yum -y update
+
+# Install epel (needed for python3)
+RUN yum -y install epel-release
+
+RUN yum -y install cronie ca-certificates hdparm zip unzip psmisc python34
+RUN yum -y install httpd mod_ssl
+RUN yum -y install pyOpenSSL python-lxml
+RUN yum -y install tomcat6 tomcat6-*
+
+RUN update-ca-trust enable
+
+RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
+
+# set time
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENTRYPOINT ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh

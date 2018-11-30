@@ -277,7 +277,7 @@ class TestUtil(unittest.TestCase):
             {'Required': 'value', 'Optional': 'value2', 'RequiredWithDependency': 'value3',
              'OptionalWithDependency': 'value4', 'OptionalWithDependency2': 'value5', 'UnknownSetting': 'value6'}, known_settings)
         self.assertEqual(len(errors), 1)
-        self.assertRegexpMatches(errors[0], 'Unknown setting "UnknownSetting" encountered')
+        self.assertTrue('Unknown setting "UnknownSetting" encountered' in errors[0])
         self.assertEquals(settings, None)
 
     def test_is_backup_file_path(self):
