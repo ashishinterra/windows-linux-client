@@ -1,4 +1,4 @@
-# Dockerfile to build and unittest KeyTalk client on Debian 8
+# Dockerfile to build and unittest KeyTalk client on CentOS 6
 
 FROM centos:centos6
 

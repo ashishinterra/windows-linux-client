@@ -489,6 +489,8 @@ namespace ta
 
         struct CsrInfo
         {
+            CsrInfo()
+            {}
             CsrInfo(const Subject& aSubject, const ta::SignUtils::SignatureAlgorithm aSignatureAlgorithm, const KeyType aPubKeyType, const boost::uint32_t aPubKeyBits)
                 : subject(aSubject), signatureAlgorithm(aSignatureAlgorithm), pubKeyType(aPubKeyType), pubKeyBits(aPubKeyBits)
             {}
