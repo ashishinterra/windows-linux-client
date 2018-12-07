@@ -382,7 +382,10 @@ function configure_apache()
 
 
         # cleanup
-        rm -f /etc/httpd/conf.d/README /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/keytalk-test-*.conf.orig.*
+        rm -f /etc/httpd/conf.d/README
+        rm -f /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/welcome.conf
+        rm -f /etc/httpd/conf.d/autoindex.conf /etc/httpd/conf.d/userdir.conf
+        rm -f /etc/httpd/conf.d/keytalk-test-*.conf.orig.*
 
         # enable SSL
         echo "LoadModule ssl_module modules/mod_ssl.so" >> /etc/httpd/conf/httpd.conf
@@ -471,7 +474,14 @@ function configure_tomcat()
     # Edit server.xml to enable 8443 port for SSL connection to Tomcat, using certificate stored in JAVA keystore
     if ! grep -q "keystoreFile=\"/etc/keytalk/keystore\"" ${server_xml_file} ; then
         echo "Add KeyTalk SSL connector to TomCat"
+        # add "connector" section above the indicated section
         sed -i '/A "Connector" using the shared thread pool/i \\n    <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol" \n        maxThreads="150" SSLEnabled="true" scheme="https" secure="true" \n        clientAuth="false" sslProtocol="TLS" \n        keystoreFile="/etc/keytalk/keystore" keystorePass="changeit" />\n' ${server_xml_file}
+    fi
+
+    # Create default page if necessary
+    if [ ! -d /var/lib/tomcat/webapps/ROOT ]; then
+        mkdir -p /var/lib/tomcat/webapps/ROOT
+        cp -f tomcat/index.html /var/lib/tomcat/webapps/ROOT/
     fi
 
     if ! service ${tomcat_dir} restart ; then

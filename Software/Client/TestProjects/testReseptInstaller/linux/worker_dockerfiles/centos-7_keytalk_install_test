@@ -1,0 +1,39 @@
+# Dockerfile to test the pre-built CentOS 7 KeyTalk client by installing it
+
+FROM centos:centos7
+
+# Setup systemctl
+COPY ./systemctl.py /usr/bin/systemctl
+
+# Install packages
+RUN yum -y update
+
+# Install epel (needed for python3)
+RUN yum -y install epel-release
+
+RUN yum -y install cronie hdparm zip unzip psmisc python34
+
+# for 'which'
+RUN yum -y install which
+# for 'lsb_release'
+RUN yum -y install redhat-lsb-core
+# for 'ip' command
+RUN yum -y install iproute
+# for 'service' command
+RUN yum -y install initscripts
+
+RUN yum -y install httpd mod_ssl
+RUN yum -y install pyOpenSSL python-lxml
+RUN yum -y install tomcat
+
+RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
+
+# Re-setup systemctl (this might be overriden by the above)
+COPY ./systemctl.py /usr/bin/systemctl
+
+# set time
+ENV TZ=UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Because of known limitations of CentOS7 docker images we should explicitly start systemctl as a first process
+ENTRYPOINT /usr/bin/systemctl

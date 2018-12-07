@@ -68,8 +68,8 @@
       <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy ScheduleValidateCertificate.ps1  ..\Export
-IF %25ERRORLEVEL%25 NEQ 0 exit 1</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

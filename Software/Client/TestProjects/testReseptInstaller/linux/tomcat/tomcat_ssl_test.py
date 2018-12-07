@@ -75,7 +75,7 @@ class TestTomcatSsl(unittest.TestCase):
         html_contents = conn.read()
         self.assertTrue(
             re.search(
-                "<h1>(It works !|Index of /)</h1>|<h2>If you're seeing this, you've successfully installed Tomcat. Congratulations!</h2>|If you're seeing this page via a web browser, it means you've setup Tomcat successfully. Congratulations!",
+                r"<h1>(It works\s*\!|Index of /)</h1>|<h2>If you're seeing this, you've successfully installed Tomcat. Congratulations!</h2>|If you're seeing this page via a web browser, it means you've setup Tomcat successfully. Congratulations!",
                 html_contents) is not None,
             html_contents)
         cert = ssl.get_server_certificate((host['host'], host['port']))

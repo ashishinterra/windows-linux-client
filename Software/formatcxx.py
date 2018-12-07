@@ -12,7 +12,7 @@ WIN32 = sys.platform == 'win32'
 
 # Configuration
 inputDirectories = [os.path.join(x, "Projects") for x in (
-    "Common", "SysInfra", "Server", "WebUI.Server", "Client")]
+    "Common", "SysInfra", "Server", "WebUI", "Client")]
 astyleOptions = "--indent-namespaces --keep-one-line-blocks --keep-one-line-statements --indent=spaces=4 --lineend=linux --mode=c --formatted"
 testFilePatterns = re.compile(r".*\.(c|h|cpp|hpp)$")
 if WIN32:

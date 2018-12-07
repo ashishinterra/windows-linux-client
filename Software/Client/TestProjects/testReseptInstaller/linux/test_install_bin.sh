@@ -149,7 +149,7 @@ function setup_test()
     tar -xzf ${INSTALLER_TGZ_PATH} -C ${INSTALLER_TEMP_DIR}
 
     # generate test RCCDs
-    pushd ../../../../WebUI.Server/Projects/ > /dev/null
+    pushd ../../../../WebUI/Projects/ > /dev/null
     ./create_test_rccds.py keytalkadmin.keytalkdemo.com
     cp -f Export/*.rccd ${INSTALLER_TEMP_DIR}/${PACKAGE_DIR_NAME}/
     popd > /dev/null

@@ -21,7 +21,8 @@ TEST_IMAGES=\
 " ubuntu-18.04-keytalk-build-test:ubuntu-18.04-keytalk-install-test"\
 " debian-8-keytalk-build-test:debian-8-keytalk-install-test"\
 " debian-9-keytalk-build-test:debian-9-keytalk-install-test"\
-" centos-6-keytalk-build-test:centos-6-keytalk-install-test"
+" centos-6-keytalk-build-test:centos-6-keytalk-install-test"\
+" centos-7-keytalk-build-test:centos-7-keytalk-install-test"
 
 # Repository root, the supervisor shares it with the workers.
 # The primary reason to share the repository is to save time for the workers cloning it.
@@ -38,6 +39,8 @@ SHARED_REPO_DIR="$(pwd)/../../../../../"
 SHARED_TEST_LOG_DIR=/var/log/keytalk
 # Here the worker build images store the installers they create later to be used by worker installation images
 SHARED_BUILT_INSTALLATION_PACKAGES_DIR=/var/lib/keytalk/installers
+
+KEYTALK_SERVER_IP='192.168.33.111'
 
 function fmt_time()
 {
@@ -84,28 +87,69 @@ function test_build()
     local start_time=`date +%s`
     local worker_testdir='/test'
     local container_name="${image_name}-container"
+
     echo "Start build test on ${image_name} (container ${container_name})"
 
-    # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
-    if docker run \
-      --privileged=true \
-       --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
-       --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
-       --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/result:rw \
-       --workdir=${worker_testdir} \
-       --hostname ktclient-dev \
-       --add-host=demo.keytalkdemo.com:192.168.33.111 \
-       --add-host=keytalkadmin.keytalkdemo.com:192.168.33.111 \
-       --name ${container_name} \
-        --net=host \
-       ${image_name}
-       then
-           echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
-           return 0
-       else
-           echo "TEST ${image_name} FAILED ($(elapsed_time "${start_time}"))"
-           return 1
-       fi
+    if [[ "${image_name}" =~ ^centos\-7* ]]; then
+      # CentOS 7 docker images do not support systemd and need special treatment
+
+      # Basically we start these images detached with 'docker run' and then fire up "inject" build script from a separate 'docker exec"
+
+      # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
+      docker run \
+        --detach \
+        --privileged=true \
+         --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
+         --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
+         --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/result:rw \
+         --workdir=${worker_testdir} \
+         --add-host=demo.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+         --add-host=keytalkadmin.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+         --name ${container_name} \
+         --net=host \
+         --hostname ktclient-dev \
+         ${image_name}
+
+         # uncomment this for debugging only
+         # docker exec -it ${container_name} bash
+
+         # Start the build
+         if docker exec -it ${container_name} ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_build_test.sh
+         then
+             echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
+             docker rm -f ${container_name} || true
+             return 0
+         else
+             echo "TEST ${image_name} FAILED ($(elapsed_time "${start_time}"))"
+             docker rm -f ${container_name} || true
+             return 1
+         fi
+
+    else
+
+      # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
+      if docker run \
+        --privileged=true \
+         --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
+         --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
+         --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/result:rw \
+         --workdir=${worker_testdir} \
+         --add-host=demo.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+         --add-host=keytalkadmin.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+         --name ${container_name} \
+         --net=host \
+         --hostname ktclient-dev \
+         ${image_name}
+         then
+             echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
+             return 0
+         else
+             echo "TEST ${image_name} FAILED ($(elapsed_time "${start_time}"))"
+             return 1
+         fi
+
+     fi
+
 
     # echo "To track progress 'docker logs ${container_name} | tail'"
     # echo "To login into 'docker exec -it ${container_name} /bin/bash'"
@@ -119,24 +163,60 @@ function test_installation()
     local container_name="${image_name}-container"
     echo "Start installation test on ${image_name} (container ${container_name})"
 
-    # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
-    if docker run \
-      --privileged=true \
-       --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
-       --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
-       --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/installer:rw \
-       --workdir=${worker_testdir} \
-       --add-host=demo.keytalkdemo.com:192.168.33.111 \
-       --add-host=keytalkadmin.keytalkdemo.com:192.168.33.111 \
-       --name ${container_name} \
-        --net=host \
-       ${image_name}
-    then
-        echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
-        return 0
+    if [[ "${image_name}" =~ ^centos\-7* ]]; then
+      # CentOS 7 docker images do not support systemd and need special treatment
+
+      # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
+      docker run \
+        --detach \
+        --privileged=true \
+         --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
+         --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
+         --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/installer:rw \
+         --workdir=${worker_testdir} \
+         --add-host=demo.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+         --add-host=keytalkadmin.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+         --name ${container_name} \
+          --net=host \
+         ${image_name}
+
+      # uncomment this for debugging only
+      # docker exec -it ${container_name} bash
+
+      # Start the build
+      if docker exec -it ${container_name} ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh
+      then
+          echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
+          docker rm -f ${container_name} || true
+          return 0
+      else
+          echo "TEST ${image_name} FAILED ($(elapsed_time "${start_time}"))"
+          docker rm -f ${container_name} || true
+          return 1
+      fi
+
     else
-        echo "TEST ${image_name} FAILED ($(elapsed_time "${start_time}"))"
-        return 1
+
+        # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
+        if docker run \
+          --privileged=true \
+           --volume ${SHARED_REPO_DIR}:${worker_testdir}/src:rw \
+           --volume ${SHARED_TEST_LOG_DIR}/${image_name}/:${worker_testdir}/log:rw \
+           --volume ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}/:${worker_testdir}/installer:rw \
+           --workdir=${worker_testdir} \
+           --add-host=demo.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+           --add-host=keytalkadmin.keytalkdemo.com:${KEYTALK_SERVER_IP} \
+           --name ${container_name} \
+            --net=host \
+           ${image_name}
+        then
+            echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
+            return 0
+        else
+            echo "TEST ${image_name} FAILED ($(elapsed_time "${start_time}"))"
+            return 1
+        fi
+
     fi
 
     # echo "To track progress 'docker logs ${container_name} | tail'"

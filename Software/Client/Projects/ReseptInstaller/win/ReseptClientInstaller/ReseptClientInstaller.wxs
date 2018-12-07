@@ -192,9 +192,6 @@
       <Component Id="PowershellUtilsScriptComp" Guid="4DA807EC-88F0-4669-9058-DAB03647F99D" DiskId="1">
         <File Id="POWERSHELLUTILSSCRIPT"  Source="$(var.ReseptSourceDir)\KeyTalkUtils.psm1" Vital="yes"/>
       </Component>
-      <Component Id="ScheduledValidateCertificateScriptComp" Guid="11758C2B-DFCE-4372-A97B-2DF618A8A841" DiskId="1">
-        <File Id="ScheduleValidateCertificateScript" Source="$(var.ReseptSourceDir)\ScheduleValidateCertificate.ps1" Vital="yes"/>
-      </Component>
     </DirectoryRef>
 
     <Property Id="WINBUILDVERSION" Secure="yes">
@@ -225,11 +222,10 @@
         <ComponentRef Id="ReseptConsoleClientComp" />
         <ComponentRef Id="SilentRunnerComp" />
       </Feature>
-      <Feature Id="ValidateCertificateFeature" Title="$(var.ProductName) Scheduled Certificate Validition" Description="$(var.ProductName) Certificates checked for validity on a regular interval. Only supported on Windows 10 and higher" Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
-        <Condition Level="0">WINBUILDVERSION &lt; 10000</Condition>
+      <Feature Id="ValidateCertificateFeature" Title="$(var.ProductName) Scheduled Certificate Validition" Description="$(var.ProductName) Certificates checked for validity on a regular interval. Only supported on Windows 7 and higher" Level="1" Absent="allow" InstallDefault="local" AllowAdvertise="no">
+        <Condition Level="0">WINBUILDVERSION &lt; 7000</Condition>
         <!-- We're not using VersionNT. The Windows 10 value of VersionNT is 603, which is the Windows 8.1 version (same goes for Server 2016 and Server 2012 R2) -->
         <!-- Thus we cannot differentiate between Windows 10 and Windows 8.1 and needed a different solution, like 603 -->
-        <ComponentRef Id="ScheduledValidateCertificateScriptComp" />
         <ComponentRef Id="ReseptConfigToolComp" />
         <ComponentRef Id="SilentRunnerAsyncComp" />
       </Feature>
@@ -249,8 +245,6 @@
      -->
     <Property Id="RCCDPATH" Secure="yes"/>
 
-    <SetProperty Id="ScheduleValidateCertificateScript" Before="ScheduleValidateCertificateScript" Sequence="execute" Value="&quot;[POWERSHELLEXE]&quot; -NonInteractive -ExecutionPolicy Bypass -Command &quot;&amp; '[#ScheduleValidateCertificateScript]' ; exit $$($Error.Count)&quot;" />
-
     <!-- @note immediate CA impersonates the invoking user (i.e. is executed in the user context) ignoring 'Impersonate' flag -->
     <CustomAction Id="UpdateReseptConfig"    Execute="commit"    Return="check"       Impersonate="no"  FileKey="CONFIGUPDATER"      ExeCommand='--set-install-dir "[RESEPTINSTALLDIR]"' />
     <CustomAction Id="RestoreData"           Execute="commit"    Return="check"       Impersonate="no"  FileKey="CONFIGUPDATER"      ExeCommand='--restore-data' />
@@ -262,10 +256,10 @@
     <CustomAction Id="LaunchConfigManNoUi"   Execute="commit"    Return="check"       Impersonate="yes" FileKey="RESEPTCONFIGMAN"    ExeCommand='--rccd-path "[RCCDPATH]"'/>
     <CustomAction Id="CA_WIXUI_SET_EXITDIALOGOPTIONALCHECKBOX" Property="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <!-- The &#39; characters are single quotes which are passed into the RunSilent.vbs script. These single quotes are then translated into double quotes by the script. -->
-    <CustomAction Id="ScheduleScriptsRunner" Execute="deferred"  Return="check" Impersonate="yes"  Directory="TARGETDIR"        ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /create /f /sc minute /mo 1 /tn "KeyTalkScheduledScripts" /tr "wscript &#39;[RESEPTINSTALLDIR]RunSilent.vbs&#39; powershell -ExecutionPolicy Bypass -File &#39;[RESEPTINSTALLDIR]Scripts\RunScheduledScripts.ps1&#39;"' />
-    <CustomAction Id="UnScheduleScriptsRunner" Execute="deferred"  Return="ignore" Impersonate="yes"  Directory="TARGETDIR"        ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalkScheduledScripts" /f' />
-    <CustomAction Id="ScheduleValidateCertificateScript" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="commit" Return="check" Impersonate="yes" />
-    <!-- Keep the task name in sync with ScheduleValidateCertificate.ps1 $task_name. Removal is based on task name. -->
+    <CustomAction Id="ScheduleScriptsRunner" Execute="deferred" Return="check" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /create /f /sc minute /mo 1 /tn "KeyTalkScheduledScripts" /tr "wscript &#39;[RESEPTINSTALLDIR]RunSilent.vbs&#39; powershell -ExecutionPolicy Bypass -File &#39;[RESEPTINSTALLDIR]Scripts\RunScheduledScripts.ps1&#39;"' />
+    <CustomAction Id="UnScheduleScriptsRunner" Execute="deferred" Return="ignore" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalkScheduledScripts" /f' />
+    <CustomAction Id="ScheduleValidateCertificateScript" Execute="deferred" Return="check" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /create /f /sc minute /mo 5 /tn "KeyTalk Certificate Validation Check" /tr "wscript &#39;[RESEPTINSTALLDIR]RunSilent.vbs&#39; &#39;[RESEPTINSTALLDIR]ReseptConfigTool.exe&#39; task validatecert"' />
+    <!-- Keep the task name in sync with Task Scheduler task name. Removal is based on task name. -->
     <CustomAction Id="UnScheduleValidateCertificate" Execute="deferred" Return="ignore" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalk Certificate Validation Check" /f' />
 
     <InstallExecuteSequence>

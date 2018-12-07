@@ -43,7 +43,7 @@ if [ -f /resept_server_dev ]; then
     # workaround pylint's false-positive "[E1101] Module 'ssl' has no 'PROTOCOL_TLSv1_2' member" erroneously reported in python-3.5.2
     check_python3_scripts "Client/Projects/ReseptPythonClient/*.py" "E1101"
 
-    check_python_scripts "WebUI.Server/TestProjects/webuitests/*.py"
+    check_python_scripts "WebUI/TestProjects/webuitests/*.py"
 fi
 if [ -f /resept_linux_client_dev ]; then
     # workaround pylint's false-positive "[E1101] Module 'ssl' has no 'PROTOCOL_TLSv1' member"

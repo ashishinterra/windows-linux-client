@@ -1,20 +1,32 @@
 Release Notes of KeyTalk
 =================================================================
 
-server-5.4.2, in development
+server-5.5.0, in development
+----------------------
+Support upgrades from v5.2.1 and higher
+Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
+Support import of settings created in v5.2.0-v5.5.0, v4.6.0 and v4.6.2
+    @todo
+
+
+client-5.5.0, in development
+----------------------
+    - FIXED: Windows 7 client support for certificate auto-renewal
+
+server-5.4.2, 6 December 2018
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.4.2, v4.6.0 and v4.6.2
+
     - ADDED: Provide external (non-KeyTalk) users with S/MIME certificates
-    - ADDED: Allow storing cert to LDAP from WebUI
-    - CHANGED: Tolerate errors storing alt-security-identity
-    - CHANGED: Remove the revoked certificate from LDAP
+    - ADDED: Allow storing certificate to LDAP using the Web admin interface
+    - CHANGED: Allow removing revoked certificate from LDAP using the Web admin interface
+    - ADDED: Allow admin to specify DN of LDAP Address Book on the Web admin interface
     - CHANGED: Tolerate errors storing certificate to LDAP (and/or address book)
-    - CHANGED: Set friendly name of the generated certificate to blank iso filling it with username which might not always be appropriate to expose user name to public
-    - CHNAGED: Certificate TFC (time-for-correction) cannot be configured by an admin any more. Set it to -3600 seconds.
+    - CHANGED: Set friendly name of the generated certificate to blank iso filling it with a username
+    - CHANGED: Certificate TFC (time-for-correction) cannot be configured by an admin any more. Always set to -3600 seconds.
     - FIXED: More robust and flexible writing of address book to LDAP/AD
-    - FIXED: Don't throw error after requesting a certificate
 
 
 server-5.4.1, 2 November 2018
