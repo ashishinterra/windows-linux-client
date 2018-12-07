@@ -129,7 +129,7 @@ Install Development Tools:
 
 Install epel (needed for python3)
 
-   # yum -y install epel-release
+    # yum -y install epel-release
 
 
 Install packages:
