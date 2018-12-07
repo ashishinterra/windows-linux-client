@@ -13,6 +13,7 @@ Windows and Linux clients for [KeyTalk](https://www.keytalk.com/)
 
 ### Setup base system
 Install Linux distribution (minimal installation) matching the system the KeyTalk Linux client is supposed to run on.
+Notice: thanks to binary compatibility between CentOS and RHEL we limit ourselves to building KeyTalk on CentOS, these instllers will be then used on RHEL without change.
 - 15 GB disk space
 - 512 MB RAM
 
@@ -62,7 +63,7 @@ Optional. Ubuntu 16/18 and Debain 9: install ccache to speedup C/C++ builds
     # which clang++
 
 
-### _Setting up development environment for RHEL 7/CentOS 7 Client_
+### _Setting up development environment for CentOS 7 Client_
 
 Become root
 
@@ -86,30 +87,23 @@ Install Development Tools:
     # yum -y groupinstall "Development Tools"
 
 
-**RHEL 7** only: enable optional and extras repo through subscription manager :
+Install epel (needed for python3)
 
-    # subscription-manager repos --enable rhel-7-server-optional-rpms
-    # subscription-manager repos --enable rhel-7-server-extras-rpms
-
-
-Install epel and ius packages:
-
-    # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-    # yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+    # yum -y install epel-release
 
 
 Install packages:
 
     # yum -y update
-    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget wkhtmltopdf pylint bind-utils nc
-    # pip install lxml pyopenssl
-    # yum install tomcat tomcat-*
-    # systemctl enable tomcat
-    # systemctl restart tomcat
+    # yum install -y gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python-pip python34 gdb vim git ntp ntpdate curl expect libtool pandoc zlib-devel tmux hdparm zip unzip clang wget wkhtmltopdf pylint bind-utils
+    # yum -y install httpd mod_ssl
+    # yum -y install pyOpenSSL python-lxml
+    # yum -y install tomcat
+    # curl -s https://bootstrap.pypa.io/get-pip.py | python3
 
 
 
-### _Setting up development environment for RHEL 6 /CentOS 6 Client_
+### _Setting up development environment for CentOS 6 Client_
 
 Become root
 
@@ -133,50 +127,39 @@ Install Development Tools:
     # yum -y groupinstall "Development Tools"
 
 
-**RHEL 6** only: enable optional and extras repo through subscription manager for  :
+Install epel (needed for python3)
 
-    # subscription-manager repos --enable rhel-6-server-optional-rpms
-    # subscription-manager repos --enable rhel-6-server-extras-rpms
-
-
-
-Install epel and ius packages:
-
-    # rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-6.noarch.rpm
-    # yum -y install https://centos6.iuscommunity.org/ius-release.rpm
+   # yum -y install epel-release
 
 
 Install packages:
 
     # yum -y update
-    # yum install -y mesa-libGL-devel gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python35u python35u-libs python35u-devel python35u-pip redhat-lsb-core gdb vim git ntp ntpdate curl httpd expect automake autoconf libtool pandoc zlib-devel tmux hdparm zip clang mod_ssl python-pip wget bind-utils nc
-    # pip install lxml pyopenssl
-    # yum install tomcat6 tomcat6-*
-    # service tomcat6 start
+    # yum install -y install gcc gcc-c++ make openssl-devel expat-devel xorg-x11-server-Xvfb xorg-x11-fonts-75dpi libxml2-devel libxslt-devel python-devel python-pip python34 redhat-lsb-core gdb vim git ntp ntpdate curl expect libtool pandoc zlib-devel tmux hdparm zip unzip clang wget bind-utils
+    # yum -y install httpd mod_ssl
+    # yum install -y pyOpenSSL python-lxml
+    # yum install -y tomcat6 tomcat6-*
+    # curl -s https://bootstrap.pypa.io/get-pip.py | python3
 
     # wget https://downloads.wkhtmltopdf.org/0.12/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
     # tar xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz
     # mv wkhtmltox/bin/wkhtmlto* /usr/bin
-    # pip install pylint
 
 
-**RHEL 6** only: install devtoolset
 
-    # yum -y install devtoolset-2
-
-**CentsOS 6** only: install devtoolset
+Install devtoolset (we need g++ 4.8 at least)
 
     # wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo
-    # yum -y install devtoolset-2-gcc devtoolset-2-binutils
-    # yum -y install devtoolset-2-gcc-c++ devtoolset-2-gcc-gfortran
+    # yum -y install devtoolset-2-gcc-c++ devtoolset-2-binutils
 
 
-Enable gcc/g++ version 4.8.x and to update CA Trust
+Update CA trust
+
+    # update-ca-trust enable
 
 **(Note: gcc/g++ version should always be 4.8.x before installing from keytalk source code)**
 
     # scl enable devtoolset-2 bash
-    # update-ca-trust enable
 
 
 
