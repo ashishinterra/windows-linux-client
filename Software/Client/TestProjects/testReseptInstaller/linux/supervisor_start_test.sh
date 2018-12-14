@@ -90,7 +90,7 @@ function test_build()
 
     echo "Start build test on ${image_name} (container ${container_name})"
 
-    if [[ "${image_name}" =~ ^centos\-7* ]]; then
+    if [[ "${image_name}" =~ ^centos\-7 ]]; then
       # CentOS 7 docker images do not support systemd and need special treatment
 
       # Basically we start these images detached with 'docker run' and then fire up "inject" build script from a separate 'docker exec"
@@ -114,7 +114,7 @@ function test_build()
          # docker exec -it ${container_name} bash
 
          # Start the build
-         if docker exec -it ${container_name} ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_build_test.sh
+         if docker exec -i ${container_name} ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_build_test.sh
          then
              echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
              docker rm -f ${container_name} || true
@@ -163,7 +163,7 @@ function test_installation()
     local container_name="${image_name}-container"
     echo "Start installation test on ${image_name} (container ${container_name})"
 
-    if [[ "${image_name}" =~ ^centos\-7* ]]; then
+    if [[ "${image_name}" =~ ^centos\-7 ]]; then
       # CentOS 7 docker images do not support systemd and need special treatment
 
       # Adding either 'privileged=true' or '--cap-add SYS_PTRACE' is necessary to avoid false positives starting tomcat (see https://github.com/moby/moby/issues/6800)
@@ -184,7 +184,7 @@ function test_installation()
       # docker exec -it ${container_name} bash
 
       # Start the build
-      if docker exec -it ${container_name} ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh
+      if docker exec -i ${container_name} ./src/Software/Client/TestProjects/testReseptInstaller/linux/worker_start_installation_test.sh
       then
           echo "TEST ${image_name} SUCCEEDED ($(elapsed_time "${start_time}"))"
           docker rm -f ${container_name} || true
@@ -221,6 +221,38 @@ function test_installation()
 
     # echo "To track progress 'docker logs ${container_name} | tail'"
     # echo "To login into 'docker exec -it ${container_name} /bin/bash'"
+}
+
+function create_fat_installer()
+{
+    local client_version=$(cut -d '=' -f 2 ${SHARED_REPO_DIR}/Software/Client/version)
+    pushd ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR} > /dev/null
+    # CentOS is binary compatible with RHEL, let's make use of that
+    ln -s KeyTalkClient-centos6-x64.tgz KeyTalkClient-rhel6-x64.tgz
+    ln -s KeyTalkClient-centos7-x64.tgz KeyTalkClient-rhel7-x64.tgz
+
+    # Create master installation script
+    printf '
+#!/bin/bash
+
+OS_SPEC=$(lsb_release --id --short | tr "[:upper:]" "[:lower:]")$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')-x64
+KTCLIENT_VERSION="%s"
+INSTALLER_FILENAME=KeyTalkClient-${KTCLIENT_VERSION}-${OS_SPEC}.tgz
+if [ ! -f ${INSTALLER_FILENAME} ]; then
+    echo "${INSTALLER_FILENAME} not found!" >&2
+    exit 1
+fi
+
+rm -rf ./keytalkclient-${KTCLIENT_VERSION}
+tar -xzf ${INSTALLER_FILENAME}
+
+cd keytalkclient-${KTCLIENT_VERSION}
+./install.sh
+' ${client_version} > install.sh
+    chmod +x install.sh
+
+    tar -cf KeyTalkClient-${client_version}-linux.tar *.tgz install.sh
+    popd > /dev/null
 }
 
 function start_tests()
@@ -267,7 +299,18 @@ function start_tests()
     echo "${succeeded_build_tests} build tests and ${succeeded_installation_tests} installation tests succeeded, ${failed_build_tests} build tests and ${failed_installation_tests} installation tests failed, ${failed_build_tests} installation tests skipped"
     echo "Logs can be found under ${SHARED_TEST_LOG_DIR}"
 
-    if (( failed_build_tests == 0 && failed_installation_tests == 0 )); then
+    # produce a fat installer regardless the build success
+    # to not be influenced by possible fault negatives
+    local fat_installer_created
+    if create_fat_installer ; then
+        fat_installer_created=1
+        echo "Fat installer successfully created"
+    else
+        fat_installer_created=0
+        echo "Failed to create fat installer"
+    fi
+
+    if (( failed_build_tests == 0 && failed_installation_tests == 0 && fat_installer_created == 1 )); then
         exit 0
     else
         exit 1

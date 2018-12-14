@@ -6,11 +6,11 @@ server-5.5.0, in development
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.5.0, v4.6.0 and v4.6.2
-
-    @todo
+    - ADDED: Enforce SMS password on mail cert when allowing requesting of cert for 3rd parties (KEYTALK-500)
+    - ADDED: REST API to check availability of S/MIME certificate enrollment for 3rd parties (KEYTALK-501)
 
     CHANGED shared Db schema:
-      - version 5.0-> 6.0
+      - version 6.0-> 7.0
 
 
 client-5.5.0, in development

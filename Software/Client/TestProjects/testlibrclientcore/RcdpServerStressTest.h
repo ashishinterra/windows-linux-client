@@ -76,6 +76,7 @@ class RcdpServerStressTest : public CxxTest::TestSuite
             using boost::assign::map_list_of;
             using std::string;
 
+            FUNCLOG;
             const resept::Credentials myCreds = list_of(Credential(resept::credUserId, "DemoUser"))
                                                   (Credential(resept::credHwSig, "does-not-matter"));
 
@@ -88,14 +89,15 @@ class RcdpServerStressTest : public CxxTest::TestSuite
                  myRcdp.getAuthRequirements(Service);
                  if (myRcdp.authenticate(Service, myCreds).auth_result.type != resept::AuthResult::Ok)
                  {
+                    myRcdp.eoc();
                     return false;
                  }
                  const rclient::CertResponse myCertResult = myRcdp.getCert(resept::certformatP12, false);
+                 myRcdp.eoc();
                  if (ta::CertUtils::parsePfx(myCertResult.cert, myCertResult.password) != 1)
                  {
                     return false;
                  }
-                 myRcdp.eoc();
                  // OK!
                 return true;
             }
@@ -158,9 +160,13 @@ class RcdpServerStressTest : public CxxTest::TestSuite
             // Start
             notifyThreadToRun();
             const time_t myStartTime = time(NULL);
+            unsigned int myNumOfFinshedHandlers = 0;
             foreach (HandlerEntry& entry, theHandlers)
             {
+                TS_TRACE(str(boost::format("Waiting for the handler to complete (finished so far: %d)") % myNumOfFinshedHandlers).c_str());
                 entry.thread->join();
+                ++myNumOfFinshedHandlers;
+                TS_TRACE(str(boost::format("Completed %d handlers") % myNumOfFinshedHandlers).c_str());
             }
             const unsigned int myElapsedTimeSec = time(NULL) - myStartTime;
 
@@ -186,7 +192,7 @@ class RcdpServerStressTest : public CxxTest::TestSuite
             TS_ASSERT(!"Unknown exception");
         }
 
-        foreach (HandlerEntry entry, theHandlers)
+        foreach (HandlerEntry& entry, theHandlers)
         {
             delete entry.thread;
             delete entry.handler;

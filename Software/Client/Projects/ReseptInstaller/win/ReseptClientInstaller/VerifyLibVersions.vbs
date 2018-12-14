@@ -1,4 +1,4 @@
-' The script verifies versions of 3rd party libraries before including them in the MSI isntaller
+' The script verifies versions of 3rd party libraries before including them in the MSI installer
 '
 ' The reason for that is to prevent the situation when upgrading an existing KeyTalk client installation
 ' from the msi (inadvertently) holding older versions of (some of) these libs makes the installer to skip installing

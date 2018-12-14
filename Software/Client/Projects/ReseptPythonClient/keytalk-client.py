@@ -96,11 +96,15 @@ def fetch_url(url):
         return None
 
 
-def is_true(d, key):
+def is_true(d, key, strict=False):
+    if strict and key not in d:
+        raise Exception("{} not found in {}".format(key, d))
     return (key in d) and (d[key].lower() == 'true')
 
 
-def is_false(d, key):
+def is_false(d, key, strict=False):
+    if strict and key not in d:
+        raise Exception("{} not found in {}".format(key, d))
     return (key in d) and (d[key].lower() == 'false')
 
 
@@ -111,7 +115,7 @@ class BadRequestError(Exception):
 class CertRetrievalApi(object):
 
     def __init__(self):
-        self.version = conf.RCDP_VERSION_2_3
+        self.version = conf.SERVER_SUPPORTED_RCDPV2_VERSIONS[-1]  # the latest-greatest
         self.conn = None
         self.cookie = None
 
@@ -617,7 +621,7 @@ class CaApi(object):
     def __init__(self):
         self.port = conf.CA_API_AND_CERT_DOWNLOAD_LISTEN_PORT
         self.script = conf.CA_API_REQUEST_SCRIPT_NAME
-        self.version = conf.CA_API_VERSION_1_0
+        self.version = conf.SERVER_SUPPORTED_CA_API_VERSIONS[-1]  # the latest-greatest
 
     def _url(self, ca_name):
         return "http://{}:{}/{}/{}/{}".format(KEYTALK_SERVER,
@@ -657,7 +661,8 @@ class PublicApi(object):
             self.conn.set_debuglevel(1)
 
         url = "/{}/{}/{}".format(conf.PUBLIC_API_REQUEST_SCRIPT_NAME,
-                                 conf.PUBLIC_API_VERSION_1_0,
+                                 # the latest-greatest
+                                 conf.SERVER_SUPPORTED_PUBLIC_API_VERSIONS[-1],
                                  action)
         headers = {}
         body = None
@@ -719,6 +724,28 @@ class PublicApi(object):
             return True
         elif is_false(response_payload, conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE):
             return False
+        else:
+            raise Exception("Failed to parse boolean from {} key of the response {}".format(
+                conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE, response_payload))
+
+    def is_smime_cert_enrollment_available(self, cert):
+        """ return (true, sms-required) or (false, reason) """
+        self._request(conf.PUBLIC_API_REQUEST_SMIME_CERT_ENROLLMENT_AVAILABILITY,
+                      {conf.PUBLIC_API_REQUEST_PARAM_NAME_CERT: cert},
+                      method='POST')
+        response_payload = PublicApi._parse_response(
+            self.conn,
+            conf.PUBLIC_API_REQUEST_SMIME_CERT_ENROLLMENT_AVAILABILITY,
+            conf.PUBLIC_API_RESPONSE_SMIME_CERT_ENROLLMENT_AVAILABILITY)
+        if is_true(response_payload, conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE):
+            return (
+                True,
+                is_true(
+                    response_payload,
+                    conf.PUBLIC_API_RESPONSE_PARAM_NAME_MOBILE_REQUIRED,
+                    strict=True))
+        elif is_false(response_payload, conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE):
+            return (False, response_payload[conf.PUBLIC_API_RESPONSE_PARAM_NAME_REASON])
         else:
             raise Exception("Failed to parse boolean from {} key of the response {}".format(
                 conf.PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE, response_payload))
@@ -1029,6 +1056,28 @@ def retrieve_address_books():
         pass
 
 
+def check_smime_cert_enrollment_availability():
+
+    api = PublicApi()
+
+    # given, get the cert for which self-service should be available
+    request_cert_with_password_authentication(conf.CERT_FORMAT_PEM, False)
+    cert = open('cert.pem').read()
+    # when-then (default KeyTalk build lacks S/MIME cert enrollment setup and
+    # that's pretty worksome to set it up by hand here, so just test for
+    # error)
+    available, reason = api.is_smime_cert_enrollment_available(cert)
+    assert not available
+    assert reason
+    debug(reason)
+
+    try:
+        api.is_smime_cert_enrollment_available("invalid-cert")
+        assert False, "Invalid certificate is not reported as bad request"
+    except BadRequestError:
+        pass
+
+
 #
 # Entry point
 #
@@ -1048,3 +1097,4 @@ if __name__ == "__main__":
     fetch_ca_certs()
     check_self_service_availability()
     retrieve_address_books()
+    check_smime_cert_enrollment_availability()

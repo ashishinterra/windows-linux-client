@@ -3,8 +3,11 @@ Artistic Style Automatic Code Formatter
 
 To build on Linux:
 -------------
-svn checkout  "https://svn.code.sf.net/p/astyle/code/trunk/AStyle"
-cd AStyle/build/gcc/
+Download the latest stable version from https://sourceforge.net/projects/astyle/files/astyle/
+
+mkdir out
+cd out
+cmake ../
 make
 
 To build on Windows:

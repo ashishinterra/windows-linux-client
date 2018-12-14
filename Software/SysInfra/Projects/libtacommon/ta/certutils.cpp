@@ -2678,7 +2678,7 @@ namespace ta
         {
             if (!hasPemCert(aPemCert))
             {
-                TA_THROW_MSG(std::invalid_argument, "Not a S/MIME Certificate. Input is not a PEM certificate.");
+                TA_THROW_MSG(std::invalid_argument, "Input is not a PEM certificate.");
             }
 
             const CertInfo myCertInfo = getCertInfo(aPemCert);

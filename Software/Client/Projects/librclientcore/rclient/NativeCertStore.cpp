@@ -657,19 +657,18 @@ namespace rclient
                     void *UNUSED(pvReserved),
                     void *pvArg)
                 {
-                    if (pvSystemStore == NULL)
+                    if (!pvSystemStore)
                     {
                         ERRORDEVLOG("pvSystemStore is NULL");
                         return FALSE;
                     }
-                    else if (pvArg == NULL)
+                    if (!pvArg)
                     {
                         ERRORDEVLOG("pvArg is NULL");
                         return FALSE;
                     }
                     ta::StringArray* pEnumArg = (ta::StringArray*)pvArg;
                     const LPCWSTR pwszSystemStore = (LPCWSTR)pvSystemStore;
-                    static int line_counter = 0;
 
                     pEnumArg->push_back(ta::Strings::toMbyte(pwszSystemStore));
                     return TRUE;

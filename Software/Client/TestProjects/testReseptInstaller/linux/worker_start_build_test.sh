@@ -29,7 +29,7 @@ function setup_test()
     pushd ${REPO_DIR}/Software/ContinuousIntegration/cc.py/rlinuxclient.worker/ > /dev/null
     cp ccpyd.conf /etc/
     if [[ "${OS_SPEC}" == "centos6-x64" || "${OS_SPEC}" == "rhel6-x64" ]]; then
-        # Skip code checks on legacy platforms because too ancient tooling
+        # Skip code checks on legacy platforms because of dated tooling
         cp ccpy.conf.nocodechecks /etc/ccpy.conf
     else
         cp ccpy.conf /etc/ccpy.conf

@@ -481,8 +481,8 @@ namespace resept
 
         enum Request
         {
-            FirstRequest,
-            reqEOC = FirstRequest,
+            _FirstRequest,
+            reqEOC = _FirstRequest,
             reqVSMREQ,
             reqCT, reqR3RESP, reqECRESP,
             reqAUTH, reqAUTHRESP,
@@ -490,7 +490,7 @@ namespace resept
             reqFORMAT, reqRESOLVED, reqDIGEST,
             reqFIN, reqERR, reqNOTSUP,
             reqLDAPCHANGEPWD,
-            LastRequest = reqLDAPCHANGEPWD
+            _LastRequest = reqLDAPCHANGEPWD
         };
 
         enum Response
@@ -530,18 +530,18 @@ namespace resept
 
 
         const std::string RequestStrings[] = ${RCDPV1_REQUEST_STRINGS};
-        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == LastRequest-FirstRequest+1);
+        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
         inline bool isValidRequest(int aVal)
         {
-            return (aVal >= FirstRequest && aVal <= LastRequest);
+            return (aVal >= _FirstRequest && aVal <= _LastRequest);
         }
         inline std::string str(Request aRequest)
         {
-            return RequestStrings[aRequest-FirstRequest];
+            return RequestStrings[aRequest-_FirstRequest];
         }
         inline bool parseRequest(const std::string& aRequestStr, Request& aRequest)
         {
-            for (int i = FirstRequest; i <= LastRequest; ++i)
+            for (int i = _FirstRequest; i <= _LastRequest; ++i)
             {
                 Request myRequest = static_cast<Request>(i);
                 if (str(myRequest) == aRequestStr)
@@ -656,8 +656,8 @@ namespace resept
         //
         enum Request
         {
-            FirstRequest,
-            reqEOC = FirstRequest,
+            _FirstRequest,
+            reqEOC = _FirstRequest,
             reqError,
             reqHello,
             reqHandshake,
@@ -667,7 +667,7 @@ namespace resept
             reqLastMessages,
             reqCert,
             reqCsrRequirements,
-            LastRequest = reqCsrRequirements
+            _LastRequest = reqCsrRequirements
         };
         const std::string requestParamNameCallerAppDescription = ${RCDPV2_REQUEST_PARAM_NAME_CALLER_APP_DESCRIPTION};
         const std::string requestParamNameCallerHwDescription = ${RCDPV2_REQUEST_PARAM_NAME_CALLER_HW_DESCRIPTION};
@@ -703,18 +703,18 @@ namespace resept
 
 
         const std::string RequestStrings[] = ${RCDPV2_REQUEST_STRINGS};
-        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == LastRequest-FirstRequest+1);
+        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
         inline bool isValidRequest(int aVal)
         {
-            return (aVal >= FirstRequest && aVal <= LastRequest);
+            return (aVal >= _FirstRequest && aVal <= _LastRequest);
         }
         inline std::string str(Request aRequest)
         {
-            return RequestStrings[aRequest-FirstRequest];
+            return RequestStrings[aRequest-_FirstRequest];
         }
         inline bool parseRequest(const std::string& aRequestStr, Request& aRequest)
         {
-            for (int i = FirstRequest; i <= LastRequest; ++i)
+            for (int i = _FirstRequest; i <= _LastRequest; ++i)
             {
                 Request myRequest = static_cast<Request>(i);
                 if (str(myRequest) == aRequestStr)
@@ -879,6 +879,7 @@ namespace resept
     namespace publicapi
     {
         const std::string V_1_0 = ${PUBLIC_API_VERSION_1_0};
+        const std::string V_1_1 = ${PUBLIC_API_VERSION_1_1};
 
         const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_PUBLIC_API_VERSIONS};
 
@@ -896,28 +897,29 @@ namespace resept
         //
         enum Request
         {
-            FirstRequest,
-            reqSelfServiceAvailability = FirstRequest,
+            _FirstRequest,
+            reqSelfServiceAvailability = _FirstRequest,
             reqAddressBookList,
-            LastRequest = reqAddressBookList
+            reqSmimeEnrollmentAvailability,
+            _LastRequest = reqSmimeEnrollmentAvailability
         };
 
         const std::string requestParamNameCert = ${PUBLIC_API_REQUEST_PARAM_NAME_CERT};
         const std::string requestParamNameService = ${PUBLIC_API_REQUEST_PARAM_NAME_SERVICE};
 
         const std::string RequestStrings[] = ${PUBLIC_API_REQUEST_STRINGS};
-        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == LastRequest-FirstRequest+1);
+        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
         inline bool isValidRequest(int aVal)
         {
-            return (aVal >= FirstRequest && aVal <= LastRequest);
+            return (aVal >= _FirstRequest && aVal <= _LastRequest);
         }
         inline std::string str(Request aRequest)
         {
-            return RequestStrings[aRequest-FirstRequest];
+            return RequestStrings[aRequest-_FirstRequest];
         }
         inline Request parseRequestType(const std::string& aRequestStr)
         {
-            for (int i = FirstRequest; i <= LastRequest; ++i)
+            for (int i = _FirstRequest; i <= _LastRequest; ++i)
             {
                 Request myRequest = static_cast<Request>(i);
                 if (str(myRequest) == aRequestStr)
@@ -938,11 +940,14 @@ namespace resept
             respError = FirstResponse,
             respSelfServiceAvailability,
             respAddressBookList,
-            LastResponse = respAddressBookList
+            respSmimeEnrollmentAvailability,
+            LastResponse = respSmimeEnrollmentAvailability
         };
         const std::string responseParamNameError = ${PUBLIC_API_RESPONSE_PARAM_NAME_ERROR};
         const std::string responseParamNameStatus = ${PUBLIC_API_RESPONSE_PARAM_NAME_STATUS};
         const std::string responseParamNameAvailable = ${PUBLIC_API_RESPONSE_PARAM_NAME_AVAILABLE};
+        const std::string responseParamNameMobileRequired = ${PUBLIC_API_RESPONSE_PARAM_NAME_MOBILE_REQUIRED};
+        const std::string responseParamNameReason = ${PUBLIC_API_RESPONSE_PARAM_NAME_REASON};
         const std::string responseParamNameAddressBooks = ${PUBLIC_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
         const std::string responseParamNameLdapSvrUrl = ${PUBLIC_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
         const std::string  responseParamNameSearchBase = ${PUBLIC_API_RESPONSE_PARAM_NAME_SEARCH_BASE};

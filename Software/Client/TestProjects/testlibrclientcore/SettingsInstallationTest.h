@@ -114,7 +114,7 @@ public:
                 TS_ASSERT_EQUALS(myFromMasterConfig, !service.allowOverwriteCertValidityPercentage);
                 if (service.useClientOsLogonUser)
                 {
-                    TS_TRACE(boost::format("Username: %s") % ta::getUserName());
+                    TS_TRACE(("Username: " + ta::getUserName()).c_str());
                     const vector<string> myUser = list_of(ta::getUserName());
                     TS_ASSERT_EQUALS(Settings::getUsers(provider.providerName, service.name, myFromMasterConfig), myUser);
                 }
@@ -407,7 +407,7 @@ public:
         static const bool AllowOverwriteNo = false;
         static const bool DoUseClientOsLogonUser = true;
         static const bool DontUseClientOsLogonUser = false;
-        
+
         // Imitate createRccdRequest with custom changes
         myReq.providerName = "Provider1";
         myReq.contentVersion = 2010080401;
