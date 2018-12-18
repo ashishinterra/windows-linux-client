@@ -201,6 +201,8 @@
              Name="CurrentBuild"
              Type="raw" />
     </Property>
+    
+    <Binary Id="GenerateKeyTalkUuidBinary" SourceFile="$(var.ReseptSourceDir)\GenerateKeyTalkUuid.vbs" />
 
 
     <!-- Features dialog -->
@@ -259,11 +261,13 @@
     <CustomAction Id="ScheduleScriptsRunner" Execute="deferred" Return="check" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /create /f /sc minute /mo 1 /tn "KeyTalkScheduledScripts" /tr "wscript &#39;[RESEPTINSTALLDIR]RunSilent.vbs&#39; powershell -ExecutionPolicy Bypass -File &#39;[RESEPTINSTALLDIR]Scripts\RunScheduledScripts.ps1&#39;"' />
     <CustomAction Id="UnScheduleScriptsRunner" Execute="deferred" Return="ignore" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalkScheduledScripts" /f' />
     <CustomAction Id="ScheduleValidateCertificateScript" Execute="deferred" Return="check" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /create /f /sc minute /mo 5 /tn "KeyTalk Certificate Validation Check" /tr "wscript &#39;[RESEPTINSTALLDIR]RunSilent.vbs&#39; &#39;[RESEPTINSTALLDIR]ReseptConfigTool.exe&#39; task validatecert"' />
+    <CustomAction Id="GenerateKeyTalkUuid"   Execute="deferred" Return="check" Impersonate="yes" BinaryKey="GenerateKeyTalkUuidBinary" VBScriptCall="Generate"/>
     <!-- Keep the task name in sync with Task Scheduler task name. Removal is based on task name. -->
     <CustomAction Id="UnScheduleValidateCertificate" Execute="deferred" Return="ignore" Impersonate="yes" Directory="TARGETDIR" ExeCommand='"[SystemFolder]wscript" "[RESEPTINSTALLDIR]RunSilent.vbs" "[SystemFolder]schtasks" /delete /tn "KeyTalk Certificate Validation Check" /f' />
 
     <InstallExecuteSequence>
       <!-- Actions performed during installation -->
+      <Custom Action="GenerateKeyTalkUuid" After="InstallFiles">NOT Installed</Custom>
       <Custom Action="UpdateReseptConfig" After="InstallFiles">NOT Installed</Custom>
       <Custom Action="ScheduleScriptsRunner" After="InstallFiles">NOT Installed AND <![CDATA[&IISCertificateUpdateScript=INSTALLSTATE_LOCAL]]></Custom>
       <Custom Action="LaunchConfigManNoUi" Before="InstallFinalize">NOT Installed AND RCCDPATH</Custom>

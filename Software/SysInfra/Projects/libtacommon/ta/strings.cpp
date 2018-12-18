@@ -408,6 +408,17 @@ namespace ta
             return myRetVal;
         }
 
+        string join(const StringDict& aDict, const string& aKvSep, const string& anElemSep)
+        {
+            StringArray myElems(aDict.size());
+            size_t i = 0;
+            foreach(const StringDict::value_type& kv, aDict)
+            {
+                myElems[i++] = kv.first + aKvSep + kv.second;
+            }
+            return join(myElems, anElemSep);
+        }
+
         string substTemplate(const string& aTempl, const StringDict& aMappings)
         {
             if (aMappings.empty())
@@ -415,7 +426,7 @@ namespace ta
             verifyMappingKeys(aMappings);
 
             // Split template strings on $${mapping-name}
-            std::vector<TemplatePart> mySplitTemplate;
+            vector<TemplatePart> mySplitTemplate;
             const string myKeysOrRegexStr = buildOrRegexStrFromKeys(aMappings);
             const string mySplitRegExStr = str(boost::format("(.*?)(\\$\\$\\((?:%s)\\))") % myKeysOrRegexStr);
             boost::regex mySplitRegEx(mySplitRegExStr);

@@ -1457,6 +1457,20 @@ public:
         }
     }
 
+    void testExtractHostName()
+    {
+        using ta::CertUtils::tryExtractHostName;
+
+        TS_ASSERT_EQUALS(tryExtractHostName("CA/cert.pem"), "cursus3.trustalert.com"); // from CN
+        TS_ASSERT_EQUALS(tryExtractHostName("CA/keytalk.com.cert.pem"), "autodiscover.keytalk.com"); // from SAN
+        TS_ASSERT_EQUALS(tryExtractHostName("CA/test-exts.pem"), "r4webdemo.gotdns.com"); // from SAN
+        TS_ASSERT_EQUALS(tryExtractHostName("CA/selfsigned.pem"), "");
+        TS_ASSERT_EQUALS(tryExtractHostName("CA/signingcertkey.pem"), "");
+
+        TS_ASSERT_THROWS(tryExtractHostName("CA/cert.der"), std::exception);
+        TS_ASSERT_THROWS(tryExtractHostName("non/existing/cert"), std::exception);
+    }
+
 private:
 #ifndef _WIN32
     bool doesCsrHaveChallengePassword(const std::string& aCsrPem)
@@ -1491,5 +1505,5 @@ private:
         }
     }
 #endif
-};
+}; // CertUtilsTest
 

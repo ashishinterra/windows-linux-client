@@ -2769,5 +2769,37 @@ namespace ta
             TA_THROW_MSG(std::invalid_argument, myNotFoundError);
         }
 
+        string tryExtractHostName(const string& aPemCertPath)
+        {
+            const auto myCertInfo = getCertInfoFile(aPemCertPath);
+
+            // Look up SAN
+            string mySAN;
+            if (ta::findValueByKey(SN_subject_alt_name, myCertInfo.optionalExtensions, mySAN))
+            {
+                foreach (const string& san, deserializeSAN(mySAN))
+                {
+                    if (parseSingleSAN(san).get<0>() == "DNS")
+                    {
+                        // there might be a wildcard which is not a valid hostname, so make sure to validate it
+                        const string myDNS = parseSingleSAN(san).get<1>();
+                        if (ta::NetUtils::isValidHostName(myDNS))
+                        {
+                            return myDNS;
+                        }
+                    }
+                }
+            }
+
+            // fallback to CN
+            if (ta::NetUtils::isValidHostName(myCertInfo.subjCN))
+            {
+                return myCertInfo.subjCN;
+            }
+
+            // nothing found
+            return "";
+        }
+
     }// namespace CertUtils
 }// namespace ta

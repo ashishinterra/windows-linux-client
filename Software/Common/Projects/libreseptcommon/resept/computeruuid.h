@@ -37,6 +37,7 @@ namespace resept
                 OsRegisteredOwner, // OS registered owner.
                 UserSID,           // User Security Identifier.
                 Serial,            // Serial number retrieved from BIOS
+                InstallationUID,   // 18: Custom ID unique for device, generated during installation
 
                 // ----------------------------------------------------------
                 // Do not define component enumeration values below this line
@@ -56,6 +57,7 @@ namespace resept
                 UserName,          // 606: User name.
                 Serial,            // 607: Serial number read from BIOS. When BIOS is not available (e.g. on RaspberryPi) return CPU serial number
                 SshPubKey,         // 608: SSH2 public keys of the host if available
+                InstallationUID,   // 609: Custom ID unique for device, generated during installation
 
                 // ----------------------------------------------------------
                 // Do not define component enumeration values below this line

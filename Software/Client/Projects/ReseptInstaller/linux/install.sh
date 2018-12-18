@@ -63,6 +63,12 @@ function install_keytalk()
 
     echo "Installing KeyTalk on ${platform}..."
 
+    local keytalk_uuid_filepath='/etc/.keytalk_uuid'
+    if [ ! -f "${keytalk_uuid_filepath}" ]; then
+        echo "    Generating and installing random uuid"
+        echo $(cat /proc/sys/kernel/random/uuid | tr -d '-') >> "${keytalk_uuid_filepath}"
+    fi
+
     mkdir -p /usr/local/bin/keytalk
     cp ktclient ktconfig ktconfupdater ktconfigtool ktprgen hwutils /usr/local/bin/keytalk/
     cp .uninstaller /usr/local/bin/keytalk/uninstall_keytalk

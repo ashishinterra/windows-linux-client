@@ -495,8 +495,8 @@ namespace resept
 
         enum Response
         {
-            FirstResponse,
-            respEOC = FirstResponse,
+            _FirstResponse,
+            respEOC = _FirstResponse,
             respVSMACK,
             respR3USE, respR3OK, respECUSE, respECOK,
             respAUTHREQ, respAUTHRESULT,
@@ -504,7 +504,7 @@ namespace resept
             respURL, respEXEC, respCERT,
             respFIN, respERR, respNOTSUP,
             respLDAPCHANGEPWDRESULT,
-            LastResponse = respLDAPCHANGEPWDRESULT
+            _LastResponse = respLDAPCHANGEPWDRESULT
         };
 
         enum AuthRequestOpt
@@ -554,18 +554,18 @@ namespace resept
         }
 
         const std::string ResponseStrings[] = ${RCDPV1_RESPONSE_STRINGS};
-        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == LastResponse-FirstResponse+1);
+        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == _LastResponse-_FirstResponse+1);
         inline bool isValidResponse(int aVal)
         {
-            return (aVal >= FirstResponse && aVal <= LastResponse);
+            return (aVal >= _FirstResponse && aVal <= _LastResponse);
         }
         inline std::string str(Response aResponse)
         {
-            return ResponseStrings[aResponse-FirstResponse];
+            return ResponseStrings[aResponse-_FirstResponse];
         }
         inline bool parseResponse(const std::string& aResponseStr, Response& aResponse)
         {
-            for (int i = FirstResponse; i <= LastResponse; ++i)
+            for (int i = _FirstResponse; i <= _LastResponse; ++i)
             {
                 Response myResponse = static_cast<Response>(i);
                 if (str(myResponse) == aResponseStr)
@@ -731,8 +731,8 @@ namespace resept
         //
         enum Response
         {
-            FirstResponse,
-            respEOC = FirstResponse,
+            _FirstResponse,
+            respEOC = _FirstResponse,
             respError,
             respHello,
             respHandshake,
@@ -741,7 +741,7 @@ namespace resept
             respLastMessages,
             respCert,
             respCsrRequirements,
-            LastResponse = respCsrRequirements
+            _LastResponse = respCsrRequirements
         };
         const std::string responseParamNameStatus = ${RCDPV2_RESPONSE_PARAM_NAME_STATUS};
         const std::string responseParamNameErrorCode = ${RCDPV2_RESPONSE_PARAM_NAME_ERROR_CODE};
@@ -775,18 +775,18 @@ namespace resept
         const std::string responseParamNameSubject = ${RCDPV2_RESPONSE_PARAM_NAME_SUBJECT};
 
         const std::string ResponseStrings[] = ${RCDPV2_RESPONSE_STRINGS};
-        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == LastResponse-FirstResponse+1);
+        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == _LastResponse-_FirstResponse+1);
         inline bool isValidResponse(int aVal)
         {
-            return (aVal >= FirstResponse && aVal <= LastResponse);
+            return (aVal >= _FirstResponse && aVal <= _LastResponse);
         }
         inline std::string str(Response aResponse)
         {
-            return ResponseStrings[aResponse-FirstResponse];
+            return ResponseStrings[aResponse-_FirstResponse];
         }
         inline bool parseResponse(const std::string& aResponseStr, Response& aResponse)
         {
-            for (int i = FirstResponse; i <= LastResponse; ++i)
+            for (int i = _FirstResponse; i <= _LastResponse; ++i)
             {
                 Response myResponse = static_cast<Response>(i);
                 if (str(myResponse) == aResponseStr)
@@ -936,12 +936,12 @@ namespace resept
         //
         enum Response
         {
-            FirstResponse,
-            respError = FirstResponse,
+            _FirstResponse,
+            respError = _FirstResponse,
             respSelfServiceAvailability,
             respAddressBookList,
             respSmimeEnrollmentAvailability,
-            LastResponse = respSmimeEnrollmentAvailability
+            _LastResponse = respSmimeEnrollmentAvailability
         };
         const std::string responseParamNameError = ${PUBLIC_API_RESPONSE_PARAM_NAME_ERROR};
         const std::string responseParamNameStatus = ${PUBLIC_API_RESPONSE_PARAM_NAME_STATUS};
@@ -954,18 +954,18 @@ namespace resept
         const std::string responseParamNameVerificationCa = ${PUBLIC_API_RESPONSE_PARAM_NAME_VERIFICATION_CA};
 
         const std::string ResponseStrings[] = ${PUBLIC_API_RESPONSE_STRINGS};
-        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == LastResponse-FirstResponse+1);
+        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == _LastResponse-_FirstResponse+1);
         inline bool isValidResponse(int aVal)
         {
-            return (aVal >= FirstResponse && aVal <= LastResponse);
+            return (aVal >= _FirstResponse && aVal <= _LastResponse);
         }
         inline std::string str(Response aResponse)
         {
-            return ResponseStrings[aResponse-FirstResponse];
+            return ResponseStrings[aResponse-_FirstResponse];
         }
         inline Response parseResponse(const std::string& aResponseStr)
         {
-            for (int i = FirstResponse; i <= LastResponse; ++i)
+            for (int i = _FirstResponse; i <= _LastResponse; ++i)
             {
                 const Response myResponse = static_cast<Response>(i);
                 if (str(myResponse) == aResponseStr)
@@ -977,5 +977,101 @@ namespace resept
         }
 
     } // publicapi
+
+
+    namespace selfserviceapi
+    {
+        const std::string V_1_0 = ${SELF_SERVICE_API_VERSION_1_0};
+
+        const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_SELF_SERVICE_API_VERSIONS};
+
+        inline std::vector<ta::version::Version> getServerSupportedApiVersions()
+        {
+            const ta::StringArray versions(ServerSupportedApiVersions,
+                                           ServerSupportedApiVersions + sizeof(ServerSupportedApiVersions)/sizeof(ServerSupportedApiVersions[0]));
+            return ta::version::parse(versions);
+        }
+
+        const std::string RequestScriptName  = ${SELF_SERVICE_API_REQUEST_SCRIPT_NAME};
+
+        //
+        // Requests
+        //
+        enum Request
+        {
+            _FirstRequest,
+            reqSmimeCertEnrollment = _FirstRequest,
+            _LastRequest = reqSmimeCertEnrollment
+        };
+
+        const std::string requestParamNameRecipientEmail = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_RECIPIENT_EMAIL};
+        const std::string requestParamNameKeyTalkSvrHostName = ${SELF_SERVICE_API_REQUEST_KEYTALK_SVR_HOST_NAME};
+        const std::string requestParamNameRecipientMobile = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_RECIPIENT_MOBILE};
+
+        const std::string RequestStrings[] = ${SELF_SERVICE_API_REQUEST_STRINGS};
+        BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
+        inline bool isValidRequest(int aVal)
+        {
+            return (aVal >= _FirstRequest && aVal <= _LastRequest);
+        }
+        inline std::string str(Request aRequest)
+        {
+            return RequestStrings[aRequest-_FirstRequest];
+        }
+        inline Request parseRequestType(const std::string& aRequestStr)
+        {
+            for (int i = _FirstRequest; i <= _LastRequest; ++i)
+            {
+                Request myRequest = static_cast<Request>(i);
+                if (str(myRequest) == aRequestStr)
+                {
+                    return myRequest;
+                }
+            }
+            TA_THROW_MSG(std::invalid_argument, "Cannot parse self-service API request type from string " + aRequestStr);
+        }
+
+
+        //
+        // Responses
+        //
+        enum Response
+        {
+            _FirstResponse,
+            respSuccess = _FirstResponse,
+            respError,
+            _LastResponse = respError
+        };
+        const std::string responseParamNameError = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ERROR};
+        const std::string responseParamNameStatus = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_STATUS};
+        const std::string responseParamNameAddressBooks = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
+        const std::string responseParamNameLdapSvrUrl = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
+        const std::string  responseParamNameSearchBase = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SEARCH_BASE};
+        const std::string responseParamNameVerificationCa = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_VERIFICATION_CA};
+
+        const std::string ResponseStrings[] = ${SELF_SERVICE_API_RESPONSE_STRINGS};
+        BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == _LastResponse-_FirstResponse+1);
+        inline bool isValidResponse(int aVal)
+        {
+            return (aVal >= _FirstResponse && aVal <= _LastResponse);
+        }
+        inline std::string str(Response aResponse)
+        {
+            return ResponseStrings[aResponse-_FirstResponse];
+        }
+        inline Response parseResponse(const std::string& aResponseStr)
+        {
+            for (int i = _FirstResponse; i <= _LastResponse; ++i)
+            {
+                const Response myResponse = static_cast<Response>(i);
+                if (str(myResponse) == aResponseStr)
+                {
+                    return myResponse;
+                }
+            }
+            TA_THROW_MSG(std::invalid_argument, "Cannot parse self-service API response type from string " + aResponseStr);
+        }
+
+    } // selfserviceapi
 
 } // resept

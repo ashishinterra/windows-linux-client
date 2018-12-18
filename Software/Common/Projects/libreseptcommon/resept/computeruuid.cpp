@@ -3,6 +3,7 @@
 #include "ta/linuxhwutils.h"
 #include "ta/osinfoutils.h"
 #endif
+#include "common.h"
 #include "ta/sysinfo.h"
 #include "ta/osuserinfo.h"
 #include "ta/windowshwutils.h"
@@ -12,6 +13,7 @@
 #include "ta/strings.h"
 #include "ta/utils.h"
 #include "ta/common.h"
+#include "ta/process.h"
 
 #include "boost/algorithm/string.hpp"
 #include "boost/static_assert.hpp"
@@ -52,7 +54,8 @@ namespace resept
                 "OsProductId",
                 "OsRegisteredOwner",
                 "UserSID",
-                "Serial"
+                "Serial",
+                "InstallationUID"
             };
 #elif defined(__linux__)
             const std::string names[] =
@@ -65,7 +68,8 @@ namespace resept
                 "OsProductId",
                 "UserName",
                 "Serial",
-                "SshPubKey"
+                "SshPubKey",
+                "InstallationUID"
             };
 
 #endif
@@ -143,6 +147,32 @@ namespace resept
             }
         }
 
+        string getInstallationUUIDPath()
+        {
+            const string myUUIDFilename = str(boost::format(".%s_uuid") % boost::to_lower_copy(ProductName));
+            string myUUIDPath;
+#ifdef _WIN32
+            myUUIDPath = str(boost::format("%s\\%s") % ta::Process::getCommonAppDataDir() % myUUIDFilename);
+#elif defined(__linux__)
+            myUUIDPath = str(boost::format("/etc/%s") % myUUIDFilename);
+#endif
+            return myUUIDPath;
+        }
+
+        string getInstallationUUID(const string& aUUIDFilepath)
+        {
+            if (!ta::isFileExist(aUUIDFilepath))
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Unable to find Installation Unique ID, file does not exist at path: %s") % aUUIDFilepath);
+            }
+            const string myUUID = boost::trim_copy((string)ta::readData(aUUIDFilepath));
+            if (myUUID.empty())
+            {
+                TA_THROW_MSG(std::runtime_error, boost::format("Unable to find Installation Unique ID, file is empty at %s") % aUUIDFilepath);
+            }
+            return myUUID;
+        }
+
 
         //
         // Public API
@@ -176,7 +206,8 @@ namespace resept
             static const string DefCpuArch          = "0000";
             static const string DefCpuModel         = "00000";
             static const string DefUserName         = "anonymous";
-            static const string DefSshPubKey         ="000000";
+            static const string DefSshPubKey        = "000000";
+            static const string DefInstallationUID  = "00000000000000000000000000000000";
 
             string myCs;
             std::map<Components::id, string> myHwIds;
@@ -224,6 +255,22 @@ namespace resept
                     {
                         WARNLOG2(boost::format("Failed to retrieve %s for HWSIG calculation. Falling back to default value %s") % str(compid) % DefMac, e.what());
                         myHwId = DefMac;
+                    }
+
+                    myHwIds[compid] = myHwId;
+                    myCs += myHwId;
+                    break;
+                }
+                case Components::InstallationUID:
+                {
+                    try
+                    {
+                        myHwId = getInstallationUUID(getInstallationUUIDPath());
+                    }
+                    catch (std::exception& e)
+                    {
+                        WARNLOG2(boost::format("Failed to retrieve %s for HWSIG calculation. Falling back to default value %s") % str(compid) % DefInstallationUID, e.what());
+                        myHwId = DefInstallationUID;
                     }
 
                     myHwIds[compid] = myHwId;

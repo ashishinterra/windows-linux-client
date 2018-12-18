@@ -509,7 +509,6 @@ namespace ta
         //  ["DNS:example.com", "IP: 192.168.33.1"] => ["example.com", "192.168.33.1"]
         ta::StringArray extractSAN_Values(const ta::StringArray& aSAN);
 
-
         // Check whether the given certificate is revoked by checking CRL included in the certificate if any
         // @param [in] PEM-encoded certificate
         bool isCertFileRevoked(X509* aCert, std::string* aWarnings = NULL);
@@ -530,5 +529,10 @@ namespace ta
         bool isSmimeCertForEmail(const std::string& aPemCert, const std::string& aEmail, std::string* aReasonWhenNot = NULL);
         // Get email address from S/MIME Certificate
         std::string getEmailFromSmime(const std::string& aCertificate);
+
+        // Return hostname from "DNS:" part of SAN if it exists
+        // Otherwise check to see if CN represents a valid hostname and returns this
+        // Otherwise return empty string
+        std::string tryExtractHostName(const std::string& aPemCertPath);
     }
 }

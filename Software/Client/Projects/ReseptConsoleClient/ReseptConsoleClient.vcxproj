@@ -71,6 +71,8 @@ IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy RunSilent.vbs ..\Export
 IF %25ERRORLEVEL%25 NEQ 0 exit 1
 copy RunSilentAsync.vbs ..\Export
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy GenerateKeyTalkUuid.vbs ..\Export
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
