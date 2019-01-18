@@ -23,17 +23,11 @@ else:
     astyleExecutable = "Import/astyle/bin/{}-{}/astyle".format(os_.lower(), arch.lower())
 
 ignoredDirs = [os.path.join(*x) for x in (
-    # ignore iOS dirs
-    ("Client", "Projects", "iOSDemoClient"),
-    ("Client", "Projects", "ReseptiOSClient"),
-    ("Client", "Projects", "libKeyTalkiOS"),
-    ("Client", "Projects", "libKMCrypto"),
     ("Client", "Projects", "Export"),
     # ignore most client app dirs because they contain a lot of Qt generated stuff
     ("Client", "Projects", "ReseptResponseCalculator", "generatedfiles"),
     ("Client", "Projects", "ReseptConfigManager", "generatedfiles"),
     ("Client", "Projects", "ReseptPrGenerator", "generatedfiles"),
-    ("Client", "Projects", "ReseptInstaller", "win", "ReseptActiveXClient", "generatedfiles"),
 )]
 
 # ignored files (mostly generated)
@@ -62,11 +56,6 @@ ignoredFiles = [os.path.join(*x) for x in (
     ("Client", "Projects", "librclientappcommon", "rclient", "ui_ConfigUsersDialog.h"),
     ("Client", "Projects", "librclientappcommon", "rclient", "ui_ProxyUserPassAuthDialog.h"),
     ("Client", "Projects", "librclientappcommon", "rclient", "ui_WaitDialog.h"),
-    ("Client", "Projects", "ReseptIeClient", "dlldata.c"),
-    ("Client", "Projects", "ReseptIeClient", "resource.h"),
-    ("Client", "Projects", "ReseptIeClient", "vc120.h"),
-    ("Client", "Projects", "ReseptIeClient", "vc120_i.c"),
-    ("Client", "Projects", "ReseptIeClient", "vc120_p.c"),
 )]
 
 # Change "$ {" to "${" for template files (formatting template files
