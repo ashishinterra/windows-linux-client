@@ -37,7 +37,7 @@ namespace resept
                 OsRegisteredOwner, // OS registered owner.
                 UserSID,           // User Security Identifier.
                 Serial,            // Serial number retrieved from BIOS
-                InstallationUID,   // 18: Custom ID unique for device, generated during installation
+                InstallationUID,   // 18: Custom ID unique for a device, generated during installation
 
                 // ----------------------------------------------------------
                 // Do not define component enumeration values below this line

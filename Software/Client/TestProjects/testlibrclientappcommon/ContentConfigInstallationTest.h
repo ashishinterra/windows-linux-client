@@ -158,16 +158,19 @@ public:
         }
         const Settings::RccdRequestData::Service service1("s1",
                                                         "https://s1.com",
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          11, AllowOverwriteYes,
                                                          DontUseClientOsLogonUser,
                                                          list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                         "https://s2.com",
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          12, AllowOverwriteYes,
                                                          DontUseClientOsLogonUser,
                                                          list_of("s2u1"));
         const Settings::RccdRequestData::Service service3("s3",
                                                         "https://s3.com",
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          12, AllowOverwriteYes,
                                                          DoUseClientOsLogonUser);
         myReq.services = list_of(service1)(service2)(service3);

@@ -279,6 +279,21 @@ namespace ta
             return myTree;
         }
 
+        ptree toTree(const ta::StringDictDict& aStringDictDict)
+        {
+            ptree myTree;
+            foreach (const ta::StringDictDict::value_type& item, aStringDictDict)
+            {
+                ptree myTreeItem;
+                foreach (const ta::StringDict::value_type& kv, item.second)
+                {
+                    myTreeItem.put(kv.first, kv.second);
+                }
+                myTree.push_back(std::make_pair(item.first, myTreeItem));
+            }
+            return myTree;
+        }
+
         vector<string> toStringArray(const ptree& aTree)
         {
             vector<string> myRetVal;
@@ -304,6 +319,17 @@ namespace ta
             {
                 const ptree myTreeItem = it->second;
                 myRetVal.push_back(toStringDict(myTreeItem));
+            }
+            return myRetVal;
+        }
+        ta::StringDictDict toStringDictDict(const boost::property_tree::ptree& aTree)
+        {
+            ta::StringDictDict myRetVal;
+            for (ptree::const_iterator it = aTree.begin(), end = aTree.end(); it != end; ++it)
+            {
+                const string myKey = it->first;
+                const ptree myTreeItem = it->second;
+                myRetVal[myKey] = toStringDict(myTreeItem);
             }
             return myRetVal;
         }
@@ -341,6 +367,10 @@ namespace ta
             const string myJson = toJson(tree);
             return extractJsonArray(myJson);
         }
+        string toJson(const ta::StringDictDict& aStringDictDict)
+        {
+            return toJson(toTree(aStringDictDict));
+        }
         string toJson(const ptree& aTree)
         {
             std::ostringstream stream;
@@ -359,6 +389,10 @@ namespace ta
         ta::StringDictArray jsonToStringDictArray(const string& aJson)
         {
             return toStringDictArray(jsonToTree(aJson));
+        }
+        ta::StringDictDict jsonToStringDictDict(const string& aJson)
+        {
+            return toStringDictDict(jsonToTree(aJson));
         }
         boost::property_tree::ptree jsonToTree(const string& aJson)
         {
@@ -397,6 +431,10 @@ namespace ta
         ta::StringArray parseStringArray(const ptree& aTree, const string& aKey)
         {
             return toStringArray(aTree.get_child(aKey));
+        }
+        ta::StringDict parseStringDict(const ptree& aTree, const string& aKey)
+        {
+            return toStringDict(aTree.get_child(aKey));
         }
         ta::StringDictArray parseStringDictArray(const ptree& aResponse, const string& aKey)
         {

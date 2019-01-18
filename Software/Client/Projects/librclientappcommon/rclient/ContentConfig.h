@@ -35,9 +35,13 @@ namespace rclient
         // version 2.0.2 (Sep, 2018; supported by KeyTalk-5.x; fully compatible with the previous version)
         //     - added use client os logon user setting to allow installation to add the (currently only Windows) logged on username to be added to the user list for the specific service
         //     - no longer supporting users in master.ini/yaml, actively removing the users if found in master.ini/yaml
+        //
+        // version 2.0.3 (Jan, 2019; supported by KeyTalk-5.5; fully compatible with the previous version)
+        //     - added certificate validity 'ServiceCertValidity', which can be either percentage (suffix '%') or duration (suffix 's')
+        //
 
 
-        static const ta::version::Version LatestVersion = ta::version::Version(2,0,1);
+        static const ta::version::Version LatestVersion = ta::version::Version(2,0,3);
 
         static const std::string IndexFileName     = "index.conf";
         static const std::string YamlIndexFileName = "index.yaml";

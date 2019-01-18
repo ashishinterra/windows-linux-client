@@ -580,10 +580,11 @@ class CertRetrievalApi(object):
             cert = bytes(response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT], 'utf-8')
             if fmt == conf.CERT_FORMAT_P12:
                 cert = base64.b64decode(cert)
+        store_cert_to_system = response_payload[conf.RCDPV2_RESPONSE_PARAM_NAME_CERT_STORE_TO_SYSTEM] if conf.RCDPV2_RESPONSE_PARAM_NAME_CERT_STORE_TO_SYSTEM in response_payload else False
 
         cert_passphrase = self._get_cert_passphrase()
-        log("Successfully received {} certificate {} chain".format(
-            fmt, "with" if include_chain else "without"))
+        log("Successfully received {} certificate {} chain, {} store to system store".format(
+            fmt, "with" if include_chain else "without", "should" if store_cert_to_system else "shouldn't"))
         cert_path, cert_pass_path = CertRetrievalApi._save_cert(cert, cert_passphrase, fmt)
         return cert_path, cert_pass_path
 

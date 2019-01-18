@@ -29,6 +29,7 @@
     <ZLIB_INCLUDE_DIR>$(ZLIB_LIB_VERSION_DIR)</ZLIB_INCLUDE_DIR>
     <ZLIB_LIB_DIR>$(ZLIB_LIB_VERSION_DIR)\lib\win32</ZLIB_LIB_DIR>
     <WIX_VERSION_DIR>wix-3.11</WIX_VERSION_DIR>
+    <UTF8CPP_INCLUDE_DIR>utf8cpp\source</UTF8CPP_INCLUDE_DIR>
   </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>KeyTalk Windows Client Common</_PropertySheetDisplayName>
@@ -141,6 +142,10 @@
     </BuildMacro>
     <BuildMacro Include="WIX_VERSION_DIR">
       <Value>$(WIX_VERSION_DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="UTF8CPP_INCLUDE_DIR">
+      <Value>$(UTF8CPP_INCLUDE_DIR)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
   </ItemGroup>

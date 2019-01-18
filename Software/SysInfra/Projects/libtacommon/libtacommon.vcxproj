@@ -40,7 +40,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.\;..\libtalogger;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(LIBCONFIG_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(CURL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\libtalogger;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(LIBCONFIG_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(CURL_INCLUDE_DIR);..\..\..\Import\$(UTF8CPP_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;_USE_32BIT_TIME_T;LIBCONFIG_STATIC;LIBCONFIGXX_STATIC;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>

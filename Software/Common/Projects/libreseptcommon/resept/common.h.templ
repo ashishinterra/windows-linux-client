@@ -637,6 +637,7 @@ namespace resept
         const std::string V_2_1 = ${RCDP_VERSION_2_1};
         const std::string V_2_2 = ${RCDP_VERSION_2_2};
         const std::string V_2_3 = ${RCDP_VERSION_2_3};
+        const std::string V_2_4 = ${RCDP_VERSION_2_4};
 
         const std::string ServerSupportedRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
 
@@ -764,6 +765,7 @@ namespace resept
         const std::string responseParamNameMessageText = ${RCDPV2_RESPONSE_PARAM_NAME_MESSAGE_TEXT};
         const std::string responseParamNameCert = ${RCDPV2_RESPONSE_PARAM_NAME_CERT};
         const std::string responseParamNameCertUrlTempl = ${RCDPV2_RESPONSE_PARAM_NAME_CERT_URL_TEMPL};
+        const std::string responseParamNameCertStoreToSystem = ${RCDPV2_RESPONSE_PARAM_NAME_CERT_STORE_TO_SYSTEM};
         const std::string responseParamNameServiceUris = ${RCDPV2_RESPONSE_PARAM_NAME_SERVICE_URIS};
         const std::string responseParamNameResolveServiceUris = ${RCDPV2_RESPONSE_PARAM_NAME_RESOLVE_SERVICE_URIS};
         const std::string responseParamNameCalcServiceUrisDigest = ${RCDPV2_RESPONSE_PARAM_NAME_CALC_SERVICE_URIS_DIGEST};
@@ -1004,9 +1006,10 @@ namespace resept
             _LastRequest = reqSmimeCertEnrollment
         };
 
-        const std::string requestParamNameRecipientEmail = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_RECIPIENT_EMAIL};
-        const std::string requestParamNameKeyTalkSvrHostName = ${SELF_SERVICE_API_REQUEST_KEYTALK_SVR_HOST_NAME};
-        const std::string requestParamNameRecipientMobile = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_RECIPIENT_MOBILE};
+        const std::string requestParamNameRecipients = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_RECIPIENTS};
+        const std::string requestParamNameSvrHostName = ${SELF_SERVICE_API_REQUEST_SVR_HOST_NAME};
+        const std::string requestParamNameEmail = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_EMAIL};
+        const std::string requestParamNameMobile = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_MOBILE};
 
         const std::string RequestStrings[] = ${SELF_SERVICE_API_REQUEST_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
@@ -1038,12 +1041,16 @@ namespace resept
         enum Response
         {
             _FirstResponse,
-            respSuccess = _FirstResponse,
+            respSmimeCertEnrollment = _FirstResponse,
             respError,
             _LastResponse = respError
         };
-        const std::string responseParamNameError = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ERROR};
         const std::string responseParamNameStatus = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_STATUS};
+        const std::string responseParamNameError = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ERROR};
+        const std::string responseParamNameEmail = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_EMAIL};
+        const std::string responseParamNameEnrolledRecipients = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ENROLLED_RECIPIENTS};
+        const std::string responseParamNameFailedRecipients = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_FAILED_RECIPIENTS};
+        const std::string responseParamNameSkippedRecipients = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SKIPPED_RECIPIENTS};
         const std::string responseParamNameAddressBooks = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
         const std::string responseParamNameLdapSvrUrl = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
         const std::string  responseParamNameSearchBase = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SEARCH_BASE};

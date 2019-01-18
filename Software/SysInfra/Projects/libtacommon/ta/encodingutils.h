@@ -88,9 +88,11 @@ namespace ta
         boost::property_tree::ptree toTree(const ta::StringArray& anArray);
         boost::property_tree::ptree toTree(const ta::StringDict& aDict);
         boost::property_tree::ptree toTree(const ta::StringDictArray& aStringDictArray);
+        boost::property_tree::ptree toTree(const ta::StringDictDict& aStringDictDict);
         std::vector<std::string> toStringArray(const boost::property_tree::ptree& aTree);
         ta::StringDict toStringDict(const boost::property_tree::ptree& aTree);
         ta::StringDictArray toStringDictArray(const boost::property_tree::ptree& aTree);
+        ta::StringDictDict toStringDictDict(const boost::property_tree::ptree& aTree);
 
         // JSON serialization routines
         // - during serialization forward slashes '/' are escaped as '\/'
@@ -98,12 +100,14 @@ namespace ta
         std::string toJson(const ta::StringArray& anArray);
         std::string toJson(const ta::StringDict& aStringDict);
         std::string toJson(const ta::StringDictArray& aStringDictArray);
+        std::string toJson(const ta::StringDictDict& aStringDictDict);
         //@known issues: empty array is serialized as empty string ""
         std::string toJson(const boost::property_tree::ptree& aTree);
 
         std::vector<std::string> jsonToStringArray(const std::string& aJson);
         ta::StringDict jsonToStringDict(const std::string& aJson);
         ta::StringDictArray jsonToStringDictArray(const std::string& aJson);
+        ta::StringDictDict jsonToStringDictDict(const std::string& aJson);
         boost::property_tree::ptree jsonToTree(const std::string& aJson);
 
         // Convenience functions to parse tree[key]
@@ -111,6 +115,7 @@ namespace ta
         int parseIntVal(const boost::property_tree::ptree& aTree, const std::string& aKey);
         bool parseBoolVal(const boost::property_tree::ptree& aTree, const std::string& aKey);
         ta::StringArray parseStringArray(const boost::property_tree::ptree& aTree, const std::string& aKey);
+        ta::StringDict parseStringDict(const boost::property_tree::ptree& aTree, const std::string& aKey);
         ta::StringDictArray parseStringDictArray(const boost::property_tree::ptree& aResponse, const std::string& aKey);
     }
 }

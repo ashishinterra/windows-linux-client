@@ -213,7 +213,7 @@ namespace resept
             std::map<Components::id, string> myHwIds;
             foreach (formula_t::value_type compid, myParsedFormula)
             {
-                // reuse the already calcualted HWSIG is applicable
+                // reuse the already calculated HWSIG is applicable
                 string myHwId;
                 if (ta::findValueByKey(compid, myHwIds, myHwId))
                 {

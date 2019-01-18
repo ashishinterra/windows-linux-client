@@ -1140,8 +1140,112 @@ public:
         const std::string myCsr = ta::readData("CA/csr_test.pem");
         const std::string myPem = ta::readData("CA/cert.pem");
 
-        TS_ASSERT_THROWS_NOTHING(ta::CertUtils::parseSignedCSR(myCsr));
+        ta::CertUtils::CsrInfo myCsrInfo;
+        TS_ASSERT_THROWS_NOTHING(myCsrInfo = ta::CertUtils::parseSignedCSR(myCsr));
         TS_ASSERT_THROWS(ta::CertUtils::parseSignedCSR(myPem), std::exception);
+
+        TS_ASSERT_THROWS_NOTHING(ta::CertUtils::validateSubject(myCsrInfo.subject));
+    }
+
+    void test_max_length_checks()
+    {
+        using namespace ta::CertUtils;
+        const ta::KeyPair myKeyPair = ta::RsaUtils::genKeyPair(2048, ta::RsaUtils::encPEM, ta::RsaUtils::pubkeyPKCS1);
+        const ta::SignUtils::Digest mySigningAlgorithm = ta::SignUtils::digestSha256;
+
+        // Test every subject field
+        const Subject mySubjShortEnough(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!012345678",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!012345678",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!012345678",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!012345678",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!012345678",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz000123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0@testa.com");
+        const Subject mySubjLimit(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz000123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz00@testa.com");
+        const Subject mySubjTooBigCN(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x");
+        const Subject mySubjTooBigC(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x", 
+            "ab");
+        const Subject mySubjTooBigST(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x");
+        const Subject mySubjTooBigL(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x");
+        const Subject mySubjTooBigO(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x");
+        const Subject mySubjTooBigOU(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x");
+        const Subject mySubjTooBigE(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz000123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz00@testab.comx");
+        const Subject mySubjInvalidE(
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "ab",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz000123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz00");
+
+        TS_ASSERT_THROWS_NOTHING(validateSubject(mySubjShortEnough));
+        TS_ASSERT_THROWS_NOTHING(validateSubject(mySubjLimit));
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigCN), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigC), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigST), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigL), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigO), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigOU), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjTooBigE), InvalidSubjectError);
+        TS_ASSERT_THROWS(validateSubject(mySubjInvalidE), InvalidSubjectError);
+
+        TS_ASSERT_THROWS_NOTHING(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjShortEnough, &mySigningAlgorithm), X509_REQ_free));
+        TS_ASSERT_THROWS_NOTHING(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjLimit, &mySigningAlgorithm), X509_REQ_free));
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigCN, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigC, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigST, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigL, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigO, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigOU, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjTooBigE, &mySigningAlgorithm), X509_REQ_free), std::exception);
+        // Skip Invalid E
+
+
+        // Test wide char strings
+        const Subject mySubjCyrillicLimit("ТимТимТимТимТимТимТимТимТимТимТиТимТимТимТимТимТимТимТимТимТимТи");
+        const Subject mySubjCyrillicTooBig("ТимТимТимТимТимТимТимТимТимТимТиТимТимТимТимТимТимТимТимТимТимТим");
+
+        TS_ASSERT_THROWS_NOTHING(validateSubject(mySubjCyrillicLimit));
+        TS_ASSERT_THROWS(validateSubject(mySubjCyrillicTooBig), std::exception);
+
+        TS_ASSERT_THROWS_NOTHING(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjCyrillicLimit, &mySigningAlgorithm), X509_REQ_free));
+        TS_ASSERT_THROWS(ta::ScopedResource<X509_REQ*> myCsr(createCSR(myKeyPair, mySubjCyrillicTooBig, &mySigningAlgorithm), X509_REQ_free), std::exception);
     }
 
     void testCreateCSR()

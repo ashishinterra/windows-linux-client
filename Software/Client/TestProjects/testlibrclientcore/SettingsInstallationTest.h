@@ -110,8 +110,8 @@ public:
             {
                 TS_TRACE(("Checking service " + service.name + " for provider " + provider.providerName).c_str());
                 TS_ASSERT_EQUALS(Settings::getServiceUri(provider.providerName, service.name), service.uri);
-                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(provider.providerName, service.name, myFromMasterConfig), service.certValidityPercentage);
-                TS_ASSERT_EQUALS(myFromMasterConfig, !service.allowOverwriteCertValidityPercentage);
+                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(provider.providerName, service.name, myFromMasterConfig), service.certValidity.value);
+                TS_ASSERT_EQUALS(myFromMasterConfig, !service.allowOverwriteCertValidity);
                 if (service.useClientOsLogonUser)
                 {
                     TS_TRACE(("Username: " + ta::getUserName()).c_str());
@@ -146,16 +146,19 @@ public:
         myReq.pcaPem = ta::readData("pcacert.pem");
         const Settings::RccdRequestData::Service service1("s1",
                                                         "https://s1.com", // uri
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          11, anIsForAdminInstallation ? AllowOverwriteNo : AllowOverwriteYes, // cert validity percentage
                                                          DontUseClientOsLogonUser,
                                                          list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                         "https://s2.com", // uri
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          12, AllowOverwriteYes, // cert validity percentage
                                                          DontUseClientOsLogonUser,
                                                          list_of("s2u1"));
         const Settings::RccdRequestData::Service service3("s3",
                                                           "https://s3.com",
+                                                          rclient::Settings::certValidityTypePercentage,
                                                           10, AllowOverwriteYes, // cert validity percentage
                                                           DoUseClientOsLogonUser);
         myReq.services = list_of(service1)(service2)(service3);
@@ -418,16 +421,19 @@ public:
         myReq.pcaPem = ta::readData("pcacert.pem");
         const Settings::RccdRequestData::Service service1("Service1",
             "https://s1.com", // uri
+            rclient::Settings::certValidityTypePercentage,
             11, myIsAdminInstallation ? AllowOverwriteNo : AllowOverwriteYes, // cert validity percentage
             DontUseClientOsLogonUser,
             list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("Service2",
             "https://s2.com", // uri
+            rclient::Settings::certValidityTypePercentage,
             12, AllowOverwriteYes, // cert validity percentage
             DontUseClientOsLogonUser,
             list_of("s2u1"));
         const Settings::RccdRequestData::Service service3("Service3",
             "https://s3.com",
+            rclient::Settings::certValidityTypePercentage,
             10, AllowOverwriteYes, // cert validity percentage
             DoUseClientOsLogonUser);
         myReq.services = list_of(service1)(service2)(service3);

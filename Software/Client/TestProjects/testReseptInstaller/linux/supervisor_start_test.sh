@@ -39,6 +39,8 @@ SHARED_REPO_DIR="$(pwd)/../../../../../"
 SHARED_TEST_LOG_DIR=/var/log/keytalk
 # Here the worker build images store the installers they create later to be used by worker installation images
 SHARED_BUILT_INSTALLATION_PACKAGES_DIR=/var/lib/keytalk/installers
+# A location to save the latest successfully created installer. Comes to handy when a failed build proves to be a false-negative yet it already removed "good" installers
+LAST_INSTALLATION_PACKAGES_DIR=/var/lib/keytalk/last-good-installers
 
 KEYTALK_SERVER_IP='192.168.33.111'
 
@@ -227,9 +229,19 @@ function create_fat_installer()
 {
     local client_version=$(cut -d '=' -f 2 ${SHARED_REPO_DIR}/Software/Client/version)
     pushd ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR} > /dev/null
+
+    # check
+    for os in centos6 centos7 debian8 debian9 ubuntu16 ubuntu18 ; do
+        if [ ! -f KeyTalkClient-${client_version}-${os}-x64.tgz ]; then
+            echo "Cannot create fat installer. KeyTalkClient-${client_version}-${os}-x64.tgz is missing"
+            popd > /dev/null
+            return 1
+        fi
+    done
+
     # CentOS is binary compatible with RHEL, let's make use of that
-    ln -s KeyTalkClient-centos6-x64.tgz KeyTalkClient-rhel6-x64.tgz
-    ln -s KeyTalkClient-centos7-x64.tgz KeyTalkClient-rhel7-x64.tgz
+    ln -s KeyTalkClient-${client_version}-centos6-x64.tgz KeyTalkClient-${client_version}-rhel6-x64.tgz
+    ln -s KeyTalkClient-${client_version}-centos7-x64.tgz KeyTalkClient-${client_version}-rhel7-x64.tgz
 
     # Create master installation script
     printf '
@@ -252,6 +264,10 @@ cd keytalkclient-${KTCLIENT_VERSION}
     chmod +x install.sh
 
     tar -cf KeyTalkClient-${client_version}-linux.tar *.tgz install.sh
+
+    # save the installer to a non-volatile location to it doesn't disappear after the next failed build
+    cp -f KeyTalkClient-${client_version}-linux.tar ${LAST_INSTALLATION_PACKAGES_DIR}/
+
     popd > /dev/null
 }
 
@@ -265,6 +281,7 @@ function start_tests()
 
     rm -rf ${SHARED_TEST_LOG_DIR}
     mkdir -p ${SHARED_TEST_LOG_DIR}
+    mkdir -p ${LAST_INSTALLATION_PACKAGES_DIR}
     if ! ${FAKE_BUILD_TEST}; then
         rm -rf ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}
         mkdir -p ${SHARED_BUILT_INSTALLATION_PACKAGES_DIR}
@@ -300,7 +317,7 @@ function start_tests()
     echo "Logs can be found under ${SHARED_TEST_LOG_DIR}"
 
     # produce a fat installer regardless the build success
-    # to not be influenced by possible fault negatives
+    # because we don't want to suffer from possible fault negatives
     local fat_installer_created
     if create_fat_installer ; then
         fat_installer_created=1

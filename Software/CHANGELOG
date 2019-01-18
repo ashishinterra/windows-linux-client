@@ -1,16 +1,21 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
-server-5.5.0, in development
+server-5.5.0, 18 January 2019
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.5.0, v4.6.0 and v4.6.2
     - ADDED: Enforce SMS password on mail cert when allowing requesting of cert for 3rd parties (KEYTALK-500)
     - ADDED: REST API to check availability of S/MIME certificate enrollment for 3rd parties (KEYTALK-501)
-    - ADDED: REST API for self-service to enroll S/MIME certificate for 3rd parties (KEYTALK-501)
+    - ADDED: REST API for self-service to enroll S/MIME certificates for 3rd parties (KEYTALK-501)
     - ADDED: Extend HWSIG with random number (Windows, Linux) (KEYTALK-502)
     - ADDED: Allow using coupon code for GlobalSign mSSL orders (KEYTALK-503)
+    - ADDED: Add SERVICE-level flag instructing KT apps to install the received cert to the machine certificate store (KEYTALK-504)
+    - ADDED: Allow "certificate validity percentage" in absolute time (KEYTALK-505)
+    - ADDED: TrustZone CA provider as a marketing alias for GlobalSign
+    - ADDED: Pre-check max length of subject attributes before generating a certificate (KEYTALK-506)
+    - CHANGED: Force GlobalSign profile to "production"
 
     CHANGED shared Db schema:
       - version 6.0-> 7.0

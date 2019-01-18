@@ -769,17 +769,20 @@ public:
         myReq.pcaPem = ta::readData("pcacert.pem");
         const Settings::RccdRequestData::Service service1("s1",
                                                                 "https://s1.com", // uri
-                                                                 11, AllowOverwriteNo, // cert validity percentage
+                                                                 rclient::Settings::certValidityTypePercentage,
+                                                                 11, AllowOverwriteNo,
                                                                  DontUseClientOsLogonUser,
                                                                  list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                                 "https://s2.com", // uri
-                                                                 12, AllowOverwriteYes, // cert validity percentage
+                                                                 rclient::Settings::certValidityTypeDuration,
+                                                                 36000, AllowOverwriteYes,
                                                                  DontUseClientOsLogonUser,
                                                                  list_of("s2u1"));
         const Settings::RccdRequestData::Service service3("s3",
                                                                 "https://s3.com", // uri
-                                                                 12, AllowOverwriteYes, // cert validity percentage
+                                                                 rclient::Settings::certValidityTypeDuration,
+                                                                 36000, AllowOverwriteYes,
                                                                  DoUseClientOsLogonUser);
         const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2)(service3);
         myReq.services = myServices;
@@ -810,7 +813,9 @@ public:
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidityPercentage);
+            #ifdef DONT_SKIP_PERCENTAGE
+            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
+            #endif
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
@@ -838,12 +843,13 @@ public:
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri); // restored from the default URI we supplied
             TS_ASSERT_EQUALS(Settings::isCertChain(myReq.providerName, service.name), Settings::DefIsCertChain);// default
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), Settings::DefCertFormat);// default
-
-            if (service.allowOverwriteCertValidityPercentage) {
+#ifdef DONT_SKIP_PERCENTAGE
+            if (service.allowOverwriteCertValidity) {
                 TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), Settings::DefCertValidPercent);// default
             } else {
-                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidityPercentage);
+                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
             }
+#endif
 
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name).size(), 0U);
         }
@@ -874,11 +880,13 @@ public:
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
         const Settings::RccdRequestData::Service service1("s3",
                                                         "https://s3.com",
+                                                        rclient::Settings::certValidityTypePercentage,
                                                         13, AllowOverwriteYes,
                                                         DontUseClientOsLogonUser,
                                                         list_of("s3u1")("s3u2"));
         const Settings::RccdRequestData::Service service2("s4",
                                                         "https://s3.com",
+                                                        rclient::Settings::certValidityTypePercentage,
                                                         13, AllowOverwriteYes,
                                                         DoUseClientOsLogonUser);
         const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2);
@@ -911,7 +919,9 @@ public:
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidityPercentage);
+            #ifdef DONT_SKIP_PERCENTAGE
+            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
+            #endif
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
@@ -943,11 +953,13 @@ public:
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
         const Settings::RccdRequestData::Service service1("s3",
                                                          "https://s3.com",
+                                                          rclient::Settings::certValidityTypePercentage,
                                                           13, AllowOverwriteNo,
                                                           DontUseClientOsLogonUser,
                                                           list_of("s3u1")("s3u2"));
         const Settings::RccdRequestData::Service service2("s4",
                                                          "https://s4.com",
+                                                          rclient::Settings::certValidityTypePercentage,
                                                           13, AllowOverwriteNo,
                                                           DoUseClientOsLogonUser);
         const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2);
@@ -993,16 +1005,19 @@ public:
         myReq.pcaPem = ta::readData("pcacert.pem");
         const Settings::RccdRequestData::Service service1("s1",
                                                          "https://s1.com",
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          11, AllowOverwriteYes,
                                                          DontUseClientOsLogonUser,
                                                          list_of("s1u1")("s1u2"));
         const Settings::RccdRequestData::Service service2("s2",
                                                          "https://s2.com",
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          12, AllowOverwriteYes,
                                                          DontUseClientOsLogonUser,
                                                          vector<string>());
         const Settings::RccdRequestData::Service service3("s3",
                                                          "https://s3.com",
+                                                         rclient::Settings::certValidityTypePercentage,
                                                          12, AllowOverwriteYes,
                                                          DoUseClientOsLogonUser);
         const std::vector<Settings::RccdRequestData::Service> myServices = list_of(service1)(service2)(service3);
@@ -1033,7 +1048,9 @@ public:
         foreach (const Settings::RccdRequestData::Service& service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidityPercentage);
+            #ifdef DONT_SKIP_PERCENTAGE
+            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
+            #endif
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
@@ -1053,11 +1070,13 @@ public:
         myReq.rcaPem = ta::readData("pcacert.pem"); // somewhat dirty trick to avoid creating a new cert tree
         const Settings::RccdRequestData::Service service4("s3",
                                                          "https://s4.com",
+                                                          rclient::Settings::certValidityTypePercentage,
                                                           13, AllowOverwriteYes,
                                                           DontUseClientOsLogonUser,
                                                           list_of("s4u1")("s4u2"));
         const Settings::RccdRequestData::Service service5("s5",
                                                          "https://s5.com",
+                                                          rclient::Settings::certValidityTypePercentage,
                                                           13, AllowOverwriteYes,
                                                           DoUseClientOsLogonUser);
         const std::vector<Settings::RccdRequestData::Service> myNewServices = list_of(service4)(service5);
@@ -1089,7 +1108,9 @@ public:
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidityPercentage);
+            #ifdef DONT_SKIP_PERCENTAGE
+            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
+            #endif
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);

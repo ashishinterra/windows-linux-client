@@ -49,6 +49,7 @@ namespace ta
     typedef std::map<std::string, std::string> StringDict;
     typedef std::pair<std::string, std::string> StringPair;
     typedef std::map<std::string, StringArray> StringArrayDict;
+    typedef std::map<std::string, StringDict> StringDictDict;
     typedef std::vector<StringDict> StringDictArray;
 
     /**

@@ -111,18 +111,35 @@ public:
         TS_ASSERT_EQUALS(toStringDict(toTree(myDict)), myDict);
 
         // given
-        vector<ta::StringDict> myStringDictArray;
+        ta::StringDictArray myStringDictArray;
         // when-then
-        TS_ASSERT_EQUALS(toStringDictArray(toTree(myStringDictArray)).size(), 0U);
+        TS_ASSERT_EQUALS(toStringDictArray(toTree(myStringDictArray)).size(), 0);
         // given
         myStringDictArray.push_back(boost::assign::map_list_of<string, string>("один", "1"));
         myStringDictArray.push_back(boost::assign::map_list_of<string, string>("two", "2")("three", "три"));
         // when
-        const vector<ta::StringDict> myStringDictArrayActual = toStringDictArray(toTree(myStringDictArray));
+        const ta::StringDictArray myStringDictArrayActual = toStringDictArray(toTree(myStringDictArray));
         // then
-        TS_ASSERT_EQUALS(myStringDictArrayActual.size(), 2U);
+        TS_ASSERT_EQUALS(myStringDictArrayActual.size(), 2);
         TS_ASSERT_EQUALS(myStringDictArrayActual.at(0), myStringDictArray.at(0));
         TS_ASSERT_EQUALS(myStringDictArrayActual.at(1), myStringDictArray.at(1));
+
+        // given
+        ta::StringDictDict myStringDictDict;
+        // when-then
+        TS_ASSERT_EQUALS(toStringDictDict(toTree(myStringDictDict)).size(), 0);
+        // given
+        const ta::StringDict info_nl =  boost::assign::map_list_of("capital", "Amsterdam")("population", "17 million");
+        const ta::StringDict info_by =  boost::assign::map_list_of("capital", "Minsk")("population", "10 million");
+        const ta::StringDict info_xx;
+        myStringDictDict["NL"]  = info_nl;
+        myStringDictDict["BY"]  = info_by;
+        myStringDictDict["XX"]  = info_xx;
+        // when
+        const StringDictDict myStringDictDictActual = toStringDictDict(toTree(myStringDictDict));
+        // then
+        TS_ASSERT_EQUALS(myStringDictDictActual.size(), 3);
+        TS_ASSERT_EQUALS(myStringDictDictActual, myStringDictDict);
     }
 
     void testJsonEncodeEscapesForwardSlashes()
@@ -165,24 +182,48 @@ public:
         TS_ASSERT_EQUALS(jsonToStringDict(toJson(toTree(myDict))), myDict);
 
         // given
-        vector<ta::StringDict> myStringDictArray;
+        ta::StringDictArray myStringDictArray;
         // when-then
-        TS_ASSERT_EQUALS(jsonToStringDictArray(toJson(myStringDictArray)).size(), 0U);
-        TS_ASSERT_EQUALS(jsonToStringDictArray(toJson(toTree(myStringDictArray))).size(), 0U);
+        TS_ASSERT_EQUALS(jsonToStringDictArray(toJson(myStringDictArray)).size(), 0);
+        TS_ASSERT_EQUALS(jsonToStringDictArray(toJson(toTree(myStringDictArray))).size(), 0);
         // given
         myStringDictArray.push_back(boost::assign::map_list_of<string, string>("один", "1"));
         myStringDictArray.push_back(boost::assign::map_list_of<string, string>("two", "2")("three", "три"));
         // when
-        vector<ta::StringDict> myStringDictArrayActual = jsonToStringDictArray(toJson(myStringDictArray));
+        ta::StringDictArray myStringDictArrayActual = jsonToStringDictArray(toJson(myStringDictArray));
         // then
-        TS_ASSERT_EQUALS(myStringDictArrayActual.size(), 2U);
+        TS_ASSERT_EQUALS(myStringDictArrayActual.size(), 2);
         TS_ASSERT_EQUALS(myStringDictArrayActual.at(0), myStringDictArray.at(0));
         TS_ASSERT_EQUALS(myStringDictArrayActual.at(1), myStringDictArray.at(1));
         // when
         myStringDictArrayActual = jsonToStringDictArray(toJson(toTree(myStringDictArray)));
         // then
-        TS_ASSERT_EQUALS(myStringDictArrayActual.size(), 2U);
+        TS_ASSERT_EQUALS(myStringDictArrayActual.size(), 2);
         TS_ASSERT_EQUALS(myStringDictArrayActual.at(0), myStringDictArray.at(0));
         TS_ASSERT_EQUALS(myStringDictArrayActual.at(1), myStringDictArray.at(1));
+
+
+        // given
+        ta::StringDictDict myStringDictDict;
+        // when-then
+        TS_ASSERT_EQUALS(jsonToStringDictDict(toJson(myStringDictDict)).size(), 0);
+        TS_ASSERT_EQUALS(jsonToStringDictDict(toJson(toTree(myStringDictDict))).size(), 0);
+        // given
+        const ta::StringDict info_nl =  boost::assign::map_list_of("capital", "Amsterdam")("population", "17 million");
+        const ta::StringDict info_by =  boost::assign::map_list_of("capital", "Minsk")("population", "10 million");
+        const ta::StringDict info_xx;
+        myStringDictDict["NL"]  = info_nl;
+        myStringDictDict["BY"]  = info_by;
+        myStringDictDict["XX"]  = info_xx;
+        // when
+        StringDictDict myStringDictDictActual = jsonToStringDictDict(toJson(myStringDictDict));
+        // then
+        TS_ASSERT_EQUALS(myStringDictDictActual.size(), 3);
+        TS_ASSERT_EQUALS(myStringDictDictActual, myStringDictDict);
+        // when
+        myStringDictDictActual = jsonToStringDictDict(toJson(toTree(myStringDictDict)));
+        // then
+        TS_ASSERT_EQUALS(myStringDictDictActual.size(), 3);
+        TS_ASSERT_EQUALS(myStringDictDictActual, myStringDictDict);
     }
 };

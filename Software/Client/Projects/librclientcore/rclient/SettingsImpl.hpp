@@ -94,6 +94,7 @@ namespace rclient
                                                               ServiceDisplayName,
                                                               ServiceCleanupUserCert,
                                                               ServiceCertValidPercent,
+                                                              ServiceCertValidity,
                                                               ServiceCertFormat,
                                                               ServiceCertChain,
                                                               ServiceUserList
@@ -104,6 +105,7 @@ namespace rclient
                                                               ServiceDisplayName,
                                                               ServiceCleanupUserCert,
                                                               ServiceCertValidPercent,
+                                                              ServiceCertValidity,
                                                               ServiceCertFormat,
                                                               ServiceCertChain,
                                                               ServiceUserList
@@ -196,7 +198,7 @@ namespace rclient
                     int myListSize = myListSetting.getLength();
                     if (myListSize < 0)
                         TA_THROW_MSG(SettingsError, boost::format("Negative number of elements in the %s list?!") % aPath);
-                    return static_cast<unsigned int>(myListSize);
+                    return myListSize;
                 }
                 unsigned int getArraySize(const libconfig::Config& aConfig, const string& aPath)
                 {
@@ -208,7 +210,7 @@ namespace rclient
                     int myArraySize = myArraySetting.getLength();
                     if (myArraySize < 0)
                         TA_THROW_MSG(SettingsError, boost::format("Negative number of elements in the %s array?!") % aPath);
-                    return static_cast<unsigned int>(myArraySize);
+                    return myArraySize;
                 }
 
                 template <class IterableCollection>

@@ -52,18 +52,82 @@ namespace rclient
         static const char UserConfigFileName[]    =        "user.ini";
         static const char UserYamlConfigFileName[] =       "user.yaml";
 
+        enum CertificateValidityType
+        {
+            _firstCertValidityType = 0,
+            certValidityTypePercentage = _firstCertValidityType,
+            certValidityTypeDuration,
+            _lastCertValidityType = certValidityTypeDuration
+        };
+        // Mapped pair contains <name, suffix>
+        const std::map<CertificateValidityType, boost::tuple<std::string, std::string> > CertValidityTypeStrings = boost::assign::map_list_of
+                (certValidityTypePercentage, boost::make_tuple(std::string("Percentage"), std::string("%")))
+                (certValidityTypeDuration, boost::make_tuple(std::string("Duration"), std::string("s")));
+
+        inline bool isCertValidityType(int aVal)
+        {
+            return (aVal >= _firstCertValidityType && aVal <= _lastCertValidityType);
+        }
+        inline std::string name(CertificateValidityType aCertValidityType)
+        {
+            if (!isCertValidityType(static_cast<int>(aCertValidityType)))
+            {
+                TA_THROW_MSG(std::invalid_argument, str(boost::format("Cannot get name for unknown CertValidityType %d") % aCertValidityType));
+            }
+            return ta::getValueByKey(aCertValidityType, CertValidityTypeStrings).get<0>();
+        }
+        inline std::string suffix(CertificateValidityType aCertValidityType)
+        {
+            if (!isCertValidityType(static_cast<int>(aCertValidityType)))
+            {
+                TA_THROW_MSG(std::invalid_argument, str(boost::format("Cannot get suffix for unknown CertValidityType %d") % aCertValidityType));
+            }
+            return ta::getValueByKey(aCertValidityType, CertValidityTypeStrings).get<1>();
+        }
+        inline bool nameToCertificateValidityType(const std::string& aCertValidityTypeStr, CertificateValidityType& aCertValidityType)
+        {
+            for (int typ = _firstCertValidityType; typ <= _lastCertValidityType; ++typ)
+            {
+                CertificateValidityType myType = static_cast<CertificateValidityType>(typ);
+                if (name(myType) == aCertValidityTypeStr)
+                {
+                    aCertValidityType = myType;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         typedef std::vector<std::string> Users;
 
         // Setting defaults
         static const unsigned int DefRcdpV1Port        = 80;
         static const unsigned int DefRcdpV2Port        = 443;
-        static const unsigned int DefCertValidPercent  = 10;
+        static const CertificateValidityType DefCertValidityType = certValidityTypeDuration;
+        static const unsigned int DefCertValidPercent  = 10; // @todo tim To be fased out
+        static const unsigned int DefCertValidityPercentage = 10;
         static const bool DefIsCertChain               = false;
         static const resept::CertFormat DefCertFormat  = resept::certformatP12;
         static const std::string DefLogLevel           = str(ta::LogLevel::Debug); // it is important to have some default for log level in order KeyTalk app can start&complain regardless messed up configuration
         static const bool DefServiceDisplayName       = true;
         static const bool DefServiceCleanupUserCert   = false;
         static const bool DefServiceUseClientOsLogonUser = true;
+
+        struct CertValidity
+        {
+            CertValidity() : type(DefCertValidityType), value(DefCertValidityType == certValidityTypeDuration ? 0 : DefCertValidityPercentage)
+            {}
+            CertValidity(const CertificateValidityType aType, const unsigned int aValue)
+                : type(aType), value(aValue)
+            {}
+
+            inline std::string toString() const {
+                return str(boost::format("%d%s") % value % suffix(type));
+            }
+
+            CertificateValidityType type;
+            unsigned int value;
+        };
 
 
         //
@@ -180,6 +244,10 @@ namespace rclient
         unsigned int getCertValidPercentage(const std::string& aProviderName, const std::string& aServiceName);
         unsigned int getCertValidPercentage(const std::string& aProviderName, const std::string& aServiceName, bool& aFromMasterConfig);
 
+        CertValidity getCertValidity();
+        CertValidity getCertValidity(const std::string& aProviderName, const std::string& aServiceName);
+        CertValidity getCertValidity(const std::string& aProviderName, const std::string& aServiceName, bool& aFromMasterConfig);
+
         resept::CertFormat getCertFormat();
         resept::CertFormat getCertFormat(const std::string& aProviderName, const std::string& aServiceName);
         void setCertFormat(const std::string& aProviderName, const std::string& aServiceName, resept::CertFormat aCertFormat);
@@ -242,7 +310,7 @@ namespace rclient
                 }
                 foreach (const Service& service, services)
                 {
-                    if (!service.allowOverwriteCertValidityPercentage)
+                    if (!service.allowOverwriteCertValidity)
                     {
                         return true;
                     }
@@ -265,36 +333,38 @@ namespace rclient
             struct Service
             {
                 Service() // default c'tor is required by boost::serialize
-                    : certValidityPercentage(DefCertValidPercent)
-                    , allowOverwriteCertValidityPercentage(true)
+                    : allowOverwriteCertValidity(true)
                     , useClientOsLogonUser(DefServiceUseClientOsLogonUser)
                 {}
-                Service(const std::string& aName, const std::string& aUri)
+                Service(const std::string& aName, const std::string& aUri, const unsigned int aDefaultValidity)
                     : name(aName)
                     , uri(aUri)
-                    , certValidityPercentage(DefCertValidPercent)
-                    , allowOverwriteCertValidityPercentage(true)
+                    , certValidity(DefCertValidityType, aDefaultValidity)
+                    , allowOverwriteCertValidity(true)
                     , useClientOsLogonUser(DefServiceUseClientOsLogonUser)
                 {}
                 // this c'tor is for testing only
                 Service(const std::string& aName,
                         const std::string& aUri,
-                        const unsigned int aCertValidityPercentage,
-                        const bool anAllowOverwriteCertValidityPercentage,
+                        const CertificateValidityType aCertValidityType,
+                        const unsigned int aCertValidity,
+                        const bool anAllowOverwriteCertValidity,
                         const bool aUseClientOsLogonUser,
                         const std::vector<std::string>& aUsers = std::vector<std::string>())
                     : name(aName)
                     , uri(aUri)
-                    , certValidityPercentage(aCertValidityPercentage)
-                    , allowOverwriteCertValidityPercentage(anAllowOverwriteCertValidityPercentage)
+                    , certValidity(aCertValidityType, aCertValidity)
+                    , allowOverwriteCertValidity(anAllowOverwriteCertValidity)
                     , useClientOsLogonUser(aUseClientOsLogonUser)
                     , users(aUsers)
                 {}
 
                 std::string name;
                 std::string uri;
-                unsigned int certValidityPercentage;
-                bool allowOverwriteCertValidityPercentage;
+                CertValidity certValidity;
+                // CertificateValidityType certValidityType;
+                // unsigned int certValidity;
+                bool allowOverwriteCertValidity;
                 bool useClientOsLogonUser;
                 std::vector<std::string> users;
             };
@@ -339,12 +409,19 @@ namespace boost
     namespace serialization
     {
         template<class Archive>
+        void serialize(Archive& ar, rclient::Settings::CertValidity& aCertValidity, const unsigned int UNUSED(version))
+        {
+            ar & aCertValidity.type;
+            ar & aCertValidity.value;
+        }
+
+        template<class Archive>
         void serialize(Archive& ar, rclient::Settings::RccdRequestData::Service& aService, const unsigned int UNUSED(version))
         {
             ar & aService.name;
             ar & aService.uri;
-            ar & aService.certValidityPercentage;
-            ar & aService.allowOverwriteCertValidityPercentage;
+            ar & aService.certValidity;
+            ar & aService.allowOverwriteCertValidity;
             ar & aService.users;
             ar & aService.useClientOsLogonUser;
         }

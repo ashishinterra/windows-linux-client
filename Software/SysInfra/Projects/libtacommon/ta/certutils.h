@@ -462,6 +462,26 @@ namespace ta
             std::string ou;
             std::string e;
         };
+
+        const unsigned int CnMax    =  64;
+        const unsigned int CMax     =   2;
+        const unsigned int StMax    = 128;
+        const unsigned int LMax     = 128;
+        const unsigned int OMax     =  64;
+        const unsigned int OuMax    =  64;
+        const unsigned int EMax     = 128;
+
+        struct InvalidSubjectError : std::runtime_error
+        {
+            explicit InvalidSubjectError(const std::string& aMessage) // user-friendly error message
+                : std::runtime_error(aMessage) {}
+        };
+
+        // Validate whether the Subject fields are correct
+        // Correctly handles wide character strings for length checks
+        // Throws InvalidSubjectError when field is incorrect with a user friendly message
+        void validateSubject(const Subject& aSubject);
+
         /**
             Generate CSR for the given public key and certificate fields, optionally signed with the given private key
             @param [in] aKeyPair RSA keypair with PEM-encoded PKCS1 public key

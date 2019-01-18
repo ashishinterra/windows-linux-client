@@ -41,7 +41,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\\utf8cpp\source;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(CURL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(UTF8CPP_INCLUDE_DIR);..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(CURL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />

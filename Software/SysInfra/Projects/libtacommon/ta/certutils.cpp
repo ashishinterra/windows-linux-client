@@ -8,6 +8,7 @@
 #include "scopedresource.hpp"
 #include "opensslwrappers.h"
 #include "common.h"
+#include "utf8.h"
 
 #ifdef _WIN32
 #include <Ws2tcpip.h>
@@ -2369,6 +2370,42 @@ namespace ta
             return tree;
         }
 
+        void validateSubject(const Subject& aSubject)
+        {
+            if (utf8::distance(aSubject.cn.begin(), aSubject.cn.end()) > CnMax)
+            {
+                throw InvalidSubjectError(str(boost::format("Common Name attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.cn % CnMax));
+            }
+            if (!aSubject.c.empty() && utf8::distance(aSubject.c.begin(), aSubject.c.end()) != CMax) // Country code has to be exactly CMax size
+            {
+                throw InvalidSubjectError(str(boost::format("Country attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.c % CMax));
+            }
+            if (utf8::distance(aSubject.st.begin(), aSubject.st.end()) > StMax)
+            {
+                throw InvalidSubjectError(str(boost::format("State / Province attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.st % StMax));
+            }
+            if (utf8::distance(aSubject.l.begin(), aSubject.l.end()) > LMax)
+            {
+                throw InvalidSubjectError(str(boost::format("Locality attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.l % LMax));
+            }
+            if (utf8::distance(aSubject.o.begin(), aSubject.o.end()) > OMax)
+            {
+                throw InvalidSubjectError(str(boost::format("Organization attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.o % OMax));
+            }
+            if (utf8::distance(aSubject.ou.begin(), aSubject.ou.end()) > OuMax)
+            {
+                throw InvalidSubjectError(str(boost::format("Organizational Unit attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.ou % OuMax));
+            }
+            if (utf8::distance(aSubject.e.begin(), aSubject.e.end()) > EMax)
+            {
+                throw InvalidSubjectError(str(boost::format("Email Address attribute '%s' in the Subject cannot be longer than %d symbols") % aSubject.e % EMax));
+            }
+            if (!aSubject.e.empty() && !ta::isValidEmail(aSubject.e))
+            {
+                throw InvalidSubjectError(str(boost::format("Email Address attribute '%s' in the Subject should be a valid email address") % aSubject.e));
+            }
+        }
+
 
         X509_REQ* createCSR(const ta::KeyPair& aKeyPair,
                             const Subject& aSubject,
@@ -2771,7 +2808,7 @@ namespace ta
 
         string tryExtractHostName(const string& aPemCertPath)
         {
-            const auto myCertInfo = getCertInfoFile(aPemCertPath);
+            const CertInfo myCertInfo = getCertInfoFile(aPemCertPath);
 
             // Look up SAN
             string mySAN;
