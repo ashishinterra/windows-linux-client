@@ -121,13 +121,20 @@ namespace rclient
                 : type(aType), value(aValue)
             {}
 
-            inline std::string toString() const {
-                return str(boost::format("%d%s") % value % suffix(type));
+            inline std::string str() const {
+                return boost::str(boost::format("%d%s") % value % suffix(type));
+            }
+
+            inline bool operator==(const CertValidity& rhs)
+            {
+                return (type == rhs.type && value == rhs.value);
             }
 
             CertificateValidityType type;
             unsigned int value;
         };
+
+        CertValidity parseCertValidity(const std::string& aValidityStr);
 
 
         //
@@ -163,7 +170,7 @@ namespace rclient
         std::vector<std::string> getCustomizedUsers();
         void addCustomizedUser(const std::string& aUserName);
 
-        std::string getCertValidPercentParamName();
+        std::string getCertValidityParamName();
 
 
         //
@@ -239,10 +246,6 @@ namespace rclient
 
         bool isCertChain();
         bool isCertChain(const std::string& aProviderName, const std::string& aServiceName);
-
-        unsigned int getCertValidPercentage();
-        unsigned int getCertValidPercentage(const std::string& aProviderName, const std::string& aServiceName);
-        unsigned int getCertValidPercentage(const std::string& aProviderName, const std::string& aServiceName, bool& aFromMasterConfig);
 
         CertValidity getCertValidity();
         CertValidity getCertValidity(const std::string& aProviderName, const std::string& aServiceName);

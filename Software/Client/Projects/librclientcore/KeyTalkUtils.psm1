@@ -204,24 +204,34 @@ Function IsTaskConfigurationValid(
     }
 }
 
-Function GetValidityPercentage(
+Function GetValidity(
         [parameter(mandatory)][string]$aProviderName,
         [parameter(mandatory)][string]$aServiceName) {
-    $exitCode, $stringValue = Invoke-ConfigTool @( 'service', 'getparam', $aProviderName, $aServiceName, 'CertValidPercent' )
+    $exitCode, $stringValue = Invoke-ConfigTool @( 'service', 'getparam', $aProviderName, $aServiceName, 'CertValidity' )
 
     if ($exitCode -ne $SUCCESS)
     {
-        throw "Cannot retrieve validity percentage for service '$aServiceName' of provider '$aProviderName', error code $exitCode"
+        throw "Cannot retrieve validity for service '$aServiceName' of provider '$aProviderName', error code $exitCode"
     }
 
-    try {
-        [int]$result = $stringValue;
-        return $result;
-    } catch {
-        throw "Non integer value found in validity percentage for service '$aServiceName' of provider '$aProviderName': $stringValue"
+    $suffices = @("s", "%")
+    For ($i=0; $i -lt $suffices.Length; $i++)
+    {
+        if ($stringValue.EndsWith($suffices[$i]))
+        {
+            [int]$result_value = $stringValue.Substring(0, $stringValue.Length-$suffices[$i].Length)
+            $result = @{
+                value = $result_value
+                type = $suffices[$i]
+            }
+            if ($suffices[$i] -eq "%" -and ($result_value -lt 0 -or $result_value -gt 100)) {
+                throw "Invalid value $result.value in the certificate validity string $stringValue. The value should be between 0 and 100"
+            }
+            return $result;
+        }
     }
 
-    return $result
+    throw "Failed to get validity value for string $stringValue. Suffix not found"
 }
 
 Function GetTaskList() {

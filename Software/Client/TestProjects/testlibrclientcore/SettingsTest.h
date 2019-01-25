@@ -387,6 +387,7 @@ public:
     {
         using namespace rclient;
         using boost::assign::list_of;
+        using rclient::Settings::CertValidity;
 
         TS_TRACE("--- Testing service list");
         Settings::setLatestProviderService("Provider1", "Service1");
@@ -471,29 +472,32 @@ public:
         TS_ASSERT(Settings::isCertChain());
 
 
-        TS_TRACE("--- Testing CertValidPercent");
+        TS_TRACE("--- Testing CertValidity");
+        Settings::setLatestProviderService("Provider1", "Service1");
+        TS_ASSERT_EQUALS(Settings::getCertValidity(), CertValidity(rclient::Settings::certValidityTypeDuration, 3600));
         Settings::setLatestProviderService("Provider1", "Service2");
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage(), Settings::DefCertValidPercent);
+        TS_ASSERT_EQUALS(Settings::getCertValidity(), CertValidity(rclient::Settings::DefCertValidityType, 0));
         Settings::setLatestProviderService("Provider1", "Service3");
-        TS_ASSERT_THROWS(Settings::getCertValidPercentage(), SettingsError);
+        TS_ASSERT_THROWS(Settings::getCertValidity(), SettingsError);
         Settings::setLatestProviderService("Provider1", "Service4");
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage(), 75U);
+        TS_ASSERT_EQUALS(Settings::getCertValidity(), CertValidity(rclient::Settings::certValidityTypePercentage, 75U));
         Settings::setLatestProviderService("Provider1", "Service5");
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage(), 25U);
+        TS_ASSERT_EQUALS(Settings::getCertValidity(), CertValidity(rclient::Settings::certValidityTypePercentage, 25U));
         Settings::setLatestProviderService("Provider1", "Service6");
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage(), 25U);
+        TS_ASSERT_THROWS(Settings::getCertValidity(), SettingsError);
         Settings::setLatestProviderService("Provider1", "Service7");
-        TS_ASSERT_THROWS(Settings::getCertValidPercentage(), SettingsError);
-        Settings::setLatestProviderService("Provider1", "Service8");
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage(), 99U);
+        TS_ASSERT_THROWS(Settings::getCertValidity(), SettingsError);
+        Settings::setLatestProviderService("Provider1", "Service9");
+        TS_ASSERT_EQUALS(Settings::getCertValidity(), CertValidity(rclient::Settings::certValidityTypePercentage, 25U));
 
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage("Provider1", "Service2"), Settings::DefCertValidPercent);
-        TS_ASSERT_THROWS(Settings::getCertValidPercentage("Provider1", "Service3"), SettingsError);
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage("Provider1", "Service4"), 75U);
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage("Provider1", "Service5"), 25U);
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage("Provider1", "Service6"), 25U);
-        TS_ASSERT_THROWS(Settings::getCertValidPercentage("Provider1", "Service7"), SettingsError);// that's not PHP, baby
-        TS_ASSERT_EQUALS(Settings::getCertValidPercentage("Provider1", "Service8"), 99U);
+        TS_ASSERT_EQUALS(Settings::getCertValidity("Provider1", "Service1"), CertValidity(rclient::Settings::certValidityTypeDuration, 3600));
+        TS_ASSERT_EQUALS(Settings::getCertValidity("Provider1", "Service2"), CertValidity(rclient::Settings::DefCertValidityType, 0));
+        TS_ASSERT_THROWS(Settings::getCertValidity("Provider1", "Service3"), SettingsError);
+        TS_ASSERT_EQUALS(Settings::getCertValidity("Provider1", "Service4"), CertValidity(rclient::Settings::certValidityTypePercentage, 75U));
+        TS_ASSERT_EQUALS(Settings::getCertValidity("Provider1", "Service5"), CertValidity(rclient::Settings::certValidityTypePercentage, 25U));
+        TS_ASSERT_THROWS(Settings::getCertValidity("Provider1", "Service6"), SettingsError);
+        TS_ASSERT_THROWS(Settings::getCertValidity("Provider1", "Service7"), SettingsError);
+        TS_ASSERT_EQUALS(Settings::getCertValidity("Provider1", "Service9"), CertValidity(rclient::Settings::certValidityTypePercentage, 25U));
 
         TS_TRACE("--- Testing CertFormat");
         Settings::setLatestProviderService("Provider1", "Service2");
@@ -813,9 +817,7 @@ public:
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            #ifdef DONT_SKIP_PERCENTAGE
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
-            #endif
+            TS_ASSERT_EQUALS(Settings::getCertValidity(myReq.providerName, service.name), service.certValidity);
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
@@ -843,13 +845,11 @@ public:
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri); // restored from the default URI we supplied
             TS_ASSERT_EQUALS(Settings::isCertChain(myReq.providerName, service.name), Settings::DefIsCertChain);// default
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), Settings::DefCertFormat);// default
-#ifdef DONT_SKIP_PERCENTAGE
             if (service.allowOverwriteCertValidity) {
-                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), Settings::DefCertValidPercent);// default
+                TS_ASSERT_EQUALS(Settings::getCertValidity(myReq.providerName, service.name), Settings::CertValidity(Settings::certValidityTypeDuration, 0)); // default
             } else {
-                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
+                TS_ASSERT_EQUALS(Settings::getCertValidity(myReq.providerName, service.name), service.certValidity);
             }
-#endif
 
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name).size(), 0U);
         }
@@ -919,9 +919,7 @@ public:
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            #ifdef DONT_SKIP_PERCENTAGE
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
-            #endif
+            TS_ASSERT_EQUALS(Settings::getCertValidity(myReq.providerName, service.name), service.certValidity);
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
@@ -1048,9 +1046,7 @@ public:
         foreach (const Settings::RccdRequestData::Service& service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            #ifdef DONT_SKIP_PERCENTAGE
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
-            #endif
+            TS_ASSERT_EQUALS(Settings::getCertValidity(myReq.providerName, service.name), service.certValidity);
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
@@ -1108,9 +1104,7 @@ public:
         foreach (const Settings::RccdRequestData::Service service, myReq.services)
         {
             TS_ASSERT(!Settings::isCertChain(myReq.providerName, service.name));
-            #ifdef DONT_SKIP_PERCENTAGE
-            TS_ASSERT_EQUALS(Settings::getCertValidPercentage(myReq.providerName, service.name), service.certValidity);
-            #endif
+            TS_ASSERT_EQUALS(Settings::getCertValidity(myReq.providerName, service.name), service.certValidity);
             TS_ASSERT_EQUALS(Settings::getCertFormat(myReq.providerName, service.name), resept::certformatP12);
             TS_ASSERT_EQUALS(Settings::getServiceUri(myReq.providerName, service.name), service.uri);
             TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);

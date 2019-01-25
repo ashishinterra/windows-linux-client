@@ -121,7 +121,12 @@ Function IsCertRenewalNeeded() {
 
         # Check whether the cert is expired
         $now = (Get-Date)
-        $expirationMarginSec = ($expirationMarginPercent / 100) * ($oldCertificate.NotAfter.Subtract($oldCertificate.NotBefore).TotalSeconds)
+        $expirationMarginSec = 0
+        if ($expirationMarginType -eq "s") {
+            $expirationMarginSec = $expirationMarginValue
+        } elif ($expirationMarginType -eq "%") {
+            $expirationMarginSec = ($expirationMarginValue / 100) * ($oldCertificate.NotAfter.Subtract($oldCertificate.NotBefore).TotalSeconds)
+        }
         $certificateReplacementDueTime = $oldCertificate.NotAfter.AddSeconds(-$expirationMarginSec)
         $renewalNeeded = ($now -ge $certificateReplacementDueTime)
 
@@ -448,7 +453,9 @@ Function LoadTaskConfiguration() {
         # For example: 0 means never apply a new certificate until it is expired
         # 60 means apply a new certificate only when it has one minute until expiration (not before that)
         # Mind that it may take a few seconds to obtain a certificate
-        [int]$global:expirationMarginPercent      = GetValidityPercentage $global:keyTalkProvider $global:keyTalkService
+        $cert_validity                            = GetValidity $global:keyTalkProvider $global:keyTalkService
+        [int]$global:expirationMarginValue        = $cert_validity.value
+        [string]$global:expirationMarginType      = $cert_validity.type
 
         [string]$global:rootCertStoreLocation     = "Cert:\$certificateRootStore"
         [string]$global:certStoreLocation         = "$rootCertStoreLocation\$certificateStore"

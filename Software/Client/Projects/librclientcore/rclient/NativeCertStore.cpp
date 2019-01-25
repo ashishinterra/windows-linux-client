@@ -109,20 +109,6 @@ namespace rclient
                 ULARGE_INTEGER myNotAfter = *(ULARGE_INTEGER*)&aCertContextPtr->pCertInfo->NotAfter;
                 ULARGE_INTEGER myNow = *(ULARGE_INTEGER*)&myFtNow;
 
-                unsigned int myRemain = static_cast<unsigned int>((myNotAfter.QuadPart - myNow.QuadPart) / 10000000);
-                if (!myRemain)
-                    return false;
-                if (myNotAfter.QuadPart < myNotBefore.QuadPart)
-                    TA_THROW_MSG(NativeCertStoreError, "Certificate expires before it gets valid ?!");
-                unsigned int myCertDuration = static_cast<unsigned int>((myNotAfter.QuadPart - myNotBefore.QuadPart) / 10000000);
-                unsigned int myCertValidPercent;
-                try {
-                    myCertValidPercent = Settings::getCertValidPercentage();
-                }
-                catch (SettingsError& e) {
-                    TA_THROW_MSG(NativeCertStoreError, e.what());
-                }
-                bool myIsValid = (myRemain >= myCertDuration * myCertValidPercent / 100);
 
                 const unsigned char* myCertPtr = aCertContextPtr->pbCertEncoded;
                 ScopedResource<X509*>myX509(d2i_X509(NULL, &myCertPtr, aCertContextPtr->cbCertEncoded), X509_free);
@@ -130,9 +116,40 @@ namespace rclient
                 {
                     TA_THROW_MSG(std::runtime_error, "Call to d2i_X509 failed attepmting to get cert");
                 }
-                myIsValid = myIsValid && !ta::CertUtils::isCertFileRevoked(myX509);
+                if (ta::CertUtils::isCertFileRevoked(myX509)) { // Just return false if the cert is revoked
+                    return false;
+                }
 
-                DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid ? "" : "in"));
+                unsigned int myRemain = static_cast<unsigned int>((myNotAfter.QuadPart - myNow.QuadPart) / 10000000);
+                if (!myRemain)
+                    return false;
+                if (myNotAfter.QuadPart < myNotBefore.QuadPart)
+                    TA_THROW_MSG(NativeCertStoreError, "Certificate expires before it gets valid ?!");
+                unsigned int myCertDuration = static_cast<unsigned int>((myNotAfter.QuadPart - myNotBefore.QuadPart) / 10000000);
+                Settings::CertValidity myCertValidity;
+                try {
+                    myCertValidity = Settings::getCertValidity();
+                }
+                catch (SettingsError& e) {
+                    TA_THROW_MSG(NativeCertStoreError, e.what());
+                }
+
+                bool myIsValid = true;
+                if (myCertValidity.type == rclient::Settings::certValidityTypeDuration)
+                {
+                    myIsValid = myRemain >= myCertValidity.value;
+                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, minimum valid seconds is %d, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                }
+                else if (myCertValidity.type == rclient::Settings::certValidityTypePercentage)
+                {
+                    myIsValid = myRemain >= myCertDuration * myCertValidity.value / 100;
+                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                }
+                else
+                {
+                    TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported CertValidityType %d found") % myCertValidity.type);
+                }
+
                 return myIsValid;
             }
 
@@ -854,21 +871,35 @@ namespace rclient
                 if (myNow < aCertInfo.utcNotBefore || myNow >= aCertInfo.utcNotAfter)
                     return false;
 
-                const int myRemain = aCertInfo.utcNotAfter - myNow;
+                if (ta::CertUtils::isCertFileRevoked(aCertPath)) { // Just return false if the cert is revoked
+                    return false;
+                }
 
-                unsigned int myCertValidPercent;
+                const int myRemain = aCertInfo.utcNotAfter - myNow;
+                Settings::CertValidity myCertValidity;
                 try {
-                    myCertValidPercent = Settings::getCertValidPercentage();
+                    myCertValidity = Settings::getCertValidity();
                 }
                 catch (SettingsError& e) {
                     TA_THROW_MSG(NativeCertStoreError, e.what());
                 }
-                const int myMinRemain = (int)(myCertDuration * myCertValidPercent / 100);
 
-                bool myIsValid = (myRemain >= myMinRemain);
-                myIsValid = myIsValid && !ta::CertUtils::isCertFileRevoked(aCertPath);
+                bool myIsValid = true;
+                if (myCertValidity.type == rclient::Settings::certValidityTypeDuration)
+                {
+                    myIsValid = myRemain >= (int)myCertValidity.value;
+                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, minimum valid seconds is %d, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                }
+                else if (myCertValidity.type == rclient::Settings::certValidityTypePercentage)
+                {
+                    myIsValid = myRemain >= (int)(myCertDuration * myCertValidity.value / 100);
+                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                }
+                else
+                {
+                    TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported CertValidityType %d found") % myCertValidity.type);
+                }
 
-                DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage  is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidPercent % (myIsValid ? "" : "in"));
                 return myIsValid;
             }
 

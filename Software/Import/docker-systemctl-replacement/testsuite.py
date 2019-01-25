@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.2456"
+__version__ = "1.4.3025"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -341,11 +341,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def rm_zzfiles(self, root):
         for folder in self.real_folders():
             for item in glob(os_path(root, folder + "/zz*")):
-                logg.info("rm %s", item)
-                os.remove(item)
+                if os.path.isdir(item):
+                   logg.info("rmtree %s", item)
+                   shutil.rmtree(item)
+                else:
+                   logg.info("rm %s", item)
+                   os.remove(item)
             for item in glob(os_path(root, folder + "/test_*")):
-                logg.info("rm %s", item)
-                os.remove(item)
+                if os.path.isdir(item):
+                   logg.info("rmtree %s", item)
+                   shutil.rmtree(item)
+                else:
+                   logg.info("rm %s", item)
+                   os.remove(item)
     def coverage(self, testname = None):
         testname = testname or self.caller_testname()
         newcoverage = ".coverage."+testname
@@ -1134,6 +1142,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, r"g.service:.* there may be only one ExecReload statement")) # systemctl.py special
         self.assertFalse(greps(out, r"c.service:.* the use of /bin/kill is not recommended")) # systemctl.py special
         sh____("rm /etc/systemd/system/zz*")
+    def test_1099_errors_message_on_dot_include(self):
+        """ check that '.include' is accepted but marked deprecated"""
+        self.begin()
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/etc/systemd/system/zza.service"),"""
+            .include /etc/systemd/system/zzb.service
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=foo
+            ExecStart=runA
+            ExecReload=runB
+            ExecStop=runC
+            [Install]
+            WantedBy=multi-user.target""")
+        cmd = "{systemctl} status zza.service"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        # self.assertEqual(end, 0)
+        self.assertTrue(greps(err, r"deprecated"))
+        self.end()
+
     def real_1101_get_bad_command(self):
         self.test_1101_bad_command(True)
     def test_1101_bad_command(self, real = False):
@@ -2239,7 +2275,539 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         self.rm_zzfiles(root)
         self.coverage()
-    def test_2290_show_unit_not_found(self):
+
+    def real_2300_override_environment_extras(self):
+        self.test_2300_override_environment_extras(True)
+    def test_2300_override_environment_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF7=def7
+            Environment=DEF8=$DEF5
+            ExecStartPre=/usr/bin/printf y.$DEF7.$DEF8
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def5"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertTrue(greps(out, r"DEF7=def7"))
+        self.assertTrue(greps(out, r"DEF8=[$]DEF5"))
+        self.assertFalse(greps(out, r"DEF9=def9"))
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2310_override_environment_by_extras(self):
+        self.test_2310_override_environment_by_extras(True)
+    def test_2310_override_environment_by_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def7"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertFalse(greps(out, r"DEF7=def7"))
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2320_override_environment_by_usrlib_extras(self):
+        self.test_2320_override_environment_by_usrlib_extras(True)
+    def test_2320_override_environment_by_usrlib_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def7"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertFalse(greps(out, r"DEF7=def7"))
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2330_override_environment_by_usrlib_etc_extras(self):
+        self.test_2330_override_environment_by_usrlib_etc_extras(True)
+    def test_2330_override_environment_by_usrlib_etc_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def7"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertFalse(greps(out, r"DEF7=def7"))
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2340_override_environment_by_multiple_extras(self):
+        self.test_2340_override_environment_by_multiple_extras(True)
+    def test_2340_override_environment_by_multiple_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service.d/base.conf"),"""
+            [Service]
+            Environment=DEF5=def6
+            Environment=DEF7=def6
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def7"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertTrue(greps(out, r"DEF7=def"))
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2350_override_environment_by_multiple_same_extras(self):
+        self.test_2350_override_environment_by_multiple_same_extras(True)
+    def test_2350_override_environment_by_multiple_same_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def6
+            Environment=DEF7=def6
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def7"))
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertFalse(greps(out, r"DEF7=def")) # <<< difference to previous!!
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2360_override_environment_by_multiple_same_extras(self):
+        self.test_2360_override_environment_by_multiple_same_extras(True)
+    def test_2360_override_environment_by_multiple_same_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=DEF5=def6
+            Environment=DEF7=def6
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/base.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def6")) # <<< difference to (pre)previous
+        self.assertTrue(greps(out, r"DEF6=[$]DEF5"))
+        self.assertTrue(greps(out, r"DEF7=def")) 
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def real_2390_override_environment_with_zero_out_extras(self):
+        self.test_2390_override_environment_with_zero_out_extras(True)
+    def test_2390_override_environment_with_zero_out_extras(self, real = False):
+        """ check that the result of 'show -p Environment UNIT' can 
+            list the settings when using override file extras"""
+        testname = self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir, real)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        if real: systemctl = "/usr/bin/systemctl"
+        text_file(os_path(root, "/etc/sysconfig/zzb.conf"),"""
+            DEF1='def1'
+            DEF2="def2"
+            DEF3=def3
+            """)
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            EnvironmentFile=/etc/sysconfig/zzb.conf
+            Environment=DEF5=def5
+            Environment=DEF6=$DEF5
+            ExecStart=/usr/bin/printf x.$DEF1.$DEF2.$DEF3.$DEF4.$DEF5
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(root, "/usr/lib/systemd/system/zzb.service.d/extra.conf"),"""
+            [Service]
+            Environment=
+            Environment=DEF5=def6
+            Environment=DEF7=def6
+            """)
+        text_file(os_path(root, "/etc/systemd/system/zzb.service.d/base.conf"),"""
+            [Service]
+            Environment=DEF5=def7
+            Environment=DEF8=def8
+            """)
+        cmd = "{systemctl} daemon-reload"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} show -p Environment zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(end, 0)
+        self.assertFalse(greps(out, r"DEF1=def1"))
+        self.assertFalse(greps(out, r"DEF2=def2"))
+        self.assertFalse(greps(out, r"DEF3=def3"))
+        self.assertFalse(greps(out, r"DEF4=def4"))
+        self.assertTrue(greps(out, r"DEF5=def6"))
+        self.assertFalse(greps(out, r"DEF6=")) # <<< zero-out
+        self.assertTrue(greps(out, r"DEF7=def")) 
+        self.assertFalse(greps(out, r"DEF8=")) # <<< zero-out
+        a_lines = len(lines(out))
+        cmd = "{systemctl} show -p EnvironmentFile zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} start zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} stop zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        cmd = "{systemctl} status zzb.service"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        #
+        self.rm_testdir()
+        self.rm_zzfiles(root)
+        self.coverage()
+    def test_2610_show_unit_not_found(self):
         """ check when 'show UNIT' not found  """
         testname = self.testname()
         testdir = self.testdir()
@@ -2262,7 +2830,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertIn("SubState=dead", rep)
         self.assertIn("Id=zz-not-existing.service", rep)
         ##
-    def test_2292_show_unit_property_not_found(self):
+    def test_2612_show_unit_property_not_found(self):
         """ check when 'show UNIT' not found  """
         testname = self.testname()
         testdir = self.testdir()
@@ -12377,13 +12945,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} systemctl --version"
         sh____(cmd.format(**locals()))
-        list_units_systemctl = "docker exec {testname} systemctl default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out2 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -vv"
+        out2 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out2)
-        list_units_systemctl = "docker exec {testname} systemctl --all default-services -vv"
-        # sh____(list_units_systemctl.format(**locals()))
-        out3 = output(list_units_systemctl.format(**locals()))
+        cmd = "docker exec {testname} systemctl --all default-services -vv"
+        out3 = output(cmd.format(**locals()))
         logg.info("\n>\n%s", out3)
         #
         self.save_coverage(testname)
@@ -19393,6 +19959,122 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
+    def test_5600_systemctl_py_list_units_running(self):
+        """ check that we can enable services in a docker container to be run as default-services
+            after it has been restarted and that we can filter the list of services shown"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        images = IMAGES
+        image = self.local_image(COVERAGE or IMAGE or CENTOS)
+        if _python.endswith("python3") and "centos" in image: 
+            self.skipTest("no python3 on centos")
+        testname = self.testname()
+        testdir = self.testdir()
+        package = package_tool(image)
+        refresh = refresh_tool(image)
+        python = os.path.basename(_python)
+        python_coverage = coverage_package(image)
+        systemctl_py = _systemctl_py
+        sometime = SOMETIME or 188
+        text_file(os_path(testdir, "zza.service"),"""
+            [Unit]
+            Description=Testing A""")
+        text_file(os_path(testdir, "zzb.service"),"""
+            [Unit]
+            Description=Testing B
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/testsleep 99
+            [Install]
+            WantedBy=multi-user.target""")
+        text_file(os_path(testdir, "zzc.service"),"""
+            [Unit]
+            Description=Testing C
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/testsleep 111
+            [Install]
+            WantedBy=multi-user.target""")
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name={testname} {image} sleep {sometime}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} {refresh}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'ls -l /usr/bin/{python} || {package} install -y {python}'"
+        sx____(cmd.format(**locals()))
+        if COVERAGE:
+             cmd = "docker exec {testname} {package} install -y {python_coverage}"
+             sx____(cmd.format(**locals()))
+        self.prep_coverage(testname)
+        cmd = "docker exec {testname} mkdir -p /etc/systemd/system /etc/systemd/user"
+        sx____(cmd.format(**locals()))
+        cmd = "docker cp /usr/bin/sleep {testname}:/usr/bin/testsleep"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zza.service {testname}:/etc/systemd/system/zza.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzb.service {testname}:/etc/systemd/system/zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testdir}/zzc.service {testname}:/etc/systemd/system/zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzb.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl enable zzc.service"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl --version"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl default-services -v"
+        # sh____(cmd.format(**locals()))
+        out2 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out2)
+        cmd = "docker exec {testname} bash -c 'grep nobody /etc/group || groupadd nobody'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} useradd somebody -g nobody -m"
+        sh____(cmd.format(**locals()))
+        # .........................................vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run --detach --name {testname}x {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        time.sleep(3)
+        #
+        #
+        top_container2 = "docker exec -u somebody {testname}x ps -eo pid,ppid,user,args"
+        top = output(top_container2.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertTrue(greps(top, "testsleep 99"))
+        self.assertTrue(greps(top, "testsleep 111"))
+        self.assertEqual(len(greps(top, "testsleep")), 2)
+        self.assertEqual(len(greps(top, " 1 *.*systemctl")), 1)
+        self.assertEqual(len(greps(top, " root ")), 3)
+        self.assertEqual(len(greps(top, " somebody ")), 1)
+        #
+        check = "docker exec {testname}x systemctl list-units"
+        top = output(check.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertEqual(len(greps(top, "zz")), 3)
+        check = "docker exec {testname}x systemctl list-units --state=running"
+        top = output(check.format(**locals()))
+        logg.info("\n>>>\n%s", top)
+        self.assertEqual(len(greps(top, "zz")), 2)
+        #
+        cmd = "docker stop {testname}x" # <<<
+        # sh____(cmd.format(**locals()))
+        out3 = output(cmd.format(**locals()))
+        logg.info("\n>\n%s", out3)
+        #
+        self.save_coverage(testname, testname+"x")
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}x"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+
     def test_6130_run_default_services_from_simple_saved_container(self):
         """ check that we can enable services in a docker container to be run as default-services
             after it has been restarted from a commit-saved container image.
@@ -21429,6 +22111,79 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    text_8051_serv = """# systemctl.py cat kubelet
+[Unit]
+Description=kubelet: The Kubernetes Node Agent
+Documentation=https://kubernetes.io/docs/home/
+
+[Service]
+ExecStart=/usr/bin/kubelet
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+"""
+    text_8051_conf = """# cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+# Note: This dropin only works with kubeadm and kubelet v1.11+
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+# This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+# This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+# the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+EnvironmentFile=-/etc/default/kubelet
+ExecStart=
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+    """
+    def test_8051_systemctl_extra_conf_dirs(self):
+        """ checking issue #51 on extra conf dirs """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service"), self.text_8051_serv)
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_conf)
+        #
+        cmd = "{systemctl} environment kubelet -vvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.debug(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" HAVE %s", greps(out, "HOME"))
+        logg.info(" HAVE %s", greps(out, "KUBE"))
+        self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
+        self.assertEqual(len(greps(out, "KUBE")), 2)
+        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
+        self.rm_testdir()
+        self.coverage()
+    def test_8052_systemctl_extra_conf_dirs(self):
+        """ checking issue #52 on extra conf dirs """
+        testdir = self.testdir()
+        root = self.root(testdir)
+        systemctl = cover() + _systemctl_py + " --root=" + root
+        text_file(os_path(root, "/lib/systemd/system/kubelet.service"), self.text_8051_serv)
+        text_file(os_path(root, "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"), self.text_8051_conf)
+        #
+        cmd = "{systemctl} environment kubelet -vvv"
+        out, end = output2(cmd.format(**locals()))
+        logg.debug(" %s =>%s\n%s", cmd, end, out)
+        logg.info(" HAVE %s", greps(out, "HOME"))
+        logg.info(" HAVE %s", greps(out, "KUBE"))
+        self.assertTrue(greps(out, "KUBELET_CONFIG_ARGS=--config"))
+        self.assertEqual(len(greps(out, "KUBE")), 2)
+        cmd = "{systemctl} environment kubelet -vvv -p ExecStart"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertEqual(len(lines(out)), 1)
+        self.assertTrue(greps(out, "KUBELET_KUBECONFIG_ARGS"))
+        self.rm_testdir()
+        self.coverage()
+
+
     def test_9999_drop_local_mirrors(self):
         """ a helper when using images from https://github.com/gdraheim/docker-mirror-packages-repo"
             which create containers according to self.local_image(IMAGE) """

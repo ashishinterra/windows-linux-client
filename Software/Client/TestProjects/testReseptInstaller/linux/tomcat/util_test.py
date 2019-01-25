@@ -38,19 +38,19 @@ class TestUtil(unittest.TestCase):
         '''
         self.assertEquals(util.strip_json_comments(json_with_comments), expected_json)
 
-    def test_get_cert_validity_percentage_with_success(self):
-        self.assertEqual(util.get_cert_validity_percentage(
-                         "DemoProvider", "CUST_PASSWD_INTERNAL"), 10)
+    def test_get_cert_validity_with_success(self):
+        self.assertEqual(util.get_cert_validity(
+                         "DemoProvider", "CUST_PASSWD_INTERNAL"), "10%")
 
-    def test_get_cert_validity_percentage_with_error(self):
+    def test_get_cert_validity_with_error(self):
         self.assertRaises(
             Exception,
-            util.get_cert_validity_percentage,
+            util.get_cert_validity,
             "DemoProvider",
             "invalid-service")
         self.assertRaises(
             Exception,
-            util.get_cert_validity_percentage,
+            util.get_cert_validity,
             "invalid-provider",
             "CUST_PASSWD_INTERNAL")
 

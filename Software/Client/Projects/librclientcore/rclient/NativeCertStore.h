@@ -39,7 +39,7 @@ namespace rclient
         /**
            Check the existence of valid certificates issued with the current KeyTalk service
 
-           Certificate validity is determined by the 'CertValidPercent' value associated with the latest service
+           Certificate validity is determined by the 'CertValidity' value associated with the latest service
            and, of course, the validity of the certificate itself
 
            @return The number of valid certificates found

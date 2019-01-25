@@ -1,8 +1,8 @@
 #! /usr/bin/python
 from __future__ import print_function
 
-__copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2456"
+__copyright__ = "(C) 2016-2019 Guido U. Draheim, licensed under the EUPL"
+__version__ = "1.4.3025"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -45,6 +45,7 @@ _preset_mode = "all"
 _quiet = False
 _root = ""
 _unit_type = None
+_unit_state = None
 _unit_property = None
 _show_all = False
 _user_mode = False
@@ -70,6 +71,7 @@ _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
 
+SystemCompatibilityVersion = 219
 MinimumYield = 0.5
 MinimumTimeoutStartSec = 4
 MinimumTimeoutStopSec = 4
@@ -382,6 +384,13 @@ class UnitConfigParser:
                 continue
             if line.startswith(";"):
                 continue
+            if line.startswith(".include"):
+                logg.error("the '.include' syntax is deprecated. Use x.service.d/ drop-in files!")
+                includefile = re.sub(r'^\.include[ ]*', '', line).rstrip()
+                if not os.path.isfile(includefile):
+                    raise Exception("tried to include file that doesn't exist: %s" % includefile)
+                self.read_sysd(includefile)
+                continue
             if line.startswith("["):
                 x = line.find("]")
                 if x > 0:
@@ -397,7 +406,8 @@ class UnitConfigParser:
                 nextline = True
                 text = text + "\n"
             else:
-                self.set(section, name, text)
+                # hint: an empty line shall reset the value-list
+                self.set(section, name, text and text or None)
     def read_sysv(self, filename):
         """ an LSB header is scanned and converted to (almost)
             equivalent settings of a SystemD ini-style input """
@@ -447,6 +457,7 @@ class UnitConf:
         self.status = None
         self.masked = None
         self.module = module
+        self.drop_in_files = {}
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -460,6 +471,9 @@ class UnitConf:
         if files:
             return files[0]
         return None
+    def overrides(self):
+        """ drop-in files are loaded alphabetically by name, not by full path """
+        return [ self.drop_in_files[name] for name in sorted(self.drop_in_files) ]
     def name(self):
         """ the unit id or defaults to the file name """
         name = self.module or ""
@@ -756,8 +770,10 @@ class Systemctl:
         self._root = _root
         self._show_all = _show_all
         self._unit_property = _unit_property
+        self._unit_state = _unit_state
         self._unit_type = _unit_type
         # some common constants that may be changed
+        self._systemd_version = SystemCompatibilityVersion
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
         # and the actual internal runtime state
@@ -920,6 +936,27 @@ class Systemctl:
         except Exception as e:
             logg.warning("%s not loaded: %s", module, e)
         return None
+    def find_drop_in_files(self, unit):
+        """ search for some.service.d/extra.conf files """
+        result = {}
+        basename_d = unit + ".d"
+        for folder in self.sysd_folders():
+            if not folder: 
+                continue
+            if self._root:
+                folder = os_path(self._root, folder)
+            override_d = os_path(folder, basename_d)
+            if not os.path.isdir(override_d):
+                continue
+            for name in os.listdir(override_d):
+                path = os.path.join(override_d, name)
+                if os.path.isdir(path):
+                    continue
+                if not path.endswith(".conf"):
+                    continue
+                if name not in result:
+                    result[name] = path
+        return result
     def load_sysd_unit_conf(self, module): # -> conf?
         """ read the unit file with a UnitParser (systemd) """
         path = self.unit_sysd_file(module)
@@ -929,19 +966,18 @@ class Systemctl:
         masked = None
         if os.path.islink(path) and os.readlink(path).startswith("/dev"):
             masked = os.readlink(path)
+        drop_in_files = {}
         unit = UnitParser()
         if not masked:
             unit.read_sysd(path)
-            override_d = path + ".d"
-            if os.path.isdir(override_d):
-                for name in os.listdir(override_d):
-                    path = os.path.join(override_d, name)
-                    if os.path.isdir(path):
-                        continue
-                    if name.endswith(".conf"):
-                        unit.read_sysd(path)
+            drop_in_files = self.find_drop_in_files(os.path.basename(path))
+            # load in alphabetic order, irrespective of location
+            for name in sorted(drop_in_files):
+                path = drop_in_files[name]
+                unit.read_sysd(path)
         conf = UnitConf(unit, module)
         conf.masked = masked
+        conf.drop_in_files = drop_in_files
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -1038,6 +1074,10 @@ class Systemctl:
                 substate[unit] = self.get_substate_from(conf)
             except Exception as e:
                 logg.warning("list-units: %s", e)
+            if self._unit_state:
+                if self._unit_state not in [ result[unit], active[unit], substate[unit] ]:
+                    del result[unit]
+                    continue
         return [ (unit, result[unit] + " " + active[unit] + " " + substate[unit], description[unit]) for unit in sorted(result) ]
     def show_list_units(self, *modules): # -> [ (unit,loaded,description) ]
         """ [PATTERN]... -- List loaded units.
@@ -1388,6 +1428,8 @@ class Systemctl:
         if conf is None:
             logg.error("Unit %s could not be found.", unit)
             return False
+        if _unit_property:
+            return conf.data.getlist("Service", _unit_property)
         return self.get_env(conf)
     def extra_vars(self):
         return self._extra_vars # from command line
@@ -2733,6 +2775,8 @@ class Systemctl:
             filename = conf.filename()
             enabled = self.enabled_from(conf)
             result += "\n    Loaded: {loaded} ({filename}, {enabled})".format(**locals())
+            for path in conf.overrides():
+                result += "\n    Drop-In: {path}".format(**locals())
         else:
             result += "\n    Loaded: failed"
             return 3, result
@@ -4097,10 +4141,10 @@ class Systemctl:
             return False
         return lines
     def systemd_version(self):
-        """ the the version line for systemd compatibility """
-        return "systemd 219\n  - via systemctl.py %s" % __version__
+        """ the version line for systemd compatibility """
+        return "systemd %s\n  - via systemctl.py %s" % (self._systemd_version, __version__)
     def systemd_features(self):
-        """ the the info line for systemd features """
+        """ the info line for systemd features """
         features1 = "-PAM -AUDIT -SELINUX -IMA -APPARMOR -SMACK"
         features2 = " +SYSVINIT -UTMP -LIBCRYPTSETUP -GCRYPT -GNUTLS"
         features3 = " -ACL -XZ -LZ4 -SECCOMP -BLKID -ELFUTILS -KMOD -IDN"
@@ -4186,7 +4230,7 @@ if __name__ == "__main__":
     #     help="Operate on local container*")
     _o.add_option("-t","--type", metavar="TYPE", dest="unit_type", default=_unit_type,
         help="List units of a particual type")
-    _o.add_option("--state", metavar="STATE",
+    _o.add_option("--state", metavar="STATE", default=_unit_state,
         help="List units with particular LOAD or SUB or ACTIVE state")
     _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
         help="Show only properties by this name")
@@ -4274,6 +4318,7 @@ if __name__ == "__main__":
     _quiet = opt.quiet
     _root = opt.root
     _show_all = opt.show_all
+    _unit_state = opt.state
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
     # being PID 1 (or 0) in a container will imply --init

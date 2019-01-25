@@ -1,6 +1,10 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
+server-5.5.1, in development
+----------------------
+    ---
+
 server-5.5.0, 18 January 2019
 ----------------------
 Support upgrades from v5.2.1 and higher
@@ -21,9 +25,10 @@ Support import of settings created in v5.2.0-v5.5.0, v4.6.0 and v4.6.2
       - version 6.0-> 7.0
 
 
-client-5.5.0, in development
+client-5.5.0, 25 January 2019
 ----------------------
-    - ADDED: Extend HWSIG with random number (Windows, Linux) (KEYTALK-502)
+    - ADDED: Extend HWSIG with random number (KEYTALK-502)
+    - ADDED: Allow "certificate validity percentage" in absolute time (RCCD 2.0.2 -> 2.0.3) (KEYTALK-505)
     - FIXED: Windows 7 client support for certificate auto-renewal (KEYTALK-499)
 
 

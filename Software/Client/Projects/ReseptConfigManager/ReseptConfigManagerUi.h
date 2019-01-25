@@ -85,11 +85,11 @@ private slots:
 private:
     struct ServiceSettings
     {
-        ServiceSettings(const std::string& aName, const std::string& aServiceUri, const unsigned int aCertValidPercentage)
-            : name(aName), service_uri(aServiceUri), cert_valid_percentage(aCertValidPercentage) {}
+        ServiceSettings(const std::string& aName, const std::string& aServiceUri, const rclient::Settings::CertValidity aCertValidity)
+            : name(aName), service_uri(aServiceUri), cert_validity(aCertValidity) {}
         std::string name;
         std::string service_uri;
-        unsigned int cert_valid_percentage;
+        rclient::Settings::CertValidity cert_validity;
     };
     struct ProviderSettings
     {
@@ -105,7 +105,7 @@ private:
     QComboBox* theProvidersCombo;
     QComboBox* theServicesCombo;
     QLabel* theServiceUriLabel;
-    QLabel* theCertValidPercentageLabel;
+    QLabel* theCertValidityLabel;
 };
 
 enum ValidationPolicy { validateYes, validateNo };

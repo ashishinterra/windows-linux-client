@@ -297,9 +297,9 @@ def same_file(path1, path2):
     return os.stat(path1).st_ino == os.stat(path2).st_ino
 
 
-def get_cert_validity_percentage(provider, service, logger=None):
+def get_cert_validity(provider, service, logger=None):
     stdout = run_cmd(
-        "{0} service getparam {1} {2} CertValidPercent".format(
+        "{0} service getparam {1} {2} CertValidity".format(
             KT_CONFIG_TOOL_PATH,
             provider,
             service),
@@ -326,8 +326,22 @@ def _cert_duration_seconds(not_after, not_before):
         return cert_duration.total_seconds()
     except AttributeError:
         # python prior to 2.7
-        return float(cert_duration.microseconds + (cert_duration.seconds + \
-                     cert_duration.days * 24 * 3600) * 10**6) / float(10**6)
+        return float(cert_duration.microseconds + (cert_duration.seconds +
+                                                   cert_duration.days * 24 * 3600) * 10**6) / float(10**6)
+
+
+def _parse_cert_validity(validity_str):
+    for suffix in ['s', '%']:
+        if (validity_str.endswith(suffix)):
+            cert_validity = int(validity_str[0:-len(suffix)])
+            if (suffix == '%' and (cert_validity < 0 or cert_validity > 100)):
+                raise Exception(
+                    'Invalid value {0} in the certificate validity string {1}. The value should be between 0 and 100'.format(
+                        cert_validity, validity_str))
+            return cert_validity, suffix
+    # Suffix not recognized
+    raise Exception(
+        'Failed to get validity value for string {0}. Suffix not found'.format(validity_str))
 
 
 def is_cert_expired(pem_cert, vhost, provider, service, logger):
@@ -338,9 +352,13 @@ def is_cert_expired(pem_cert, vhost, provider, service, logger):
     logger.debug(
         "Certificate validity for {0} : {1} UTC -> {2} UTC".format(vhost, not_before, not_after))
 
-    cert_valididy_percentage = get_cert_validity_percentage(provider, service, logger)
-    cert_validity_margin_seconds = int(
-        (float(cert_valididy_percentage) / 100) * _cert_duration_seconds(not_after, not_before))
+    cert_validity = get_cert_validity(provider, service, logger)
+    cert_validity_value, cert_validity_type = _parse_cert_validity(cert_validity)
+    if (cert_validity_type == 's'):
+        cert_validity_margin_seconds = cert_validity_value
+    elif (cert_validity_type == '%'):
+        cert_validity_margin_seconds = int(
+            (float(cert_valididy_value) / 100) * _cert_duration_seconds(not_after, not_before))
     cert_expiration_utc = not_after - datetime.timedelta(seconds=cert_validity_margin_seconds)
 
     cert_expired = cert_expiration_utc <= datetime.datetime.utcnow()

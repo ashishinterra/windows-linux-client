@@ -15,7 +15,8 @@ Providers :
 		(
 			{
 				Name = "Service1";
-				CertValidity = "3600s";
+				CertValidity = "25%";
+				CertValidPercent = 25;
 				CertFormat = "P12";
 				CertChain = true;
 				Uri = "https://siouxdemo.trustalert.com/";
@@ -27,8 +28,8 @@ Providers :
 			},
 			{
 				Name = "Service3";
-				# invalid CertValidity: negative
-				CertValidity = "-25s";
+				# bad CertValidPercent
+				CertValidPercent = -25;
 				DisplayName = true;
 				CleanupUserCert = true;
 				Uri = "https://siouxdemo.trustalert.com#fragment";
@@ -53,8 +54,8 @@ Providers :
 			},
 			{
 				Name = "Service6";
-				# invalid CertValidity: int value
-				CertValidity = 25;
+				CertValidity = "25%";
+				CertValidPercent = 25;
 				DisplayName = false;
 				CleanupUserCert = false;
 				CertChain = true;
@@ -64,54 +65,19 @@ Providers :
 			},
 			{
 				Name = "Service7";
-				# invalid CertValidity: no suffix
-				CertValidity = "25";
+				# incorrect int type
+				CertValidPercent = "25";
 				Uri = "https://siouxdemo.trustalert.com/../";
 				Users = [ ];
 			},
 			{
 				Name = "Service9";
-				# No CertValidity / rccd v2.0.2 and before style
+				CertValidity = "25%";
 				CertValidPercent = 25;
 				CertFormat = "P12";
 				CertChain = true;
 				Uri = "https://siouxdemo.trustalert.nl/";
 				UseClientOsLogonUser = true;
-			}
-		);
-	},
-
-	{
-		Name = "Provider2";
-		ContentVersion = 2010080421;
-		CAs = [ "RESEPT Demo UCA2", "RESEPT Demo SCA2", "RESEPT Demo PCA2" ];
-		LastUserMsgUtc = "2010-11-05T00:00:30+0000";
-		Services :
-		(
-			{
-				Name = "Service1";
-				CertValidity = "25%";
-				CertValidPercent = 25;
-				Users = [ "DemoUser" ];
-			}
-		);
-	},
-
-	{
-	    Name = "Provider4";
-	    ContentVersion = 2010080441;
-	    Server = "[fd7c:1111:1111:10::112]:1234";
-		LogLevel = "DEBUG";
-		CAs = [ "RESEPT Demo UCA4", "RESEPT Demo SCA4", "RESEPT Demo PCA4", "RESEPT Demo RCA4" ];
-		LastUserMsgUtc = "2008-11-05T13:15:30+0000";
-		Services :
-		(
-			{
-			    Name = "Service1";
-				CertValidity = "25%";
-				CertValidPercent = 25;
-				Uri = "https://siouxdemo2.trustalert.com";
-				Users = [ "DemoUser" ];
 			}
 		);
 	}

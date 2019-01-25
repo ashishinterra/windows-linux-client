@@ -419,10 +419,10 @@ int main(int argc, char *argv[])
                 return exitError;
             }
 
-            if (myParamName == rclient::Settings::getCertValidPercentParamName())
+            if (myParamName == rclient::Settings::getCertValidityParamName())
             {
-                const unsigned int myCertValidPercent = getCertValidPercentage(myProviderName, myServiceName);
-                printValue(myCertValidPercent);
+                const rclient::Settings::CertValidity myCertValidity = getCertValidity(myProviderName, myServiceName);
+                printValue(myCertValidity.str());
             }
             else
             {

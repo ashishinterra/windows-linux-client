@@ -26,26 +26,6 @@ namespace rclient
         // Private API
         namespace
         {
-            CertValidity getCertValidityFromStr(const string& aValidityStr)
-            {
-                const string myStrippedValidityStr = boost::trim_copy(aValidityStr);
-                for (int typ = _firstCertValidityType; typ <= _lastCertValidityType; ++typ)
-                {
-                    const string mySuffix = suffix(static_cast<CertificateValidityType>(typ));
-                    if (boost::ends_with(myStrippedValidityStr, mySuffix))
-                    {
-                        const int myValue = ta::Strings::parse<int>(myStrippedValidityStr.substr(0, myStrippedValidityStr.length() - mySuffix.length()));
-                        // parse to int to verify the number is non-negative
-                        if (myValue < 0)
-                        {
-                            TA_THROW_MSG(std::invalid_argument, boost::format("Invalid value %d in the certificate validity string %s. The value should be non negative") % myValue % myStrippedValidityStr);
-                        }
-                        return CertValidity(static_cast<CertificateValidityType>(typ), myValue);
-                    }
-                }
-                TA_THROW_MSG(std::invalid_argument, boost::format("Failed to get validity value for string %s. Suffix not found") % myStrippedValidityStr);
-            }
-
             void generateUserLibConfigConfigImpl(const RccdRequestData& aReq, const string& anOutConfPath)
             {
                 try
@@ -86,7 +66,7 @@ namespace rclient
                         myServiceConfig.add(ServiceCertFormat, libconfig::Setting::TypeString) = str(resept::certformatP12);
                         myServiceConfig.add(ServiceCertChain, libconfig::Setting::TypeBoolean) = false;
                         myServiceConfig.add(ServiceUri, libconfig::Setting::TypeString) = service.uri;
-                        myServiceConfig.add(ServiceCertValidity, libconfig::Setting::TypeString) = service.certValidity.toString();
+                        myServiceConfig.add(ServiceCertValidity, libconfig::Setting::TypeString) = service.certValidity.str();
                         // Keep writing percentage in the old style for backwards compatability (from RCCD v2.0.3)
                         if (service.certValidity.type == certValidityTypePercentage)
                         {
@@ -168,7 +148,7 @@ namespace rclient
                         conf << YAML::Key << ServiceCertFormat << YAML::Value << str(resept::certformatP12);
                         conf << YAML::Key << ServiceCertChain << YAML::Value << false;
                         conf << YAML::Key << ServiceUri << YAML::Value << service.uri;
-                        conf << YAML::Key << ServiceCertValidity << YAML::Value << service.certValidity.toString();
+                        conf << YAML::Key << ServiceCertValidity << YAML::Value << service.certValidity.str();
                         // Keep writing percentage in the old style for backwards compatability (from RCCD v2.0.3)
                         if (service.certValidity.type == certValidityTypePercentage)
                         {
@@ -271,7 +251,7 @@ namespace rclient
 
                         if (!service.allowOverwriteCertValidity)
                         {
-                            myServiceConfig.add(ServiceCertValidity, libconfig::Setting::TypeString) = service.certValidity.toString();
+                            myServiceConfig.add(ServiceCertValidity, libconfig::Setting::TypeString) = service.certValidity.str();
                             // Keep writing percentage in the old style for backwards compatability (from RCCD v2.0.3)
                             if (service.certValidity.type == certValidityTypePercentage)
                             {
@@ -351,7 +331,7 @@ namespace rclient
                         conf << YAML::Key << DefServiceUri << YAML::Value << service.uri;
                         if (!service.allowOverwriteCertValidity)
                         {
-                            conf << YAML::Key << ServiceCertValidity << YAML::Value << service.certValidity.toString();
+                            conf << YAML::Key << ServiceCertValidity << YAML::Value << service.certValidity.str();
                             // Keep writing percentage in the old style for backwards compatability (from RCCD v2.0.3)
                             if (service.certValidity.type == certValidityTypePercentage)
                             {
@@ -417,15 +397,11 @@ namespace rclient
 
             bool isCertValiditySettingExistInMasterConfig(const string& aProviderName, const string& aServiceName)
             {
-                if (SettingsImpl::isServiceValExist<int>(ServiceCertValidity, aProviderName, aServiceName, masterConfig))
+                if (SettingsImpl::isServiceValExist<string>(ServiceCertValidity, aProviderName, aServiceName, masterConfig))
                 {
-                    string myCertValidityStr, myCertValiditySuffix;
+                    string myCertValidityStr;
                     const string myPath = SettingsImpl::getServiceScalarVal(ServiceCertValidity, aProviderName, aServiceName, masterConfig, myCertValidityStr);
-                    const CertValidity myCertValidity = getCertValidityFromStr(myCertValidityStr);
-                    if (myCertValidity.type == certValidityTypePercentage && (myCertValidity.value > 100))
-                    {
-                        TA_THROW_MSG(SettingsError, boost::format("Invalid value %d for %s setting in the master config. The value should be between 0 and 100") % myCertValidity.value % myPath);
-                    }
+                    parseCertValidity(myCertValidityStr); // Force validation of the value
                     return true;
                 }
                 else
@@ -469,6 +445,30 @@ namespace rclient
         //
         // Global RESEPT settings
         //
+
+        CertValidity parseCertValidity(const string& aValidityStr)
+        {
+            const string myStrippedValidityStr = boost::trim_copy(aValidityStr);
+            for (int typ = _firstCertValidityType; typ <= _lastCertValidityType; ++typ)
+            {
+                const string mySuffix = suffix(static_cast<CertificateValidityType>(typ));
+                if (boost::ends_with(myStrippedValidityStr, mySuffix))
+                {
+                    const int myValue = ta::Strings::parse<int>(myStrippedValidityStr.substr(0, myStrippedValidityStr.length() - mySuffix.length()));
+                    // parse to int to verify the number is non-negative
+                    if (myValue < 0)
+                    {
+                        TA_THROW_MSG(SettingsError, boost::format("Invalid value %d in the certificate validity string %s. The value should be non negative") % myValue % myStrippedValidityStr);
+                    }
+                    if (typ == certValidityTypePercentage && myValue > 100)
+                    {
+                        TA_THROW_MSG(SettingsError, boost::format("Invalid value %d in the certificate validity string %s. The value should be between 0 and 100") % myValue % myStrippedValidityStr);
+                    }
+                    return CertValidity(static_cast<CertificateValidityType>(typ), myValue);
+                }
+            }
+            TA_THROW_MSG(SettingsError, boost::format("Failed to get validity value for string %s. Suffix not found") % myStrippedValidityStr);
+        }
 
         string getReseptInstallDir()
         {
@@ -596,9 +596,9 @@ namespace rclient
             addArrayElemToReseptConfig(aUserName, ReseptCustomizedUsers);
         }
 
-        string getCertValidPercentParamName()
+        string getCertValidityParamName()
         {
-            return ServiceCertValidPercent;
+            return ServiceCertValidity;
         }
 
 
@@ -1200,18 +1200,25 @@ namespace rclient
         {
             checkProviderAndServiceExist(aProviderName, aServiceName);
 
-            aFromMasterConfig = isCertValiditySettingExistInMasterConfig(aProviderName, aServiceName);
-
-            if (SettingsImpl::isServiceValExist<string>(ServiceCertValidPercent, aProviderName, aServiceName, userConfig))
+            if (SettingsImpl::isServiceValExist<string>(ServiceCertValidity, aProviderName, aServiceName, userConfig))
             {
+                aFromMasterConfig = isCertValiditySettingExistInMasterConfig(aProviderName, aServiceName);
                 string myRetValStr;
-                const string myPath = SettingsImpl::getServiceScalarVal(ServiceCertValidPercent, aProviderName, aServiceName, userConfig, myRetValStr);
-                const CertValidity myCertValidity = getCertValidityFromStr(myRetValStr);
-                if (myCertValidity.type == certValidityTypePercentage && myCertValidity.value > 100)
+                SettingsImpl::getServiceScalarVal(ServiceCertValidity, aProviderName, aServiceName, userConfig, myRetValStr);
+                return parseCertValidity(myRetValStr);
+            }
+            else if (SettingsImpl::isServiceValExist<int>(ServiceCertValidPercent, aProviderName, aServiceName, userConfig))
+            {
+                aFromMasterConfig = isCertValidPercentageSettingExistInMasterConfig(aProviderName, aServiceName);
+                //@note libconfig behavior is that assigning a negative value to an unsigned produces 0,
+                // therefore we retrieve all numbers as signed and then test whether it falls into the desired range
+                int myPercentage;
+                const string myPath = SettingsImpl::getServiceScalarVal(ServiceCertValidPercent, aProviderName, aServiceName, userConfig, myPercentage);
+                if (myPercentage < 0 || myPercentage > 100)
                 {
-                    TA_THROW_MSG(SettingsError, boost::format("Invalid value %d for %s setting in the user config. The value should be between 0 and 100") % myCertValidity.value % myPath);
+                    TA_THROW_MSG(SettingsError, boost::format("Invalid value %d for %s setting in the user config. The value should be between 0 and 100") % myPercentage % myPath);
                 }
-                return myCertValidity;
+                return CertValidity(rclient::Settings::certValidityTypePercentage, myPercentage);
             }
             else
             {
@@ -1226,39 +1233,6 @@ namespace rclient
         CertValidity getCertValidity()
         {
             return getCertValidity(getLatestProvider(), getLatestService());
-        }
-
-        unsigned int getCertValidPercentage(const string& aProviderName, const string& aServiceName, bool& aFromMasterConfig)
-        {
-            checkProviderAndServiceExist(aProviderName, aServiceName);
-
-            aFromMasterConfig = isCertValidPercentageSettingExistInMasterConfig(aProviderName, aServiceName);
-
-            if (SettingsImpl::isServiceValExist<int>(ServiceCertValidPercent, aProviderName, aServiceName, userConfig))
-            {
-                //@note libconfig behavior is that assigning a negative value to an unsigned produces 0,
-                // therefore we retrieve all numbers as signed and then test whether it falls into the desired range
-                int myRetVal;
-                const string myPath = SettingsImpl::getServiceScalarVal(ServiceCertValidPercent, aProviderName, aServiceName, userConfig, myRetVal);
-                if (myRetVal < 0 || myRetVal > 100)
-                {
-                    TA_THROW_MSG(SettingsError, boost::format("Invalid value %d for %s setting in the user config. The value should be between 0 and 100") % myRetVal % myPath);
-                }
-                return myRetVal;
-            }
-            else
-            {
-                return DefCertValidPercent;
-            }
-        }
-        unsigned int getCertValidPercentage(const string& aProviderName, const string& aServiceName)
-        {
-            bool myIsFromMasterConfigDummy;
-            return getCertValidPercentage(aProviderName, aServiceName, myIsFromMasterConfigDummy);
-        }
-        unsigned int getCertValidPercentage()
-        {
-            return getCertValidPercentage(getLatestProvider(), getLatestService());
         }
 
         resept::CertFormat getCertFormat(const string& aProviderName, const string& aServiceName)

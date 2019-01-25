@@ -110,7 +110,7 @@ public:
             {
                 TS_TRACE(("Checking service " + service.name + " for provider " + provider.providerName).c_str());
                 TS_ASSERT_EQUALS(Settings::getServiceUri(provider.providerName, service.name), service.uri);
-                TS_ASSERT_EQUALS(Settings::getCertValidPercentage(provider.providerName, service.name, myFromMasterConfig), service.certValidity.value);
+                TS_ASSERT_EQUALS(Settings::getCertValidity(provider.providerName, service.name, myFromMasterConfig), service.certValidity);
                 TS_ASSERT_EQUALS(myFromMasterConfig, !service.allowOverwriteCertValidity);
                 if (service.useClientOsLogonUser)
                 {
@@ -463,5 +463,18 @@ public:
                 TS_ASSERT_EQUALS(Settings::getUsers(myReq.providerName, service.name), service.users);
             }
         }
+    }
+
+    void testWhetherOlderRccdCanBeInstalled()
+    {
+        using namespace rclient;
+        // when
+        // Install provider using user.ini.from_rccdv2_0_2 & master.ini.from_rccdv2_0_2
+        Settings::adminInstallProvider("user.ini.from_rccdv2_0_2", "master.ini.from_rccdv2_0_2", ta::getUserName());
+        //then
+        //sanity checks
+        TS_ASSERT(Settings::isCustomized());
+        TS_ASSERT(ta::isFileExist("user.ini"));
+        TS_ASSERT(ta::isFileExist("master.ini"));
     }
 };

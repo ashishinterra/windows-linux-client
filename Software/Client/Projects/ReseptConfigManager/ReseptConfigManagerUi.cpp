@@ -577,10 +577,10 @@ ServiceSettingsTab::ServiceSettingsTab(QWidget* parent)
 
     QGroupBox* settingsGroup = new QGroupBox("Settings");
     theServiceUriLabel = new QLabel;
-    theCertValidPercentageLabel = new QLabel;
+    theCertValidityLabel = new QLabel;
     QFormLayout* settingsLayout = new QFormLayout;
     settingsLayout->addRow(new QLabel("Service URI:"), theServiceUriLabel);
-    settingsLayout->addRow(new QLabel("Certificate Validity:"), theCertValidPercentageLabel);
+    settingsLayout->addRow(new QLabel("Certificate Validity:"), theCertValidityLabel);
     settingsGroup->setLayout(settingsLayout);
 
     QFormLayout* mainLayout = new QFormLayout;
@@ -639,8 +639,8 @@ void ServiceSettingsTab::load()
         BOOST_FOREACH (const string& serviceName, rclient::Settings::getServices(providerName))// full macro name because Qt defines its own foreach
         {
             const string myServiceUri = rclient::Settings::getServiceUri(providerName, serviceName);
-            const unsigned int myCertValidityPercentage = rclient::Settings::getCertValidPercentage(providerName, serviceName);
-            myServicesSettings.push_back(ServiceSettings(serviceName, myServiceUri, myCertValidityPercentage));
+            const rclient::Settings::CertValidity myCertValidity = rclient::Settings::getCertValidity(providerName, serviceName);
+            myServicesSettings.push_back(ServiceSettings(serviceName, myServiceUri, myCertValidity));
         }
         theProvidersSettings.push_back(ProviderSettings(providerName, myServicesSettings));
     }
@@ -685,7 +685,7 @@ void ServiceSettingsTab::updateUiFromServiceSettings(const string& aSelectedProv
     // Fill in service settings
     const ServiceSettings myServiceSettings = getServiceSettings(aSelectedProvider, aSelectedService);
     theServiceUriLabel->setText(myServiceSettings.service_uri.c_str());
-    theCertValidPercentageLabel->setText(str(boost::format("%u%%") % myServiceSettings.cert_valid_percentage).c_str());
+    theCertValidityLabel->setText(myServiceSettings.cert_validity.str().c_str());
 }
 
 

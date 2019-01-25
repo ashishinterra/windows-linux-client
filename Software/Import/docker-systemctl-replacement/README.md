@@ -7,14 +7,29 @@ This is used to test deployment of services with a docker
 container as the target host. Just as on a real machine you 
 can use "systemctl start" and "systemctl enable" and other 
 commands to bring up services for further configuration and 
-testing.
+testing. Information from "systemctl show" allows deployment
+automation tools to work seemlessly.
 
-This script can also be run as PID 1 of a docker container
-(i.e. the main "CMD") where it will automatically bring up
-all enabled services in the "multi-user.target" and where it 
+This script can also be run as docker-init of a docker container
+(i.e. the main "CMD" on PID 1) where it will automatically bring 
+up all enabled services in the "multi-user.target" and where it 
 will reap all zombies from background processes in the container.
 When running a "docker stop" on such a container it will also 
 bring down all configured services correctly before exit.
+
+    ## docker exec lamp-stack-container systemctl list-units --state=running
+    httpd.service     loaded active running   The Apache HTTP Server
+    mariadb.service   loaded active running   MariaDB database server
+    
+    ## docker exec lamp-stack-container pstree -ap
+    systemctl,1 /usr/bin/systemctl
+      |-httpd,7 -DFOREGROUND
+      |   |-httpd,9 -DFOREGROUND
+      |   |-httpd,10 -DFOREGROUND
+      `-mysqld_safe,44 /usr/bin/mysqld_safe --basedir=/usr
+          `-mysqld,187 --basedir=/usr --datadir=/var/lib/mysql
+              |-{mysqld},191
+              |-{mysqld},192
 
 ## Problems with SystemD in Docker
 
@@ -181,7 +196,8 @@ most programmers tend to write very simple `*.service` files
 it works in a surprising number of cases however. But definitly 
 not all. So if there is a problem, use the
 [github issue tracker](https://github.com/gdraheim/docker-systemctl-replacement/issues)
-to make me aware of it.
+to make me aware of it. In general it is not needed to emulate
+every feature as [EXTRA-CONFIGS](EXTRA-CONFIGS.md) can help.
 
 And I take patches. ;)
 

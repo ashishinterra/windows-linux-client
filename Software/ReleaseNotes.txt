@@ -18,9 +18,10 @@ Support import of settings created in v5.2.0-v5.5.0, v4.6.0 and v4.6.2
     - CHANGED: Force GlobalSign profile to "production"
 
 
-client-5.5.0, in development
+client-5.5.0, 25 January 2019
 ----------------------
-    - ADDED: Extend HWSIG with random number (Windows, Linux)
+    - ADDED: Extend HWSIG with random number
+    - ADDED: Allow "certificate validity percentage" in absolute time (RCCD 2.0.2 -> 2.0.3)
     - FIXED: Windows 7 client support for certificate auto-renewal
 
 server-5.4.2, 6 December 2018
