@@ -304,7 +304,7 @@ def get_cert_validity(provider, service, logger=None):
             provider,
             service),
         logger)
-    return int(stdout)
+    return stdout
 
 
 def is_cert_revoked(pem_cert, logger):
