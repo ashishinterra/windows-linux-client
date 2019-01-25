@@ -358,7 +358,7 @@ def is_cert_expired(pem_cert, vhost, provider, service, logger):
         cert_validity_margin_seconds = cert_validity_value
     elif (cert_validity_type == '%'):
         cert_validity_margin_seconds = int(
-            (float(cert_valididy_value) / 100) * _cert_duration_seconds(not_after, not_before))
+            (float(cert_validity_value) / 100) * _cert_duration_seconds(not_after, not_before))
     cert_expiration_utc = not_after - datetime.timedelta(seconds=cert_validity_margin_seconds)
 
     cert_expired = cert_expiration_utc <= datetime.datetime.utcnow()
