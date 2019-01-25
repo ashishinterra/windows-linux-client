@@ -45,13 +45,14 @@ function run_test()
         local ccpy_state=$(cat /etc/ccpy.state |  egrep -o 'state="[A-Z]+"' |  sed -e 's/^state="//' -e 's/"$//')
         echo "Test finished with status ${ccpy_state}"
 
+        # NOTICE: do not use tilde '~' for home dir but use $HOME since bash does not expand the former
         local test_log_files=\
-" ~/.keytalk/ktclient.log"\
-" ~/tmp/ktapachecertrenewal.log"\
-" ~/tmp/ktconfig.log"\
-" ~/tmp/ktconfigtool.log"\
-" ~/tmp/ktconfupdater.log"\
-" ~/tmp/ktprgenerator.log"\
+" $HOME/.keytalk/ktclient.log"\
+" $HOME/tmp/ktapachecertrenewal.log"\
+" $HOME/tmp/ktconfig.log"\
+" $HOME/tmp/ktconfigtool.log"\
+" $HOME/tmp/ktconfupdater.log"\
+" $HOME/tmp/ktprgenerator.log"\
 " ${REPO_DIR}/Software/Client/TestProjects/Export/testReseptConsoleClient.log"\
 " ${REPO_DIR}/Software/Client/TestProjects/Export/testlibrclientappcommon.log"\
 " ${REPO_DIR}/Software/Client/TestProjects/Export/testlibrclientcore.log"\
