@@ -80,7 +80,7 @@ class TestUtil(unittest.TestCase):
 
     def test_get_cert_validity_with_success(self):
         self.assertEqual(util.get_cert_validity(
-                         "DemoProvider", "CUST_PASSWD_INTERNAL"), "10s")
+                         "DemoProvider", "CUST_PASSWD_INTERNAL"), "10%")
 
     def test_get_cert_validity_with_error(self):
         self.assertRaises(
