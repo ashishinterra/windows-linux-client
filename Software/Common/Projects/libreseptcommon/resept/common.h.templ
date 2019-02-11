@@ -4,6 +4,7 @@
 #include "ta/signutils.h"
 #include "ta/certutils.h"
 #include "ta/timeutils.h"
+#include "ta/url.h"
 #include "ta/version.h"
 #include "ta/logger.h"
 #include "ta/common.h"
@@ -337,7 +338,23 @@ namespace resept
        std::string search_base;
        std::string verification_cas_pem;
     };
+    inline std::string str(const AddressBook& anAddressBook)
+    {
+        return str(boost::format("http://%s (%s with search base %s)") % ta::url::parse(anAddressBook.ldap_svr_url).authority_parts.host
+                               % anAddressBook.ldap_svr_url
+                               % anAddressBook.search_base);
+    }
     typedef std::vector<AddressBook> AddressBooks;
+
+    inline std::string str(const AddressBooks& anAddressBooks)
+    {
+        ta::StringArray myAddressBookStrs;
+        foreach (const AddressBook& book, anAddressBooks)
+        {
+            myAddressBookStrs.push_back(str(book));
+        }
+        return ta::Strings::join(myAddressBookStrs, " or ");
+    }
 
     struct KerberosTicket
     {
@@ -429,25 +446,6 @@ namespace resept
             bool is_set;
             std::string val;
         };
-
-        inline std::string boolToStr(bool aBool)
-        {
-            return aBool ? "true" : "false";
-        }
-        inline bool strToBool(const std::string& aBooltStr, bool& aBool)
-        {
-            if (boost::iequals(aBooltStr, "true"))
-            {
-                aBool = true;
-                return true;
-            }
-            else if (boost::iequals(aBooltStr, "false"))
-            {
-                aBool = false;
-                return true;
-            }
-            return false;
-        }
     } // rcdp
 
     namespace rcdpv1
@@ -882,6 +880,7 @@ namespace resept
     {
         const std::string V_1_0 = ${PUBLIC_API_VERSION_1_0};
         const std::string V_1_1 = ${PUBLIC_API_VERSION_1_1};
+        const std::string V_1_2 = ${PUBLIC_API_VERSION_1_2};
 
         const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_PUBLIC_API_VERSIONS};
 
@@ -908,6 +907,7 @@ namespace resept
 
         const std::string requestParamNameCert = ${PUBLIC_API_REQUEST_PARAM_NAME_CERT};
         const std::string requestParamNameService = ${PUBLIC_API_REQUEST_PARAM_NAME_SERVICE};
+        const std::string requestParamNameSynchronous = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_SYNCHRONOUS};
 
         const std::string RequestStrings[] = ${PUBLIC_API_REQUEST_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
@@ -984,6 +984,7 @@ namespace resept
     namespace selfserviceapi
     {
         const std::string V_1_0 = ${SELF_SERVICE_API_VERSION_1_0};
+        const std::string V_1_1 = ${SELF_SERVICE_API_VERSION_1_1};
 
         const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_SELF_SERVICE_API_VERSIONS};
 
@@ -1010,6 +1011,7 @@ namespace resept
         const std::string requestParamNameSvrHostName = ${SELF_SERVICE_API_REQUEST_SVR_HOST_NAME};
         const std::string requestParamNameEmail = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_EMAIL};
         const std::string requestParamNameMobile = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_MOBILE};
+        const std::string requestParamNameSynchronous = ${SELF_SERVICE_API_REQUEST_PARAM_NAME_SYNCHRONOUS};
 
         const std::string RequestStrings[] = ${SELF_SERVICE_API_REQUEST_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(RequestStrings)/sizeof(RequestStrings[0]) == _LastRequest-_FirstRequest+1);
@@ -1047,10 +1049,14 @@ namespace resept
         };
         const std::string responseParamNameStatus = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_STATUS};
         const std::string responseParamNameError = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ERROR};
-        const std::string responseParamNameEmail = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_EMAIL};
         const std::string responseParamNameEnrolledRecipients = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ENROLLED_RECIPIENTS};
         const std::string responseParamNameFailedRecipients = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_FAILED_RECIPIENTS};
         const std::string responseParamNameSkippedRecipients = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SKIPPED_RECIPIENTS};
+        const std::string responseParamNamePlacedOrders = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_PLACED_ORDERS};
+        const std::string responseParamNameFailedOrders = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_FAILED_ORDERS};
+        const std::string responseParamNameSkippedOrders = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SKIPPED_ORDERS};
+        const std::string responseParamNameEmail = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_EMAIL};
+        const std::string responseParamNameOrderId = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ORDER_ID};
         const std::string responseParamNameAddressBooks = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
         const std::string responseParamNameLdapSvrUrl = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
         const std::string  responseParamNameSearchBase = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SEARCH_BASE};

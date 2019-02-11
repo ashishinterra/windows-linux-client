@@ -281,6 +281,26 @@ namespace ta
             return myRetVal;
         }
 
+        string boolToStr(bool aBool)
+        {
+            return aBool ? "true" : "false";
+        }
+
+        bool strToBool(const string& aBoolStr, bool& aParsedBool)
+        {
+            if (boost::iequals(aBoolStr, "true"))
+            {
+                aParsedBool = true;
+                return true;
+            }
+            else if (boost::iequals(aBoolStr, "false"))
+            {
+                aParsedBool = false;
+                return true;
+            }
+            return false;
+        }
+
         vector<string> split(const string& anSrc, char aSep, AdjacentSepsMergeMode anAdjacentSepsMergeMode, EmptyTokensPolicy anEmptyTokensPolicy)
         {
             return split(anSrc, vector<char>(1, aSep), anAdjacentSepsMergeMode, anEmptyTokensPolicy);

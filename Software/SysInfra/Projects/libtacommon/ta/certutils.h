@@ -293,13 +293,15 @@ namespace ta
         ta::StringArray extractPemCerts(const std::string& aPemBuf);
         ta::StringArray extractPemCerts(const std::vector<unsigned char>& aPemBuf);
 
+        enum KeyFilter
+        {
+            keyFilterEncryptedOnly, // yield only encrypted keys
+            keyFilterNotEncryptedOnly, // yield only not encrypted keys
+            keyFilterNone              // yield all keys
+        };
         /**
           Extract PEM-encoded private keys from file or buffer in the order they appear
          */
-        enum KeyFilter
-        {
-            keyFilterEncryptedOnly, keyFilterNotEncryptedOnly, keyFilterNone
-        };
         ta::StringArray extractPemPrivKeysFromFile(const std::string& aFilePath, KeyFilter aKeyFilter = keyFilterNone);
         ta::StringArray extractPemPrivKeys(const std::string& aPemBuf, KeyFilter aKeyFilter = keyFilterNone);
 

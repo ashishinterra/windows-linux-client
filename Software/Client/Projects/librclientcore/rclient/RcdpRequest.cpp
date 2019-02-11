@@ -80,14 +80,14 @@ namespace rclient
                                              const bool anIncludeChain)
         {
             const ta::StringDict myParams = map_list_of(requestParamNameCertFormat, str(aCertFormat))
-                                            (requestParamNameCertIncludeChain, resept::rcdp::boolToStr(anIncludeChain));
+                                            (requestParamNameCertIncludeChain, ta::Strings::boolToStr(anIncludeChain));
             return myParams;
         }
         ta::StringDict makeCertRequestParams(const string& aCsrPem,
                                              const bool anIncludeChain)
         {
             const ta::StringDict myParams = map_list_of(requestParamNameCSR, aCsrPem)
-                                            (requestParamNameCertIncludeChain, resept::rcdp::boolToStr(anIncludeChain));
+                                            (requestParamNameCertIncludeChain, ta::Strings::boolToStr(anIncludeChain));
             return myParams;
         }
 

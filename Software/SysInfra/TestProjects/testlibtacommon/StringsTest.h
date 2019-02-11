@@ -74,6 +74,43 @@ public:
         TS_ASSERT_EQUALS(Strings::fromHex("FF"), Strings::fromHex("ff"));
     }
 
+    void test_parse_bool()
+    {
+        using ta::Strings::boolToStr;
+        using ta::Strings::strToBool;
+
+        {
+            TS_ASSERT_EQUALS(boolToStr(true), "true");
+            TS_ASSERT_EQUALS(boolToStr(false), "false");
+        }
+
+        {
+            const ta::StringArray strs = boost::assign::list_of("true")("True")("tRUE")("TRUE");
+            foreach (const std::string& s, strs)
+            {
+                bool result = false;
+                TS_ASSERT(strToBool(s, result));
+                TS_ASSERT(result);
+            }
+        }
+
+        {
+            const ta::StringArray trueStrs = boost::assign::list_of("false")("False")("fAlse")("FALSE");
+            foreach (const std::string& s, trueStrs)
+            {
+                bool result = true;
+                TS_ASSERT(strToBool(s, result));
+                TS_ASSERT(!result);
+            }
+        }
+
+        {
+            bool result;
+            TS_ASSERT(!strToBool("not-a-boolean", result));
+            TS_ASSERT(!strToBool("", result));
+        }
+    }
+
     void testSplit_MergeOff_PreserveEmptyTokens()
     {
         {

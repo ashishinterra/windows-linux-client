@@ -3,7 +3,15 @@ CHANGE LOG of KeyTalk
 
 server-5.5.1, in development
 ----------------------
-    ---
+Support upgrades from v5.2.1 and higher
+Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
+Support import of settings created in v5.2.0-v5.5.1, v4.6.0 and v4.6.2
+    - ADDED: Allow ordering GlobalSign Personal Sign 1 (PS1) certificates (KEYTALK-507)
+    - CHANGED: Move the template messages per service to the NOTIFICATION tab (KEYTALK-508)
+
+    CHANGED shared Db schema:
+      - version 7.0-> 8.0
+
 
 server-5.5.0, 18 January 2019
 ----------------------

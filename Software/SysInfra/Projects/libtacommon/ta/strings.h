@@ -45,6 +45,9 @@ namespace ta
 
         std::vector<unsigned char> fromHex(const std::string& aHexStr);
 
+        std::string boolToStr(bool aBool);
+        bool strToBool(const std::string& aBoolStr, bool& aParsedBool);
+
         /**
          Split functions. Somewhat more handy than the ones from boost string algorithms
         */

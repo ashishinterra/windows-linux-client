@@ -547,7 +547,7 @@ namespace rclient
 
         try
         {
-            DEBUGDEVLOG("Requesting last messages" +  (aFromUtc ? ta::TimeUtils::timestampToIso8601(*aFromUtc) : ""));
+            DEBUGDEVLOG("Requesting last messages" +  (aFromUtc ? " from " + ta::TimeUtils::timestampToIso8601(*aFromUtc) : ""));
 
             if (pImpl->session.rcdpState != stateAuthenticated)
             {
