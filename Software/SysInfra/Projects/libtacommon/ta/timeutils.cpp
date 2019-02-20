@@ -132,7 +132,7 @@ namespace ta
                                      "(?<hour>\\d{1,2})"
                                      ":(?<minute>\\d{1,2})"
                                      ":(?<second>\\d{1,2})"
-                                     "(?:\\.\\d{3})?" // ignore milliseconds
+                                     "(?:\\.\\d+)?" // ignore fraction of seconds
                                      "(Z|(?<offset_sign>\\+|\\-)(?<offset>\\d{4}|\\d{2}:\\d{2}|\\d{2}))"
                                      "$"
                                     );

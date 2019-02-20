@@ -10,6 +10,7 @@ Support import of settings created in v5.2.0-v5.5.1, v4.6.0 and v4.6.2
     - ADDED: Allow for alternative validation CA for client-certificate logins to KeyTalk (KEYTALK-511)
     - CHANGED: Move the template messages per service to the NOTIFICATION tab (KEYTALK-508)
     - CHANGED: Move SMS  & SMTP tab from System to Notifications (KEYTALK-510)
+    - CHANGED: Disallow self-service logins as well as enrolling S/MIME certificates for 3rd party S/MIME certificate recipient services
 
     CHANGED shared Db schema:
       - version 7.0-> 8.0
