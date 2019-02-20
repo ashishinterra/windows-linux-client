@@ -19,7 +19,7 @@ namespace ta
         std::string getUtcNowAsIso8601();
         std::string timestampToIso8601(const time_t aTimestamp);
 
-        time_t parseUtcIso8601(const std::string& anUtcTimeStr);
+        time_t parseIso8601ToUtc(const std::string& anUtcTimeStr);
 
         //@nothrow
         std::string getUtcNowAsYYYYmmdd();

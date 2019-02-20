@@ -13,7 +13,7 @@ check_devenv:
 		exit 1; \
 	fi; \
 	if [[ ! -f /etc/debian_version && ! -f /etc/centos-release && ! -f /etc/redhat-release ]]; then \
-		echo "Linux Debian/RedHat/CentOS platform required to build KeyTalk Linux client" 1>&2 ; \
+		echo "Linux Debian/Ubuntu/RedHat/CentOS platform required to build KeyTalk Linux client" 1>&2 ; \
 		exit 1; \
 	fi;
 

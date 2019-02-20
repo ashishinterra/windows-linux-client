@@ -324,6 +324,25 @@ namespace PrGenerator
                 }
             }
 
+            // KeyTalk CA service logs
+            static const vector<string> myKeyTalkCAUpdaterLogs = list_of(ta::Process::getTempDir() + "ktcaupdater.log")("/tmp/ktcaupdater.log");
+            foreach (const string& logPath, myKeyTalkCAUpdaterLogs)
+            {
+                try
+                {
+                    if (ta::isFileExist(logPath))
+                    {
+                        const string myDestPath = aDir + "/" + fs::path(logPath).filename().string();
+                        copyFile(logPath, myDestPath);
+                        myRetVal.push_back(myDestPath);
+                    }
+                }
+                catch (std::exception& e)
+                {
+                    WARNLOG(boost::format("Failed to copy %s KeyTalk CA updater log to %s. %s. Skipping...") % resept::ProductName % aDir % e.what());
+                }
+            }
+
             // Apache configuration
             if (ta::isDirExist("/etc/httpd"))
             {

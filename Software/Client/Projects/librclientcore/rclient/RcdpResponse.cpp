@@ -170,7 +170,7 @@ namespace rclient
 
             try
             {
-                return ta::TimeUtils::parseUtcIso8601(parseStringVal(myResponseTree, responseParamNameServerUtc));
+                return ta::TimeUtils::parseIso8601ToUtc(parseStringVal(myResponseTree, responseParamNameServerUtc));
             }
             catch (std::exception& e)
             {
@@ -322,7 +322,7 @@ namespace rclient
                 Messages myMessages;
                 foreach (const ta::StringDict& msg, parseStringDictArray(myResponseTree, responseParamNameLastMessages))
                 {
-                    const time_t myUtc = ta::TimeUtils::parseUtcIso8601(ta::getValueByKey(responseParamNameMessageUtc, msg));
+                    const time_t myUtc = ta::TimeUtils::parseIso8601ToUtc(ta::getValueByKey(responseParamNameMessageUtc, msg));
                     const string myText = ta::getValueByKey(responseParamNameMessageText, msg);
                     myMessages.push_back(Message(myUtc, myText));
                 }

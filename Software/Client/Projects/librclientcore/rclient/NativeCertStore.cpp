@@ -138,12 +138,12 @@ namespace rclient
                 if (myCertValidity.type == rclient::Settings::certValidityTypeDuration)
                 {
                     myIsValid = myRemain >= myCertValidity.value;
-                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, minimum valid seconds is %d, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                    DEBUGLOG(boost::format("Certificate duration is %d sec, remain %d sec, minimum valid seconds is %d, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
                 }
                 else if (myCertValidity.type == rclient::Settings::certValidityTypePercentage)
                 {
                     myIsValid = myRemain >= myCertDuration * myCertValidity.value / 100;
-                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                    DEBUGLOG(boost::format("Certificate duration is %d sec, remain %d sec, validity percentage is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
                 }
                 else
                 {
@@ -888,12 +888,12 @@ namespace rclient
                 if (myCertValidity.type == rclient::Settings::certValidityTypeDuration)
                 {
                     myIsValid = myRemain >= (int)myCertValidity.value;
-                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, minimum valid seconds is %d, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                    DEBUGLOG(boost::format("Certificate duration is %d sec, remain %d sec, minimum valid seconds is %d, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
                 }
                 else if (myCertValidity.type == rclient::Settings::certValidityTypePercentage)
                 {
                     myIsValid = myRemain >= (int)(myCertDuration * myCertValidity.value / 100);
-                    DEBUGLOG(boost::format("Session certificate duration is %d sec, remain %d sec, validity percentage is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
+                    DEBUGLOG(boost::format("Certificate duration is %d sec, remain %d sec, validity percentage is %d%%, certificate is considered as %svalid") % myCertDuration % myRemain % myCertValidity.value % (myIsValid ? "" : "in"));
                 }
                 else
                 {
@@ -1037,7 +1037,7 @@ namespace rclient
                 //@return SHA-1 fingerprints of the certs removed
                 ta::StringArray removeCertKeys(const ta::StringArray& aCertSha1Fingerprints, const string& aServiceNameHint)
                 {
-                    DEBUGLOG(boost::format("Deleting certificates from %s store for service %s") % str(theStoreType) % aServiceNameHint);
+                    DEBUGLOG(boost::format("Deleting certificates from %s store for service %s with fingerprints: [%s]") % str(theStoreType) % aServiceNameHint % ta::Strings::join(aCertSha1Fingerprints, ','));
                     if (theReadOnly)
                     {
                         TA_THROW_MSG(NativeCertStoreDeleteError, "Cannot remove certificate from the " + str(theStoreType) + " store because the store is opened read-only");
@@ -1059,13 +1059,13 @@ namespace rclient
                             if (ta::isElemExist(myCertInfo.sha1Fingerprint, aCertSha1Fingerprints))
                             {
                                 fs::remove(p);
-                                effectuateRemovedCertsInStore();
                                 myRemovedCertsSha1Fingerprints.push_back(myCertInfo.sha1Fingerprint);
+                                // we might not always have sufficient permissions to effectuate the remove cert, hence KeyTalk CA service will do it for us
                             }
                         }
                     }
 
-                    DEBUGLOG(boost::format("Deleted %d certificate(s) from %s store associated with KeyTalk service %s") % myRemovedCertsSha1Fingerprints.size() % str(theStoreType) % aServiceNameHint);
+                    DEBUGLOG(boost::format("Deleted %d certificate(s) from %s store associated with KeyTalk service %s. Fingerprints of the rmoved certs: [%s]") % myRemovedCertsSha1Fingerprints.size() % str(theStoreType) % aServiceNameHint % ta::Strings::join(myRemovedCertsSha1Fingerprints, ','));
                     return myRemovedCertsSha1Fingerprints;
                 }
 
@@ -1122,8 +1122,8 @@ namespace rclient
 
                                 DEBUGLOG(boost::format("Removing cert having %s %s") % str(aCertAttr) % anAttrVal);
                                 fs::remove_all(p);
-                                effectuateRemovedCertsInStore();
                                 ++myNumFilesRemoved;
+                                // we might not always have sufficient permissions to effectuate the remove cert, hence KeyTalk Trusted CA service will do it for us
                             }
                             catch (std::exception& e)
                             {
@@ -1218,7 +1218,7 @@ namespace rclient
                         return false;
                     }
                     ta::writeData(myCertPath, aPemCert);
-                    effectuateNewCertsInStore();
+                    // we might not always have sufficient permissions to effectuate the imported cert, hence KeyTalk CA service will do it for us
                     DEBUGLOG(boost::format("Successfully imported certificate to %s store") % str(theStoreType));
                     return true;
                 }
@@ -1319,66 +1319,8 @@ namespace rclient
                         }
                         TA_THROW_MSG(NativeCertStoreError, boost::format("Failed to set permissions on the imported personal certificate with private key at %s. %s") % myCertKeyPath % myChmodErrorStr);
                     }
-
-                    effectuateNewCertsInStore(storePersonal);
                 }
 
-                static void effectuateNewCertsInStore(const StoreType aStoreType)
-                {
-                    switch (aStoreType)
-                    {
-                    case storePersonal:
-                        return; // nothing to do
-                    case storeIntermediate:
-                    case storeRoot:
-                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
-                        {
-                            ta::Process::checkedShellExecSync("update-ca-trust");
-                            return;
-                        }
-                        else if (ta::OsInfoUtils::isLinuxDebian())
-                        {
-                            ta::Process::checkedShellExecSync("update-ca-certificates");
-                            return;
-                        }
-                        else
-                        {
-                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
-                        }
-                    default:
-                        TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(aStoreType));
-                    }
-                }
-                void effectuateNewCertsInStore()
-                {
-                    effectuateNewCertsInStore(theStoreType);
-                }
-                void effectuateRemovedCertsInStore()
-                {
-                    switch (theStoreType)
-                    {
-                    case storePersonal:
-                        return; // nothing to do
-                    case storeIntermediate:
-                    case storeRoot:
-                        if (ta::OsInfoUtils::isLinuxRHEL() || ta::OsInfoUtils::isLinuxCentOS())
-                        {
-                            ta::Process::checkedShellExecSync("update-ca-trust extract");
-                            return;
-                        }
-                        else if (ta::OsInfoUtils::isLinuxDebian())
-                        {
-                            ta::Process::checkedShellExecSync("update-ca-certificates --fresh");
-                            return;
-                        }
-                        else
-                        {
-                            TA_THROW_MSG(NativeCertStoreError, boost::format("Unsupported Linux platform %s") % str(ta::OsInfoUtils::getVersion()));
-                        }
-                    default:
-                        TA_THROW_MSG(NativeCertStoreError, "Unknown store type " + str(theStoreType));
-                    }
-                }
             }; //Store
 #endif // _WIN32
 

@@ -4,6 +4,15 @@
 
 DEFAULT_CONTENT_VERSION="2011032901"
 
+
+if [ -f /etc/redhat-release -a $(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p') -eq 6 ]; then
+    # RHL6, CentOS6 with systemV
+    KEYTALK_CA_UPDATER_SERVICE_FILE=/etc/init.d/keytalk-ca-updater
+else
+    # systemd
+    KEYTALK_CA_UPDATER_SERVICE_FILE=/etc/systemd/system/keytalk-ca-updater.service
+fi
+
 INSTALLATION_FILES_REQUIRED="\
 /usr/local/bin/keytalk/ktclient \
 /usr/local/bin/keytalk/ktconfig \
@@ -17,6 +26,8 @@ INSTALLATION_FILES_REQUIRED="\
 /usr/local/bin/keytalk/apache_util.py \
 /usr/local/bin/keytalk/tomcat_util.py \
 /usr/local/bin/keytalk/tomcat.sh \
+/usr/local/bin/keytalk/keytalk_ca_updater.sh \
+${KEYTALK_CA_UPDATER_SERVICE_FILE} \
 /usr/local/bin/keytalk/uninstall_keytalk \
 /usr/local/lib/keytalk/libtalogger.so \
 /etc/keytalk/resept.ini \
@@ -51,6 +62,7 @@ apache_ports\.conf \
 ktclient\.log \
 ktconfig\.log \
 ktconfupdater\.log \
+ktcaupdater\.log \
 signing_ca_[0-9a-f]*\.pem \
 comm_ca_[0-9a-f]*\.pem \
 primary_ca_[0-9a-f]*\.pem"
@@ -124,6 +136,9 @@ function cleanup_keytalk_installation()
   rm -rf ~/.keytalk/
   rm -rf ${INSTALLATION_DIRS_REQUIRED}
   rm -f /etc/cron.d/keytalk*
+
+  service keytalk-ca-updater stop || true
+  rm -f ${KEYTALK_CA_UPDATER_SERVICE_FILE}
   rm -f $(trusted_ca_store_path)/keytalk_*.crt
   if [ -f /etc/debian_version ]; then
     update-ca-certificates --fresh || true

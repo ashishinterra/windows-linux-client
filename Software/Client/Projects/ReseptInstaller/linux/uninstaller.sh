@@ -61,10 +61,22 @@ function remove_keytalk_user_settings()
 
 function remove_keytalk_common_settings()
 {
+    local distro_version_major=$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')
     rm -rf /usr/local/bin/keytalk/
     rm -rf /usr/local/lib/keytalk/
     rm -rf /etc/keytalk/
     rm -rf /usr/share/doc/keytalk/
+
+    if [ -f /etc/redhat-release -a ${distro_version_major} -eq 6 ]; then
+        service keytalk-ca-updater stop || true
+        chkconfig keytalk-ca-updater off || true
+        rm -f /etc/init.d/keytalk-ca-updater
+    else
+        systemctl stop keytalk-ca-updater || true
+        systemctl disable keytalk-ca-updater || true
+        rm -f /etc/systemd/system/keytalk-ca-updater.service
+        systemctl daemon-reload || true
+    fi
 
     rm -f /etc/cron.d/keytalk*
 

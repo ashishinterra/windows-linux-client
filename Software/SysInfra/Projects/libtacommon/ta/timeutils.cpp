@@ -120,15 +120,27 @@ namespace ta
             return myTimeBuf;
         }
 
-        time_t parseUtcIso8601(const std::string& anUtcTimeStr)
+        time_t parseIso8601ToUtc(const std::string& anUtcTimeStr)
         {
             try
             {
-                boost::regex myRegEx("^(?<year>\\d{4})-(?<month>\\d{1,2})-(?<mday>\\d{1,2})(?:T|\\s+)(?<hour>\\d{1,2}):(?<minute>\\d{1,2}):(?<second>\\d{1,2})(?:\\.\\d{1,6})?(?:Z|\\+0000|\\+00:00|\\+00)$");
+                boost::regex myRegEx("^"
+                                     "(?<year>\\d{4})"
+                                     "-(?<month>\\d{1,2})"
+                                     "-(?<mday>\\d{1,2})"
+                                     "(?:T|\\s+)"
+                                     "(?<hour>\\d{1,2})"
+                                     ":(?<minute>\\d{1,2})"
+                                     ":(?<second>\\d{1,2})"
+                                     "(?:\\.\\d{3})?" // ignore milliseconds
+                                     "(Z|(?<offset_sign>\\+|\\-)(?<offset>\\d{4}|\\d{2}:\\d{2}|\\d{2}))"
+                                     "$"
+                                    );
+
                 boost::cmatch myMatch;
                 if (!regex_match(anUtcTimeStr.c_str(), myMatch, myRegEx))
                 {
-                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse RFC 8601 datetime (1) from string '%1%'") % anUtcTimeStr);
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse RFC 8601 datetime (1) from '%s'") % anUtcTimeStr);
                 }
 
                 tm myTmTime;
@@ -139,16 +151,43 @@ namespace ta
                 myTmTime.tm_min = Strings::parse<int>(myMatch["minute"]);
                 myTmTime.tm_sec = Strings::parse<int>(myMatch["second"]) + diffUtc();
 
-                //@todo tm_gmtoff and tm_isdst may become deprecated, so relying on them may not be robust
+                if (myMatch["offset_sign"].matched)
+                {
+                    // parse and apply offset
+                    const string mySign = myMatch["offset_sign"];
+                    string myOffsetStr = string(myMatch["offset"]);
+                    int myOffsetSeconds = 0;
+                    if (myOffsetStr.size() == 2) // hh
+                    {
+                        myOffsetSeconds = SecondsInHour * Strings::parse<int>(myOffsetStr);
+                    }
+                    else if (myOffsetStr.size() == 4) // hhmm
+                    {
+                        myOffsetSeconds = SecondsInHour * Strings::parse<int>(myOffsetStr.substr(0,2)) + SecondsInMinute * Strings::parse<int>(myOffsetStr.substr(2,2));
+                    }
+                    else if (myOffsetStr.size() == 5) // hh:mm
+                    {
+                        myOffsetSeconds = SecondsInHour * Strings::parse<int>(myOffsetStr.substr(0,2)) + SecondsInMinute * Strings::parse<int>(myOffsetStr.substr(3,2));
+                    }
+                    else
+                    {
+                        TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse RFC 8601 datetime (1) from '%s' (invalid offset: '%s'") % anUtcTimeStr % myOffsetStr);
+                    }
+
+                    // apply the  offset
+                    myTmTime.tm_sec  = (mySign == "-") ? myTmTime.tm_sec + myOffsetSeconds : myTmTime.tm_sec - myOffsetSeconds;
+                }
+
+                //@todo tm_gmtoff and tm_isdst might become deprecated, so relying on them is not be robust
 #ifndef _WIN32
                 myTmTime.tm_gmtoff = 0;
 #endif
                 myTmTime.tm_isdst = 0;
 
-                time_t myRetVal = mktime(&myTmTime);
+                const time_t myRetVal = mktime(&myTmTime);
                 if (myRetVal == (time_t)(-1))
                 {
-                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse RFC 8601 datetime (2) from string '%1%'") % anUtcTimeStr);
+                    TA_THROW_MSG(std::invalid_argument, boost::format("Cannot parse RFC 8601 datetime (2) from '%s'") % anUtcTimeStr);
                 }
 
                 return myRetVal;
@@ -159,7 +198,7 @@ namespace ta
             }
             catch (const std::exception& e)
             {
-                TA_THROW_MSG(std::logic_error, boost::format("Cannot parse RFC 8601 datetime from string '%1%'. %2%") % anUtcTimeStr % e.what());
+                TA_THROW_MSG(std::logic_error, boost::format("Cannot parse RFC 8601 datetime from '%s'. %s") % anUtcTimeStr % e.what());
             }
         }
 

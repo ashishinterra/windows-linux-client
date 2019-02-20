@@ -77,7 +77,7 @@ POST_CLEAN=post_clean
 
 include ../../../mk/linux.prog.mk
 
-post_build:
+.SILENT post_build:
 	cp -f *.der *.pem *.p12 *.pfx.pass.txt winhlp32.exe log.conf *.ini $(OUT_DIR)/
 	cp -f user.ini $(OUT_DIR)/user.ini.orig
 	cp -f master.ini $(OUT_DIR)/master.ini.orig
@@ -87,33 +87,33 @@ post_build:
 	cp -f master.ini.from_rccdv2_0_2 $(OUT_DIR)/master.ini.from_rccdv2_0_2
 ifdef RESEPT_LINUX_CLIENT
 	cp -f ../../../SysInfra/Projects/Export/hwutils $(OUT_DIR)/
-	@echo " Creating minimal KeyTalk client installation..."
+	echo " Creating minimal KeyTalk client installation..."
 	mkdir -p ~/.keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/user.ini ~/.keytalk/
 	mkdir -p /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
-		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk-test-commcacert.crt; \
-		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk-test-pcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk_test_commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk_test_pcacert.crt; \
 		update-ca-certificates; \
 	elif [ -f /etc/redhat-release ]; then \
-		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-commcacert.crt; \
-		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-pcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_pcacert.crt; \
 		update-ca-trust; \
 	fi
 endif
 
-post_clean:
+.SILENT post_clean:
 	rm -f $(OUT_DIR)/*.der $(OUT_DIR)/*.pem $(OUT_DIR)/*.p12 $(OUT_DIR)/*.pfx.pass.txt $(OUT_DIR)/winhlp32.exe $(OUT_DIR)/log.conf $(OUT_DIR)/*.ini $(OUT_DIR)/user.ini.orig $(OUT_DIR)/master.ini.orig
 	rm -rf $(OUT_DIR)/CA
 ifdef RESEPT_LINUX_CLIENT
 	rm -f $(OUT_DIR)/hwutils
 	if [ -f /etc/debian_version ]; then \
-		rm -f /usr/local/share/ca-certificates/keytalk-test-*.crt; \
+		rm -f /usr/local/share/ca-certificates/keytalk_test_*.crt; \
 		update-ca-certificates --fresh; \
 	elif [ -f /etc/redhat-release ]; then \
-		rm -f /etc/pki/ca-trust/source/anchors/keytalk-test-*.crt; \
+		rm -f /etc/pki/ca-trust/source/anchors/keytalk_test_*.crt; \
 		update-ca-trust extract; \
 	fi
 endif

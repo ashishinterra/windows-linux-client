@@ -68,6 +68,9 @@ function _test_install_customize()
     fi
     popd >/dev/null
 
+    # Give KeyTalk CA Updater service some time to pick up and effectuate KeyTalk CAs
+    sleep 5
+
 
     # Checks
     verify_installation
@@ -257,17 +260,6 @@ function test_install_customize_from_file_with_admin_user_rccds_different_provid
     SUCCEEDED_TESTS=$((SUCCEEDED_TESTS+1))
 }
 
-# Test installation, then customization, then customization with a lower content version (downgrade) in non-interactive mode and finally uninstallation
-function test_downgrade_rccd_content_version_non_interactively()
-{
-    echo "--- Running test_downgrade_rccd_content_version_non_interactively ..."
-    _cleanup_keytalk_installation
-    _test_install_customize "settings.DemoProvider.user.12.rccd" 2 "settings.DemoProvider.user.11.rccd"
-    _test_uninstall
-    _cleanup_keytalk_installation
-    SUCCEEDED_TESTS=$((SUCCEEDED_TESTS+1))
-}
-
 # Install, customize, test apache SSL certificate renewal feature and finally uninstall
 function test_apache_ssl_cert_renewal()
 {
@@ -318,7 +310,6 @@ if [ -z ${TEST_NAME} ] ; then
     test_install_customize_from_file_with_user_admin_rccds_same_provider
     test_install_customize_from_file_with_user_rccds_different_providers
     test_install_customize_from_file_with_admin_user_rccds_different_providers
-    test_downgrade_rccd_content_version_non_interactively
     test_apache_ssl_cert_renewal
     test_tomcat_ssl_cert_renewal
 else

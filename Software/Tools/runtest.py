@@ -14,5 +14,5 @@ dirname = os.path.split(os.getcwd())[1]
 if os.system('make') != 0:
     sys.exit(-1)
 
-if os.system('cd ../Export && ./{} {}'.format(dirname, test_args)) != 0:
+if os.system('cd ../Export && ./{0} {1}'.format(dirname, test_args)) != 0:
     sys.exit(-1)

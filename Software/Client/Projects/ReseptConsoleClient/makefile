@@ -1,6 +1,5 @@
 include ../../../mk/keytalk.common.mk
 
-
 SRCS=main.cpp ReseptConsoleClientDelegates.cpp
 DEPS:=ReseptConsoleClientCommon.h ReseptConsoleClientDelegates.h
 
@@ -56,25 +55,40 @@ PROG=ktclient
 
 include ../../../mk/linux.prog.mk
 
-install:
-	@echo "Creating minimal KeyTalk installation..."
+.SILENT install:
+	echo "Creating minimal KeyTalk installation..."
 	mkdir -p /usr/local/bin/keytalk/ /usr/local/lib/keytalk/
 	cp -f $(OUT_DIR)/$(PROG) /usr/local/bin/keytalk/
 	cp -f util.py apache_util.py tomcat_util.py /usr/local/bin/keytalk/
 	cp -f ../../../SysInfra/Projects/Export/libtalogger.so /usr/local/lib/keytalk/
 
-	@echo "Customizing KeyTalk installation..."
+	echo "Customizing KeyTalk installation..."
 	mkdir -p ~/.keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/user.ini ~/.keytalk/
 	mkdir -p /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
-		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk-test-commcacert.crt; \
-		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk-test-pcacert.crt; \
-		update-ca-certificates; \
+		echo "  Installing KeyTalk CA updater service..."; \
+		apt-get -q -y install inotify-tools; \
+		cp -f ../ReseptInstaller/linux/keytalk_ca_updater.sh /usr/local/bin/keytalk/; \
+		cp -f ../ReseptInstaller/linux/etc_systemd_system_keytalk-ca-updater.service /etc/systemd/system/keytalk-ca-updater.service; \
+		systemctl daemon-reload; \
+		systemctl restart keytalk-ca-updater; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk_test_commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk_test_pcacert.crt; \
 	elif [ -f /etc/redhat-release ]; then \
-		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-commcacert.crt; \
-		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-pcacert.crt; \
-		update-ca-trust; \
+		echo "  Installing KeyTalk CA updater service..."; \
+		yum -y install inotify-tools; \
+		cp -f ../ReseptInstaller/linux/keytalk_ca_updater.sh /usr/local/bin/keytalk/; \
+		if [[ "$(OSSPEC)" =~ ^redhat-6 || "$(OSSPEC)" =~ ^centos-6 ]]; then \
+			cp -f ../ReseptInstaller/linux/etc_init.d_keytalk-ca-updater /etc/init.d/keytalk-ca-updater; \
+			service keytalk-ca-updater restart; \
+		else \
+			cp -f ../ReseptInstaller/linux/etc_systemd_system_keytalk-ca-updater.service /etc/systemd/system/keytalk-ca-updater.service; \
+			systemctl daemon-reload; \
+			systemctl restart keytalk-ca-updater; \
+		fi; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_pcacert.crt; \
 	fi

@@ -34,6 +34,7 @@ release debug: hwutils ReseptConsoleClient ReseptConfigManager ReseptConfigTool 
 	mkdir -p $(OUT_DIR)/
 
 	cp -f ../install.sh ../apache.ini ../tomcat.ini ../tomcat.sh ../etc_cron.d_keytalk.apache ../etc_cron.d_keytalk.tomcat ../../resept.ini $(OUT_DIR)/
+	cp -f ../etc_init.d_keytalk-ca-updater ../etc_systemd_system_keytalk-ca-updater.service ../keytalk_ca_updater.sh  $(OUT_DIR)/
 	echo $(BUILD_PLATFORM) > $(OUT_DIR)/build-platform
 
 	cp -f ../../../Export/ktclient ../../../Export/ktconfig ../../../Export/ktconfupdater ../../../Export/ktconfigtool ../../../Export/ktprgen $(OUT_DIR)/

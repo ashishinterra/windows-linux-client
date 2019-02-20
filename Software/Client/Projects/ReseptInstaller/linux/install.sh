@@ -126,6 +126,8 @@ function install_keytalk()
         cp KeyTalk_LinuxClient_for_Tomcat.pdf /usr/share/doc/keytalk/
     fi
 
+    install_keytalk_ca_updater_service
+
     echo "Installation complete. Please customize KeyTalk by calling /usr/local/bin/keytalk/ktconfig --rccd-path <rccd-url>"
 }
 
@@ -178,7 +180,18 @@ function check_platform_compatibility()
             yum -y install redhat-lsb-core
             yum -y install nss-tools
         else
-            echo "Debain/RedHat/CentOS required for installation"
+            echo "Debain/Ubuntu/RedHat/CentOS required for installation"
+            exit 1
+        fi
+    fi
+
+    if ! has_executable inotifywait ; then
+        if [ -f /etc/debian_version ]; then
+            apt-get -q -y install inotify-tools
+        elif [ -f /etc/redhat-release ]; then
+            yum -y install inotify-tools
+        else
+            echo "Debain/Ubuntu/RedHat/CentOS required for installation"
             exit 1
         fi
     fi
@@ -325,6 +338,27 @@ function install_prerequisites()
     fi
 }
 
+function install_keytalk_ca_updater_service()
+{
+    local distro_version_major=$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')
+
+    echo "    Installing KeyTalk CA service"
+    cp keytalk_ca_updater.sh /usr/local/bin/keytalk/
+
+    if [ -f /etc/redhat-release -a ${distro_version_major} -eq 6 ]; then
+        # Use systemV-compatible service on CentOS6/RHEL6
+        cp -f etc_init.d_keytalk-ca-updater /etc/init.d/keytalk-ca-updater
+        service keytalk-ca-updater restart
+        chkconfig keytalk-ca-updater on
+    else
+        cp -f etc_systemd_system_keytalk-ca-updater.service /etc/systemd/system/keytalk-ca-updater.service
+        # systemd-compatible service
+        systemctl daemon-reload
+        systemctl restart keytalk-ca-updater
+        systemctl enable keytalk-ca-updater
+    fi
+
+}
 
 function on_keytalk_installation_error()
 {

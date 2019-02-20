@@ -68,21 +68,17 @@ post_build:
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
-		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk-test-commcacert.crt; \
-		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk-test-pcacert.crt; \
-		update-ca-certificates; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk_test_commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk_test_pcacert.crt; \
 	elif [ -f /etc/redhat-release ]; then \
-		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-commcacert.crt; \
-		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk-test-pcacert.crt; \
-		update-ca-trust; \
+		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_commcacert.crt; \
+		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_pcacert.crt; \
 	fi
 
 post_clean:
 	rm -f $(OUT_DIR)/ReseptClientAppTest.conf $(OUT_DIR)/log.conf $(OUT_DIR)/hwutils
 	if [ -f /etc/debian_version ]; then \
-		rm -f /usr/local/share/ca-certificates/keytalk-test-*.crt; \
-		update-ca-certificates --fresh; \
+		rm -f /usr/local/share/ca-certificates/keytalk_test_*.crt; \
 	elif [ -f /etc/redhat-release ]; then \
-		rm -f /etc/pki/ca-trust/source/anchors/keytalk-test-*.crt; \
-		update-ca-trust extract; \
+		rm -f /etc/pki/ca-trust/source/anchors/keytalk_test_*.crt; \
 	fi

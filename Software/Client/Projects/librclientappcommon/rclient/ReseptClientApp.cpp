@@ -89,7 +89,7 @@ namespace rclient
             rclient::Messages myLastMessages;
             if (rclient::Settings::isLastUserMsgUtcExist())
             {
-                const time_t myLastUserMsgFromUtc = ta::TimeUtils::parseUtcIso8601(rclient::Settings::getLastUserMsgUtc()) + 1;
+                const time_t myLastUserMsgFromUtc = ta::TimeUtils::parseIso8601ToUtc(rclient::Settings::getLastUserMsgUtc()) + 1;
                 myLastMessages = anRcdpHandler.getLastMessages(&myLastUserMsgFromUtc);
             }
             else

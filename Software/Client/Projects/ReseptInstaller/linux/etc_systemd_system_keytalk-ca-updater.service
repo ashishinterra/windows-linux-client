@@ -1,0 +1,14 @@
+[Unit]
+Description=KeyTalk CA updater service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=root
+ExecStart=/usr/local/bin/keytalk/keytalk_ca_updater.sh
+
+[Install]
+WantedBy=multi-user.target

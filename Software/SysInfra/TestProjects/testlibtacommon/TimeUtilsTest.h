@@ -15,21 +15,33 @@ public:
         using namespace ta::TimeUtils;
         using std::string;
 
-        TS_ASSERT_EQUALS(timestampToIso8601(parseUtcIso8601("2008-11-05T13:15:30Z")), "2008-11-05T13:15:30+0000");
-        TS_ASSERT_EQUALS(timestampToIso8601(parseUtcIso8601("2008-11-05T13:15:30+0000")), "2008-11-05T13:15:30+0000");
-        TS_ASSERT_EQUALS(timestampToIso8601(parseUtcIso8601("2008-11-05T13:15:30+00:00")), "2008-11-05T13:15:30+0000");
-        TS_ASSERT_EQUALS(timestampToIso8601(parseUtcIso8601("2008-11-05T13:15:30+00")), "2008-11-05T13:15:30+0000");
-        TS_ASSERT_EQUALS(timestampToIso8601(parseUtcIso8601("2008-01-05T13:15:3Z")), "2008-01-05T13:15:03+0000");
-        TS_ASSERT_EQUALS(timestampToIso8601(parseUtcIso8601("2008-11-05  13:15:30Z")), "2008-11-05T13:15:30+0000");
+        // when-then (source is UTC)
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30Z")), "2008-11-05T13:15:30+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30+0000")), "2008-11-05T13:15:30+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30+00:00")), "2008-11-05T13:15:30+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30+00")), "2008-11-05T13:15:30+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-01-05T13:15:3Z")), "2008-01-05T13:15:03+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05  13:15:30Z")), "2008-11-05T13:15:30+0000");
+        // milliseconds are ignored
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30.990Z")), "2008-11-05T13:15:30+0000");
 
-        string myNowStr = getUtcNowAsIso8601();
-        string myNowStr1 = timestampToIso8601(parseUtcIso8601(myNowStr));
+        // when-then (source is not UTC)
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30+04")), "2008-11-05T09:15:30+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30-0215")), "2008-11-05T15:30:30+0000");
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:30:00+01:30")), "2008-11-05T12:00:00+0000");
+        // milliseconds are ignored
+        TS_ASSERT_EQUALS(timestampToIso8601(parseIso8601ToUtc("2008-11-05T13:15:30.666+04")), "2008-11-05T09:15:30+0000");
+
+        // when
+        const string myNowStr = getUtcNowAsIso8601();
+        const string myNowStr1 = timestampToIso8601(parseIso8601ToUtc(myNowStr));
+        // then
         TS_ASSERT_EQUALS(myNowStr1, myNowStr);
         TS_TRACE(("UTC now is " +myNowStr).c_str());
 
-        TS_ASSERT_THROWS(parseUtcIso8601("2008-11-05T13:15:30+0100"), std::exception);
-        TS_ASSERT_THROWS(parseUtcIso8601("year-11-05T13:15:30+0000"), std::exception);
-        TS_ASSERT_THROWS(parseUtcIso8601(""), std::exception);
+        // when-then (exceptions)
+        TS_ASSERT_THROWS(parseIso8601ToUtc("year-11-05T13:15:30+0000"), std::exception);
+        TS_ASSERT_THROWS(parseIso8601ToUtc(""), std::exception);
     }
 
     void testNowAsLocalStr()

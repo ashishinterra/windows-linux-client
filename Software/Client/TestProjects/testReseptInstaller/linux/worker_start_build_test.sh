@@ -53,6 +53,8 @@ function run_test()
 " $HOME/tmp/ktconfigtool.log"\
 " $HOME/tmp/ktconfupdater.log"\
 " $HOME/tmp/ktprgenerator.log"\
+" $HOME/tmp/ktcaupdater.log"\
+" /tmp/ktcaupdater.log"\
 " ${REPO_DIR}/Software/Client/TestProjects/Export/testReseptConsoleClient.log"\
 " ${REPO_DIR}/Software/Client/TestProjects/Export/testlibrclientappcommon.log"\
 " ${REPO_DIR}/Software/Client/TestProjects/Export/testlibrclientcore.log"\
