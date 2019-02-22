@@ -1,6 +1,11 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
+client-5.5.1, in development
+----------------------
+    - ADDED: Allow non-root users to customize and use KeyTalk Linux client (KEYTALK-409)
+
+
 server-5.5.1, in development
 ----------------------
 Support upgrades from v5.2.1 and higher

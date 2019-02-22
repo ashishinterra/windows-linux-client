@@ -1,6 +1,11 @@
 Release Notes of KeyTalk
 =================================================================
 
+client-5.5.1, in development
+----------------------
+    - ADDED: Allow non-root users to customize and use KeyTalk Linux client
+
+
 server-5.5.1, in development
 ----------------------
 Support upgrades from v5.2.1 and higher
@@ -10,6 +15,7 @@ Support import of settings created in v5.2.0-v5.5.1, v4.6.0 and v4.6.2
     - ADDED: Allow for alternative validation CA for client-certificate logins to KeyTalk
     - CHANGED: Move the template messages per service to the NOTIFICATION tab
     - CHANGED: Move SMS  & SMTP tab from System to Notifications
+    - CHANGED: Disallow self-service logins as well as enrolling S/MIME certificates for 3rd party S/MIME certificate recipient services
 
 
 server-5.5.0, 18 January 2019

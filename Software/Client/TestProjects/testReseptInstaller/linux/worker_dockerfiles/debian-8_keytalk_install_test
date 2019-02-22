@@ -2,12 +2,19 @@
 
 FROM debian:jessie
 
+# Setup systemctl
+COPY ./systemctl.py /usr/bin/systemctl
+
 # Install packages
 RUN apt-get update
 RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release curl python3
 RUN a2enmod ssl
 RUN apt -y install default-jdk tomcat7 tomcat7-*
+
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
+
+# Re-setup systemctl (this might be overriden by the above)
+COPY ./systemctl.py /usr/bin/systemctl
 
 # set time
 ENV TZ=UTC

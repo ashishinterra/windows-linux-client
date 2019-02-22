@@ -137,7 +137,7 @@ function cleanup_keytalk_installation()
   rm -rf ${INSTALLATION_DIRS_REQUIRED}
   rm -f /etc/cron.d/keytalk*
 
-  service keytalk-ca-updater stop || true
+  service keytalk-ca-updater stop > /dev/null 2>&1 || true
   rm -f ${KEYTALK_CA_UPDATER_SERVICE_FILE}
   rm -f $(trusted_ca_store_path)/keytalk_*.crt
   if [ -f /etc/debian_version ]; then

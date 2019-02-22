@@ -2,14 +2,21 @@
 
 FROM debian:jessie
 
+# Setup systemctl
+COPY ./systemctl.py /usr/bin/systemctl
+
 # Install packages
 RUN apt-get update
 RUN apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python-pip pylint python3 hdparm zip clang lsb-release tzdata
 RUN pip2 install lxml pyopenssl
 RUN a2enmod ssl
 RUN apt -y install default-jdk tomcat7 tomcat7-*
+
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python3
 RUN git clone https://github.com/kindkaktus/CcPy /ccpy
+
+# Re-setup systemctl (this might be overriden by the above)
+COPY ./systemctl.py /usr/bin/systemctl
 
 # set time
 ENV TZ=UTC

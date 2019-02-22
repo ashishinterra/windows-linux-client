@@ -342,7 +342,7 @@ function install_keytalk_ca_updater_service()
 {
     local distro_version_major=$(lsb_release --release --short | egrep -o [0-9]+ | sed -n '1p')
 
-    echo "    Installing KeyTalk CA service"
+    echo "    Installing KeyTalk CA Updater service"
     cp keytalk_ca_updater.sh /usr/local/bin/keytalk/
 
     if [ -f /etc/redhat-release -a ${distro_version_major} -eq 6 ]; then

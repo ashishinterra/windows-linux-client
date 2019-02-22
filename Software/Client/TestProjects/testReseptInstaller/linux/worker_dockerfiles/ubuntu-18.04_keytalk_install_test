@@ -2,11 +2,17 @@
 
 FROM ubuntu:18.04
 
+# Setup systemctl
+COPY ./systemctl.py /usr/bin/systemctl
+
 # Install packages
 RUN apt-get update
 RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release python
 RUN a2enmod ssl
 RUN apt -y install default-jdk tomcat8 tomcat8-*
+
+# Re-setup systemctl (this might be overriden by the above)
+COPY ./systemctl.py /usr/bin/systemctl
 
 # set time
 ENV TZ=UTC
