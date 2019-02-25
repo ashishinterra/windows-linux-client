@@ -64,38 +64,25 @@ include ../../../mk/linux.prog.mk
 	@echo " Creating minimal KeyTalk installation..."
 	mkdir -p ~/.keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/user.ini ~/.keytalk/
-	mkdir -p /etc/keytalk/ /usr/local/bin/keytalk/
+	mkdir -p /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/master.ini /etc/keytalk/
 	cp -f ../../../ContinuousIntegration/cc.py/rlinuxclient.worker/resept.ini /etc/keytalk/
 	if [ -f /etc/debian_version ]; then \
-		echo "  Installing KeyTalk CA updater service..."; \
-		apt-get -q -y install inotify-tools; \
-		cp -f ../../Projects/ReseptInstaller/linux/keytalk_ca_updater.sh /usr/local/bin/keytalk/; \
-		cp -f ../../Projects/ReseptInstaller/linux/etc_systemd_system_keytalk-ca-updater.service /etc/systemd/system/keytalk-ca-updater.service; \
-		systemctl daemon-reload; \
-		systemctl restart keytalk-ca-updater; \
 		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /usr/local/share/ca-certificates/keytalk_test_commcacert.crt; \
 		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /usr/local/share/ca-certificates/keytalk_test_pcacert.crt; \
+		update-ca-certificates ; \
 	elif [ -f /etc/redhat-release ]; then \
-		echo "  Installing KeyTalk CA updater service..."; \
-		yum -y install inotify-tools; \
-		cp -f ../../Projects/ReseptInstaller/linux/keytalk_ca_updater.sh /usr/local/bin/keytalk/; \
-		if [[ "$(OSSPEC)" =~ ^redhat-6 || "$(OSSPEC)" =~ ^centos-6 ]]; then \
-			cp -f ../../Projects/ReseptInstaller/linux/etc_init.d_keytalk-ca-updater /etc/init.d/keytalk-ca-updater; \
-			service keytalk-ca-updater restart; \
-		else \
-			cp -f ../../Projects/ReseptInstaller/linux/etc_systemd_system_keytalk-ca-updater.service /etc/systemd/system/keytalk-ca-updater.service; \
-			systemctl daemon-reload; \
-			systemctl restart keytalk-ca-updater; \
-		fi; \
 		cp ../../../CertKeys/CommunicationAndSigning/commcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_commcacert.crt; \
 		cp ../../../CertKeys/CommunicationAndSigning/pcacert.pem /etc/pki/ca-trust/source/anchors/keytalk_test_pcacert.crt; \
+		update-ca-trust; \
 	fi
 
 post_clean:
 	rm -f $(OUT_DIR)/ReseptClientAppTest.conf $(OUT_DIR)/log.conf $(OUT_DIR)/hwutils
 	if [ -f /etc/debian_version ]; then \
 		rm -f /usr/local/share/ca-certificates/keytalk_test_*.crt; \
+		update-ca-certificates --fresh; \
 	elif [ -f /etc/redhat-release ]; then \
 		rm -f /etc/pki/ca-trust/source/anchors/keytalk_test_*.crt; \
+		update-ca-trust extract; \
 	fi
