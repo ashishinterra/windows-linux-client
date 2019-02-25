@@ -35,7 +35,9 @@ stop() {
     if ps auxw | grep $EXECUTABLE | grep -v grep > /dev/null 2>&1 ; then
         echo -n $"Stopping $SERVICE_NAME: "
         if killproc $EXECUTABLE ; then
-            [ -f $PIDFILE ] && cat $PIDFILE | xargs kill -9
+            if [ -s $PIDFILE ]; then
+                pkill -9 --pidfile $PIDFILE || true
+            fi
         fi
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
