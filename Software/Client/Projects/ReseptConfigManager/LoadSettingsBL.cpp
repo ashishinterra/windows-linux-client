@@ -41,18 +41,37 @@ namespace
 
     ServiceStatus getReseptBrokerServiceStatus()
     {
-        SC_HANDLE myScHandle = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ENUMERATE_SERVICE);
+        ta::ScopedResource<SC_HANDLE> myScHandle(OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ENUMERATE_SERVICE), CloseServiceHandle);
         if (!myScHandle)
+        {
             TA_THROW_MSG(std::runtime_error, boost::format("OpenSCManager failed. Last error: %d") % ::GetLastError());
-        ENUM_SERVICE_STATUS myServices[1024] = {};
-        DWORD cbBytesNeeded, myNumServices;
-        if (!EnumServicesStatus(myScHandle, SERVICE_WIN32, SERVICE_STATE_ALL, myServices, sizeof(myServices), &cbBytesNeeded, &myNumServices, 0))
-            TA_THROW_MSG(std::runtime_error, boost::format("EnumServicesStatus failed. Last error: %d") % ::GetLastError());
+        }
+
+        DWORD cbBytesNeeded = 0, myNumServices = 0;
+        if (EnumServicesStatus(myScHandle, SERVICE_WIN32, SERVICE_STATE_ALL, NULL, 0, &cbBytesNeeded, &myNumServices, 0))
+        {
+            // it can't succeed because we are just querying buffer size to hold services
+            TA_THROW_MSG(std::runtime_error, "EnumServicesStatus (1) unexpectedly succeed when querying buffer size !?");
+        }
+
+        const DWORD myLastError = ::GetLastError();
+        if (myLastError != ERROR_INSUFFICIENT_BUFFER && myLastError != ERROR_MORE_DATA)
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("EnumServicesStatus (1) failed. Last error: %d") % myLastError);
+        }
+
+        TA_UNIQUE_PTR<ENUM_SERVICE_STATUS> myServices(static_cast<ENUM_SERVICE_STATUS*>(::operator new (cbBytesNeeded)));
+        if (!EnumServicesStatus(myScHandle, SERVICE_WIN32, SERVICE_STATE_ALL, myServices.get(), cbBytesNeeded, &cbBytesNeeded, &myNumServices, 0))
+        {
+            TA_THROW_MSG(std::runtime_error, boost::format("EnumServicesStatus (2) failed. Last error: %d") % ::GetLastError());
+        }
+
         for (DWORD i=0; i<myNumServices; ++i)
         {
-            if (string(myServices[i].lpServiceName) == rclient::BrokerServiceName)
+            const ENUM_SERVICE_STATUS myService = myServices.get()[i];
+            if (string(myService.lpServiceName) == rclient::BrokerServiceName)
             {
-                switch (myServices[i].ServiceStatus.dwCurrentState)
+                switch (myService.ServiceStatus.dwCurrentState)
                 {
                 case SERVICE_RUNNING:
                     return serviceStatusRunning;
@@ -65,7 +84,7 @@ namespace
                 case SERVICE_STOP_PENDING:
                     return serviceStatusPending;
                 default:
-                    TA_THROW_MSG(std::runtime_error, boost::format("Unsupported service status %d") % myServices[i].ServiceStatus.dwCurrentState);
+                    TA_THROW_MSG(std::runtime_error, boost::format("Unsupported service status %d") % myService.ServiceStatus.dwCurrentState);
                 }
             }
         }

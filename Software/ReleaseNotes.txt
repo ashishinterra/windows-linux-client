@@ -12,6 +12,7 @@ Support import of settings created in v5.2.0-v5.5.2, v4.6.0 and v4.6.2
 client-5.5.1, in development
 ----------------------
     - ADDED: Allow non-root users to customize and use KeyTalk Linux client
+    - FIXED: Error importing RCCD file by Windows client
 
 
 server-5.5.1, 22 February 2019
