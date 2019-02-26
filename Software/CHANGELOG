@@ -9,7 +9,7 @@ Support import of settings created in v5.2.0-v5.5.2, v4.6.0 and v4.6.2
     - ADDED: Disallow service operators from mass-enrolling and mass-revoking/removing user certificates
 
 
-client-5.5.1, in development
+client-5.5.1, 26 February 2019
 ----------------------
     - ADDED: Allow non-root users to customize and use KeyTalk Linux client (KEYTALK-409)
     - FIXED: Error importing RCCD file by Windows client
