@@ -54,7 +54,7 @@ namespace ta
 
 
         /**
-          Creates version from string representation as "major.minor[.subminor[.devstage]]
+          Creates version(s) from string representation as "major.minor[.subminor[.devstage]] or the array thereof
           major and minor cannot be simultaneously 0.
           subminor defaults to 0.
           devstage defaults to empty string.

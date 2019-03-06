@@ -602,6 +602,13 @@ namespace ta
         };
         const std::vector<RemoteAddress> DefaultTestTcpServers = boost::assign::list_of(RemoteAddress("google.com", 80))(RemoteAddress("google.com", 443));
         ConnectivityStatus checkConnectivity(const std::vector<RemoteAddress>& aTestTcpServers = DefaultTestTcpServers);
+
+        // Query public IP address over HTTP or DNS
+        // @note Should HTTP proxy be in effect IP retrieved over HTTP might differ form IP retrieved over DNS.
+        //@nothrow, return empty string if IP cannot be queried
+        std::string queryPublicIpv4OverHttp();
+        //@nothrow, return empty string if IP cannot be queried
+        std::string queryPublicIpv4OverDns();
 #endif
 
         std::string normalizeDomainName(const std::string& aDomainName);

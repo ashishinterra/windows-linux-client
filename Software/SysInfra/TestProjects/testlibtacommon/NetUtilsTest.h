@@ -409,8 +409,9 @@ public:
 
     void test_internet_connectivity()
     {
-        using namespace ta::NetUtils;
 #ifndef _WIN32
+        using namespace ta::NetUtils;
+
         if (!ta::OsInfoUtils::isDockerContainer())
         {
             TS_ASSERT_EQUALS(checkConnectivity(), connectivityOk);
@@ -425,16 +426,52 @@ public:
 #endif
     }
 
+    void test_query_public_ipv4_over_http()
+    {
+#ifndef _WIN32
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            const std::string myIp = ta::NetUtils::queryPublicIpv4OverHttp();
+            TS_ASSERT(!myIp.empty());
+            if (!myIp.empty())
+            {
+                TS_TRACE(("Public IPv4 over HTTP: " + myIp).c_str());
+            }
+        }
+        else
+        {
+            TS_SKIP("Skip public IP address query test for docker container");
+        }
+#else
+        TS_SKIP("Not implemented on Windows");
+#endif
+    }
+
+    void test_query_public_ipv4_over_dns()
+    {
+#ifndef _WIN32
+        if (!ta::OsInfoUtils::isDockerContainer())
+        {
+            const std::string myIp = ta::NetUtils::queryPublicIpv4OverDns();
+            TS_ASSERT(!myIp.empty());
+            if (!myIp.empty())
+            {
+                TS_TRACE(("Public IPv4 over DNS: " + myIp).c_str());
+            }
+        }
+        else
+        {
+            TS_SKIP("Skip public IP address query test for docker container");
+        }
+#else
+        TS_SKIP("Not implemented on Windows");
+#endif
+    }
+
     void test_ping_running_ipv4_host_succeeds()
     {
 #ifndef _WIN32
-        TS_TRACE(__FUNCTION__);
-        // Given
-        string host("127.0.0.1");
-        // When
-        bool pingSuccess = ta::NetUtils::ping(host);
-        // Then
-        TS_ASSERT(pingSuccess);
+        TS_ASSERT(ta::NetUtils::ping("127.0.0.1"));
 #else
         TS_SKIP("Not implemented on Windows");
 #endif
@@ -443,13 +480,7 @@ public:
     void test_ping_unreachable_ipv4_host_fails()
     {
 #ifndef _WIN32
-        TS_TRACE(__FUNCTION__);
-        // Given
-        string host("128.1.2.3");
-        // When
-        bool pingSuccess = ta::NetUtils::ping(host);
-        // Then
-        TS_ASSERT(!pingSuccess);
+        TS_ASSERT(!ta::NetUtils::ping("128.1.2.3"));
 #else
         TS_SKIP("Not implemented on Windows");
 #endif
@@ -458,13 +489,7 @@ public:
     void test_ping_incorrect_ipv4_address_fails()
     {
 #ifndef _WIN32
-        TS_TRACE(__FUNCTION__);
-        // Given
-        string host("333.0.0.1");
-        // When
-        bool pingSuccess = ta::NetUtils::ping(host);
-        // Then
-        TS_ASSERT(!pingSuccess);
+        TS_ASSERT(!ta::NetUtils::ping("333.0.0.1"));
 #else
         TS_SKIP("Not implemented on Windows");
 #endif
@@ -473,13 +498,7 @@ public:
     void test_ping_running_ipv6_host_succeeds()
     {
 #ifndef _WIN32
-        TS_TRACE(__FUNCTION__);
-        // Given
-        string host("::1");
-        // When
-        bool pingSuccess = ta::NetUtils::ping6(host);
-        // Then
-        TS_ASSERT(pingSuccess);
+        TS_ASSERT(ta::NetUtils::ping6("::1"));
 #else
         TS_SKIP("Not implemented on Windows");
 #endif
@@ -488,10 +507,7 @@ public:
     void test_ping_unreachable_ipv6_host_fails()
     {
 #ifndef _WIN32
-        // When
-        bool pingSuccess = ta::NetUtils::ping6("::9");
-        // Then
-        TS_ASSERT(!pingSuccess);
+        TS_ASSERT(!ta::NetUtils::ping6("::9"));
 #else
         TS_SKIP("Not implemented on Windows");
 #endif
@@ -500,10 +516,7 @@ public:
     void test_ping_incorrect_ipv6_address_fails()
     {
 #ifndef _WIN32
-        // When
-        bool pingSuccess = ta::NetUtils::ping6("::z");
-        // Then
-        TS_ASSERT(!pingSuccess);
+        TS_ASSERT(!ta::NetUtils::ping6("::z"));
 #else
         TS_SKIP("Not implemented on Windows");
 #endif

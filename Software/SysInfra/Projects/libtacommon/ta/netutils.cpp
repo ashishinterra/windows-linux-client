@@ -40,6 +40,7 @@
 #include "boost/format.hpp"
 #include "boost/algorithm/string.hpp"
 #include "boost/regex.hpp"
+#include "boost/assign/list_of.hpp"
 
 using std::string;
 using std::vector;
@@ -1816,7 +1817,61 @@ namespace ta
 
             return connectivityOk;
         }
-#endif
+
+        string queryPublicIpv4OverHttp()
+        {
+            static const ta::StringArray myHttpProbeUrls = boost::assign::list_of
+                    ("https://ifconfig.co/ip")
+                    ("https://ipecho.net/plain")
+                    ("http://icanhazip.com/")
+                    ;
+            foreach (const string& url, myHttpProbeUrls)
+            {
+                try
+                {
+                    const string myIpv4 = boost::trim_copy(ta::vec2Str(fetchHttpUrl(url)));
+                    if (isValidIpv4(myIpv4))
+                    {
+                        return myIpv4;
+                    }
+                    else
+                    {
+                        WARNLOG2("Failed to query public IP over HTTP against " + url, "Cannot parse the retrieved IP from '" + myIpv4 + "'");
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    WARNLOG2("Failed to query public IP over HTTP against " + url, e.what());
+                }
+            }
+
+            return "";
+        }
+
+        string queryPublicIpv4OverDns()
+        {
+            const string myCmd = "dig @resolver1.opendns.com A myip.opendns.com +short";
+
+            try
+            {
+                const string myIpv4 = boost::trim_copy(ta::Process::checkedShellExecSync(myCmd));
+                if (isValidIpv4(myIpv4))
+                {
+                    return myIpv4;
+                }
+                else
+                {
+                    WARNLOG2("Failed to query public IP over DNS using command '" + myCmd + "'", "Cannot parse the retrieved IP from '" + myIpv4 + "'");
+                }
+            }
+            catch (const std::exception& e)
+            {
+                WARNLOG2("Failed to query public IP over DNS using command '" + myCmd + "'", e.what());
+            }
+
+            return "";
+        }
+#endif // non-Win32
 
         string normalizeDomainName(const string& aDomainName)
         {
