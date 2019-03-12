@@ -479,10 +479,15 @@ namespace ta
                 : std::runtime_error(aMessage) {}
         };
 
-        // Validate whether the Subject fields are correct
-        // Correctly handles wide character strings for length checks
+        // Validate Subject fields
         // Throws InvalidSubjectError when field is incorrect with a user friendly message
         void validateSubject(const Subject& aSubject);
+
+        enum Capitalize
+        {
+            capitalizeNo, capitalizeYes
+        };
+        bool isValidCN(const std::string& aCN, std::string& anErrorMsg, const Capitalize aCapitalizeErrorMsg = capitalizeNo);
 
         /**
             Generate CSR for the given public key and certificate fields, optionally signed with the given private key

@@ -381,6 +381,7 @@ public:
     void testFilter()
     {
         using boost::assign::list_of;
+        using boost::assign::map_list_of;
 
         {
             const std::vector<string> mySeq = list_of<string>("")("a")("")("bc");
@@ -392,6 +393,12 @@ public:
         {
             const std::vector<string> mySeq = list_of<string>("A")("a")("b")("a");
             TS_ASSERT_EQUALS(ta::filterOut("a", mySeq), list_of<string>("A")("b"));
+        }
+        {
+            const std::map<int, string> myDict = map_list_of(1, "one")(2, "two")(3, "three");
+            const std::map<int, string> myExpectedDict = map_list_of(1, "one")(3, "three");
+            TS_ASSERT_EQUALS(ta::filterOut(2, myDict), myExpectedDict);
+            TS_ASSERT_EQUALS(ta::filterOut(4, myDict), myDict);
         }
     }
 

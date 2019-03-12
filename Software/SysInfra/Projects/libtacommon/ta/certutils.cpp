@@ -2406,6 +2406,23 @@ namespace ta
             }
         }
 
+        bool isValidCN(const string& aCN, string& anErrorMsg, const Capitalize aCapitalizeErrorMsg)
+        {
+            if (utf8::distance(aCN.begin(), aCN.end()) > CnMax)
+            {
+                if (aCapitalizeErrorMsg == capitalizeYes)
+                {
+                    anErrorMsg = str(boost::format("COMMON NAME '%s' CANNOT BE LONGER THAN %d SYMBOLS") % aCN % CnMax);
+                }
+                else
+                {
+                    anErrorMsg = str(boost::format("Common Name '%s' cannot be longer than %d symbols") % aCN % CnMax);
+                }
+                return false;
+            }
+            return true;
+        }
+
 
         X509_REQ* createCSR(const ta::KeyPair& aKeyPair,
                             const Subject& aSubject,

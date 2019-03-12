@@ -369,6 +369,14 @@ namespace ta
         return myRetVal;
     }
 
+    template <class T, class U>
+    std::map<T,U> filterOut(const T& aKey, const std::map<T,U>& aDict)
+    {
+        std::map<T,U> myRetVal(aDict);
+        myRetVal.erase(aKey);
+        return myRetVal;
+    }
+
     // return a subsequence of aSequence1 each element of which also exists in aSequence2, preserving elements order
     template <class T>
     T intersect(const T& aSequence1, const T& aSequence2)

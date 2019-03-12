@@ -5,14 +5,14 @@ client-5.5.2, in development
 ----------------------
 
 
-server-5.5.2, in development
+server-5.5.2, 13 March 2019
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.5.2, v4.6.0 and v4.6.2
-    - ADDED: Disallow service operators from mass-enrolling and mass-revoking/removing user certificates
     - ADDED: Added DevID CN to be used for matching CN of client cert for self-service logins and as CN attribute in generated certs (KEYTALK-514)
     - ADDED: Allow querying public IP address of KeyTalk server
+    - ADDED: Disallow service operators from mass-enrolling and mass-revoking/removing user certificates
 
     CHANGED shared Db schema:
       - version 8.0-> 9.0
