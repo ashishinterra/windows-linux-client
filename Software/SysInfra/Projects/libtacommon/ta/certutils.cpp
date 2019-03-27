@@ -1216,6 +1216,11 @@ namespace ta
             return convX509_2Pem(myX509);
         }
 
+        string convDer2Pem(const string& aDerCert)
+        {
+            return convDer2Pem(ta::str2Vec<unsigned char>(aDerCert));
+        }
+
         string convX509_2Pem(X509* aCertX509)
         {
             if (!aCertX509)
@@ -1549,7 +1554,7 @@ namespace ta
             return hasPemCert(ta::vec2Str(aPem), aParsedCertsBuf);
         }
 
-        bool hasPemCertEx(const string& aPem, string& anErrorMsg, string* aParsedCertsBuf)
+        bool hasPemCertEx(const string& aPem, string& anReasonWhyNot, string* aParsedCertsBuf)
         {
             try
             {
@@ -1565,25 +1570,25 @@ namespace ta
                 if (!myCerts.empty())
                     return true;
 
-                anErrorMsg = "No PEM certificates found";
+                anReasonWhyNot = "No PEM certificates found";
                 return false;
             }
             catch (std::exception& e)
             {
-                anErrorMsg = e.what();
+                anReasonWhyNot = e.what();
                 return false;
             }
         }
-        bool hasPemCertEx(const vector<char>& aPem, string& anErrorMsg, string* aParsedCertsBuf)
+        bool hasPemCertEx(const vector<char>& aPem, string& anReasonWhyNot, string* aParsedCertsBuf)
         {
-            return hasPemCertEx(ta::vec2Str(aPem), anErrorMsg, aParsedCertsBuf);
+            return hasPemCertEx(ta::vec2Str(aPem), anReasonWhyNot, aParsedCertsBuf);
         }
-        bool hasPemCertEx(const vector<unsigned char>& aPem, string& anErrorMsg, string* aParsedCertsBuf)
+        bool hasPemCertEx(const vector<unsigned char>& aPem, string& anReasonWhyNot, string* aParsedCertsBuf)
         {
-            return hasPemCertEx(ta::vec2Str(aPem), anErrorMsg, aParsedCertsBuf);
+            return hasPemCertEx(ta::vec2Str(aPem), anReasonWhyNot, aParsedCertsBuf);
         }
 
-        bool hasDerCert(const vector<unsigned char>& aBuf)
+        bool isDerCert(const vector<unsigned char>& aBuf)
         {
             try
             {
@@ -1596,9 +1601,28 @@ namespace ta
             }
         }
 
-        bool hasDerCert(const std::string& aBuf)
+        bool isDerCert(const std::string& aBuf)
         {
-            return hasDerCert(ta::str2Vec<unsigned char>(aBuf));
+            return isDerCert(ta::str2Vec<unsigned char>(aBuf));
+        }
+
+        bool isDerCertEx(const std::vector<unsigned char>& aBuf, string& anReasonWhyNot)
+        {
+            try
+            {
+                getCertInfo(aBuf, DER);
+                return true;
+            }
+            catch (std::exception& e)
+            {
+                anReasonWhyNot = e.what();
+                return false;
+            }
+        }
+
+        bool isDerCertEx(const std::string& aBuf, string& anReasonWhyNot)
+        {
+            return isDerCertEx(ta::str2Vec<unsigned char>(aBuf), anReasonWhyNot);
         }
 
         bool fileHasPemPrivKey(const string& aFilePath, string* aParsedKeysBuf)
@@ -2690,7 +2714,7 @@ namespace ta
             if (isPemCertFile(aCertPath)) {
                 myCert.loadFromFile(aCertPath);
             } else {
-                myCert.loadFromBuf(convDer2Pem(ta::readData(aCertPath)));
+                myCert.loadFromBuf(convDer2Pem((string)ta::readData(aCertPath)));
             }
             return isCertFileRevokedForCrl(myCert, aCRLs);
         }
@@ -2723,7 +2747,7 @@ namespace ta
             if (isPemCertFile(aCertPath)) {
                 myCert.loadFromFile(aCertPath);
             } else {
-                myCert.loadFromBuf(convDer2Pem(ta::readData(aCertPath)));
+                myCert.loadFromBuf(convDer2Pem((string)ta::readData(aCertPath)));
             }
             return isCertFileRevokedImpl(myCert, getCertInfoFile(aCertPath, isPemCertFile(aCertPath) ? PEM : DER).crlDistributionPoints, aWarnings);
         }

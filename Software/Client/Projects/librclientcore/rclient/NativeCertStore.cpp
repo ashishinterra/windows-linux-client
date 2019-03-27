@@ -1193,7 +1193,7 @@ namespace rclient
                 void importDerCertFileToTrustedStore(const string& aDerCertPath)
                 {
                     DEBUGLOG(boost::format("Importing DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));
-                    const string myPemCert = ta::CertUtils::convDer2Pem(ta::readData(aDerCertPath));
+                    const string myPemCert = ta::CertUtils::convDer2Pem((string)ta::readData(aDerCertPath));
                     const bool myIsImported = importPemCertToTrustedStore(myPemCert);
                     if (myIsImported)
                         DEBUGLOG(boost::format("Successfully imported DER certificate from %s to %s store") % aDerCertPath % str(theStoreType));

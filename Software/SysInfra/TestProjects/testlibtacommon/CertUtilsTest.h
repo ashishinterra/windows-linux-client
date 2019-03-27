@@ -599,13 +599,21 @@ public:
         TS_ASSERT_THROWS(ta::CertUtils::fileHasPemEncryptedPrivKey("non_existing_file"), std::exception);
     }
 
-    void testHasDerCert()
+    void testIsDerCert()
     {
-    	const std::vector<unsigned char> myTestPemCert = ta::readData("CA/cert.pem");
-    	const std::vector<unsigned char> myTestDerCert = ta::readData("CA/cert.der");
+        {
+            const std::vector<unsigned char> myCert = ta::readData("CA/cert.der");
+            std::string myReasonWhyNot;
+            TS_ASSERT(ta::CertUtils::isDerCertEx(myCert, myReasonWhyNot));
+            TS_ASSERT_EQUALS(myReasonWhyNot, "");
+        }
 
-    	TS_ASSERT(ta::CertUtils::hasDerCert(myTestDerCert));
-    	TS_ASSERT(!ta::CertUtils::hasDerCert(myTestPemCert));
+        {
+            const std::vector<unsigned char> myCert = ta::readData("CA/cert.pem");
+            std::string myReasonWhyNot;
+            TS_ASSERT(!ta::CertUtils::isDerCertEx(myCert, myReasonWhyNot));
+            TS_ASSERT_DIFFERS(myReasonWhyNot, "");
+        }
     }
 
     void testConvertDerPem()
@@ -619,8 +627,8 @@ public:
     	TS_ASSERT_EQUALS(ta::CertUtils::convPem2Der(myTestPemCert), myTestDerCert);
     	TS_ASSERT_DIFFERS(ta::CertUtils::convDer2Pem(myOtherDerCert), myTestPemCert);
 
-    	TS_ASSERT_THROWS(ta::CertUtils::convDer2Pem(ta::str2Vec<unsigned char>(myTestPemCert)), std::exception);
-    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(ta::vec2Str(myTestDerCert)), std::exception);
+    	TS_ASSERT_THROWS(ta::CertUtils::convDer2Pem(myTestPemCert), std::exception);
+    	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(myTestDerCert), std::exception);
     	TS_ASSERT_THROWS(ta::CertUtils::convPem2Der(""), std::exception);
     	TS_ASSERT_THROWS(ta::CertUtils::convDer2Pem(std::vector<unsigned char>()), std::exception);
     }
@@ -1173,7 +1181,7 @@ public:
         const Subject mySubjTooBigCN(
             "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x");
         const Subject mySubjTooBigC(
-            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x", 
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789x",
             "ab");
         const Subject mySubjTooBigST(
             "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz=!0123456789",

@@ -1,6 +1,13 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
+server-5.5.3, in development
+----------------------
+Support upgrades from v5.2.1 and higher
+Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
+Support import of settings created in v5.2.0-v5.5.3, v4.6.0 and v4.6.2
+
+
 client-5.5.2, in development
 ----------------------
 

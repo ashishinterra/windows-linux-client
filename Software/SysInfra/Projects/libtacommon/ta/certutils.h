@@ -217,6 +217,7 @@ namespace ta
         std::vector<unsigned char> convPem2Der(const std::string& aPemCert);
         std::vector<unsigned char> convPem2Der(const std::vector<unsigned char>& aPemCert);
         std::string convDer2Pem(const std::vector<unsigned char>& aDerCert);
+        std::string convDer2Pem(const std::string& aDerCert);
         std::string convX509_2Pem(X509* aCertX509);
         // convert PEM to PFX; private key in PEM should be not password-protected
         std::vector<unsigned char> convPem2Pfx(const std::string& aPemCertKey, const std::string& aPfxPassword, const std::string& aPfxCertKeyFriendlyName = "");
@@ -260,12 +261,14 @@ namespace ta
         bool hasPemCert(const std::vector<char>& aPemBuf, std::string* aParsedCertsBuf = NULL);
         bool hasPemCert(const std::vector<unsigned char>& aPemBuf, std::string* aParsedCertsBuf = NULL);
         // extended versions of the above counterparts with added error reporting
-        bool hasPemCertEx(const std::string& aPemBuf, std::string& anErrorMsg, std::string* aParsedCertsBuf = NULL);
-        bool hasPemCertEx(const std::vector<char>& aPemBuf, std::string& anErrorMsg, std::string* aParsedCertsBuf = NULL);
-        bool hasPemCertEx(const std::vector<unsigned char>& aPemBuf, std::string& anErrorMsg, std::string* aParsedCertsBuf = NULL);
+        bool hasPemCertEx(const std::string& aPemBuf, std::string& anReasonWhyNot, std::string* aParsedCertsBuf = NULL);
+        bool hasPemCertEx(const std::vector<char>& aPemBuf, std::string& anReasonWhyNot, std::string* aParsedCertsBuf = NULL);
+        bool hasPemCertEx(const std::vector<unsigned char>& aPemBuf, std::string& anReasonWhyNot, std::string* aParsedCertsBuf = NULL);
 
-        bool hasDerCert(const std::vector<unsigned char>& aBuf);
-        bool hasDerCert(const std::string& aBuf);
+        bool isDerCert(const std::vector<unsigned char>& aBuf);
+        bool isDerCert(const std::string& aBuf);
+        bool isDerCertEx(const std::vector<unsigned char>& aBuf, std::string& anReasonWhyNot);
+        bool isDerCertEx(const std::string& aBuf, std::string& anReasonWhyNot);
 
         /**
           Checks whether the given source contains at least one valid PEM-encoded private key and retrieves them

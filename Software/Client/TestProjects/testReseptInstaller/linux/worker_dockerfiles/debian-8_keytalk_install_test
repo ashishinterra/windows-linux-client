@@ -5,6 +5,11 @@ FROM debian:jessie
 # Setup systemctl
 COPY ./systemctl.py /usr/bin/systemctl
 
+# In March 2019 Debian Jessie stopped maintaining updates under the main mirror and moved them to archive.debian.org.
+# We will simply ignore this channel them to make life easier
+# More info https://unix.stackexchange.com/questions/508724/failed-to-fetch-jessie-backports-repository
+RUN sed -i '/http:\/\/deb.debian.org\/debian jessie-updates/d' /etc/apt/sources.list
+
 # Install packages
 RUN apt-get update
 RUN apt -y install openssh-client procps apache2 hdparm unzip lsb-release curl python3

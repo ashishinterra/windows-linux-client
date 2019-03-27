@@ -9,6 +9,7 @@
 #include "boost/format.hpp"
 #include "boost/foreach.hpp"
 #include "boost/bind.hpp"
+#include "boost/optional.hpp"
 #include "boost/algorithm/string.hpp"
 #include "boost/range/algorithm.hpp"
 
@@ -424,21 +425,25 @@ namespace ta
     {
         const typename T::const_iterator it = boost::find_if(aSequence, boost::bind(aPred, _1));
         if (it == aSequence.end())
+        {
             TA_THROW_MSG(std::logic_error, "No " + anElementNameHint + " found");
+        }
         return *it;
     }
 
     // retrieve the first element in the sequence satisfying the predicate and return true or return false if not found
     template <typename Pred, class T>
-    bool findFirstElem(Pred aPred, const T& aSequence, typename T::value_type& aVal)
+    boost::optional<typename T::value_type> findFirstElem(Pred aPred, const T& aSequence)
     {
         const typename T::const_iterator it = boost::find_if(aSequence, boost::bind(aPred, _1));
-        if (it == aSequence.end())
+        if (it != aSequence.end())
         {
-            return false;
+            return *it;
         }
-        aVal = *it;
-        return true;
+        else
+        {
+            return boost::none;
+        }
     }
 
     // return the element in the sequence satisfying the predicate or raise exception if no or multiple elements found for the given criteria
