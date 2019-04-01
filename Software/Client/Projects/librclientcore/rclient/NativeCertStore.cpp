@@ -114,7 +114,7 @@ namespace rclient
                 ScopedResource<X509*>myX509(d2i_X509(NULL, &myCertPtr, aCertContextPtr->cbCertEncoded), X509_free);
                 if (myX509 == NULL)
                 {
-                    TA_THROW_MSG(std::runtime_error, "Call to d2i_X509 failed attepmting to get cert");
+                    TA_THROW_MSG(std::runtime_error, "Call to d2i_X509 failed attempting to get cert");
                 }
                 if (ta::CertUtils::isCertFileRevoked(myX509)) { // Just return false if the cert is revoked
                     return false;

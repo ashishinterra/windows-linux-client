@@ -1393,7 +1393,7 @@ namespace ta
         // Verify that the certificate specified in the file aCertFilePath is issued by the certificate specified in the file aCACertFilePath.
         // Only one level in the certificate chain is verified.
         // Both certificate files have to be in PEM format.
-        static bool verifyPEMCertIsIssuedBy(const string& aCertFilePath, const string& aCACertFilePath)
+        static bool verifyPemCertFileIsIssuedBy(const string& aCertFilePath, const string& aCACertFilePath)
         {
             ScopedResource<X509_STORE*> cert_ctx(X509_STORE_new(), X509_STORE_free);
             if (!cert_ctx)
@@ -1411,7 +1411,7 @@ namespace ta
 
             if (!X509_LOOKUP_load_file(lookupfile, aCACertFilePath.c_str(), X509_FILETYPE_PEM))
             {
-                TA_THROW_MSG(std::runtime_error, "X509_LOOKUP_load_file failed");
+                TA_THROW_MSG(std::runtime_error, boost::format("X509_LOOKUP_load_file failed. %s") % ERR_error_string(ERR_get_error(), NULL));
             }
 
             X509_LOOKUP* lookupdir = X509_STORE_add_lookup(cert_ctx, X509_LOOKUP_hash_dir());
@@ -1427,7 +1427,7 @@ namespace ta
 
         bool isCertFileIssuedBy(const string& aCertFilePath, const string& aCaCertFilePath)
         {
-            return verifyPEMCertIsIssuedBy(aCertFilePath, aCaCertFilePath);
+            return verifyPemCertFileIsIssuedBy(aCertFilePath, aCaCertFilePath);
         }
 
         bool isCertIssuedBy(const vector<unsigned char>& aCert, const vector<unsigned char>& aCaCert)
@@ -1449,29 +1449,35 @@ namespace ta
                                   ta::str2Vec<unsigned char>(aCaCert));
         }
 
-        void insertCertInChain(const string& aCert, ta::StringArray& aChain)
+        ta::StringArray insertCertInChain(const string& aCert, const ta::StringArray& aChain)
         {
-            for (ta::StringArray::iterator it = aChain.begin(), end = aChain.end(); it != end; ++it)
+            ta::StringArray myChain = aChain;
+            for (ta::StringArray::iterator chain_it = myChain.begin(), end = myChain.end(); chain_it != end; ++chain_it)
             {
-                if (isCertIssuedBy(aCert, *it))
+                if (isCertIssuedBy(aCert, *chain_it))
                 {
-                    aChain.insert(it, aCert);
-                    return;
+                    // insert the cert before the chained item
+                    myChain.insert(chain_it, aCert);
+                    return myChain;
+                }
+                else if (isCertIssuedBy(*chain_it, aCert))
+                {
+                    // insert the cert after the chained item
+                    myChain.insert(chain_it+1, aCert);
+                    return myChain;
+                }
+                else if (*chain_it == aCert)
+                {
+                    // skip duplicates
+                    return myChain;
                 }
             }
-            aChain.push_back(aCert);
+
+            // no relatives found, just settle here
+            myChain.push_back(aCert);
+            return myChain;
         }
 
-        ta::StringArray orderCAs(const string& aCert, const ta::StringArray& aCAs)
-        {
-            ta::StringArray myOrderedChain = list_of(aCert);
-            foreach (const string& ca, aCAs)
-            {
-                insertCertInChain(ca, myOrderedChain);
-            }
-            myOrderedChain.erase(myOrderedChain.begin());// remove the certificate itself
-            return myOrderedChain;
-        }
 
         string createPEM(X509* aCert, const vector<X509*>& aCAs, const string& aPlainPemKey, const string& aKeyPassword, const ta::RsaUtils::KeyEncryptionAlgo* aKeyEncryptionAlgo)
         {
@@ -1823,6 +1829,9 @@ namespace ta
                 anExtractedPemCert = convX509_2Pem(cert);
             }
             anExtractedPemKey = convPrivKey2Pem(pkey);
+
+            // Add issuer CAs
+            ta::StringArray myExtractedPemCAs;
             if (cas)
             {
                 const int myNumCAs = sk_X509_num(cas);
@@ -1831,12 +1840,12 @@ namespace ta
                     for (int i = 0; i < myNumCAs; ++i)
                     {
                         X509 *ca = sk_X509_value(cas, i);
-                        anExtractedPemCAs.push_back(convX509_2Pem(ca));
+                        myExtractedPemCAs = insertCertInChain(convX509_2Pem(ca), myExtractedPemCAs);
                     }
-                    myNumParsedCerts += anExtractedPemCAs.size();
+                    myNumParsedCerts += myExtractedPemCAs.size();
                 }
             }
-            anExtractedPemCAs = orderCAs(anExtractedPemCert, anExtractedPemCAs);
+            anExtractedPemCAs = myExtractedPemCAs;
 
             return myNumParsedCerts;
         }

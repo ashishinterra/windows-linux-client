@@ -6,6 +6,12 @@ server-5.5.3, in development
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
 Support import of settings created in v5.2.0-v5.5.3, v4.6.0 and v4.6.2
+    - ADDED: Allow specifying subject in S/MIME notification email templates
+    - ADDED: Allow uploading multiple DER and PEM certs for auth. modules, client login CA and Db validation CA
+    - ADDED: Notify a requestor of GlobalSign PS1 S/MIME certificate about a placed order
+
+CHANGED shared Db schema:
+  - version 9.0-> 10.0
 
 
 client-5.5.2, in development

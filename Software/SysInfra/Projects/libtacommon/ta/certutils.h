@@ -235,9 +235,7 @@ namespace ta
 
         // Insert the given PEM-encoded cert into the chain respecting the chain order from child to parent.
         // If no parent/child cert found in the chain, append the cert to the end
-        void insertCertInChain(const std::string& aCert, ta::StringArray& aChain);
-        // order CAs of the given PEM-encoded cert from child towards parent
-        ta::StringArray orderCAs(const std::string& aCert, const ta::StringArray& aCAs);
+        ta::StringArray insertCertInChain(const std::string& aCert, const ta::StringArray& aChain);
 
 
         // Creates PEM from the given cert, CAs and private key
