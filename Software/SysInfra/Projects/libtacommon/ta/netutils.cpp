@@ -1805,7 +1805,7 @@ namespace ta
                 try {
                     ta::Process::checkedShellExecSync(str(boost::format("nc -z -w 1 %s %s") % svr.host % svr.port));
                 } catch (std::exception& e) {
-                    WARNDEVLOG("Failed to connect to " + str(svr));
+                    WARNDEVLOG(boost::format("Failed to connect to %s. %s") % str(svr) % e.what());
                     return connectivityTcpServersNotAccessible;
                 }
             }

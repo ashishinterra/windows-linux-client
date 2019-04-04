@@ -844,6 +844,119 @@ public:
 
     void testIsCertIssuedBy()
     {
+        const ta::StringArray myOrderedChain = boost::assign::list_of
+                ("-----BEGIN CERTIFICATE-----\n"
+        "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\n"
+        "Hs0oL5M9A2cSAsIIQ/x4FqVPek5O+OmsUQMMyw==\n"
+        "-----END CERTIFICATE-----")
+                ("-----BEGIN CERTIFICATE-----\n"
+        "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\n"
+        "Tw==\n"
+        "-----END CERTIFICATE-----")
+                ("-----BEGIN CERTIFICATE-----\n"
+        "MIIFnTCCA4WgAwIBAgICAcIwDQYJKoZIhvcNAQELBQAwgYExHzAdBgkqhkiG9w0B\n"
+        "CQEWEGluZm9Aa2V5dGFsay5jb20xCzAJBgNVBAYTAk5MMRwwGgYDVQQKDBNLZXlU\n"
+        "YWxrIElUIFNlY3VyaXR5MRgwFgYDVQQLDA9GYWN0b3J5IERlZmF1bHQxGTAXBgNV\n"
+        "BAMMEEtleVRhbGsgRGVtbyBQQ0EwHhcNMTUxMjEwMDc1MjEyWhcNMjUxMjA3MDg1\n"
+        "MjEyWjCBgTEfMB0GCSqGSIb3DQEJARYQaW5mb0BrZXl0YWxrLmNvbTELMAkGA1UE\n"
+        "BhMCTkwxHDAaBgNVBAoME0tleVRhbGsgSVQgU2VjdXJpdHkxGDAWBgNVBAsMD0Zh\n"
+        "Y3RvcnkgRGVmYXVsdDEZMBcGA1UEAwwQS2V5VGFsayBEZW1vIFBDQTCCAiIwDQYJ\n"
+        "KoZIhvcNAQEBBQADggIPADCCAgoCggIBAMcvmvKKpY5T9UVs74iBmGphHNTLYe6T\n"
+        "Jx9DuyO2Ad6/+JPPaDzgZD6Lbr13ITKXagBpu56YrBLwxfsH8tD+ZJwmR5X0Ep5F\n"
+        "/tW0GVPOlyX+QvEm2AaLLc7DvUZoxSLo1Z6IYtbRvNSPjk4MRcKzsGQC6YVyT7Eb\n"
+        "S+75virjLMhfiD3AytXKnwK1opYYSWGnZ8aZ2cSQ9kBA9C43mNBwbDxHYaIsQ96y\n"
+        "UXTeMtJZJQr8nf1znSNHmSPlXNuAJZR5BSbTwefWe1Vx602RkH7RsoydltcWYuiW\n"
+        "P+000df62sqfkPo1qoCjQxzjmkHtXyEI4euT65lj1e/B67ie2w5vjhVFYLiRVhC9\n"
+        "URXp4wlaHwsaLC7AGsp9qi9BIMP4niNcf3jLF4BZAUARwkyslqi5bwlG7J2Hpudj\n"
+        "zcxwutu4qYErSmQVGTA6xA7HxM+rJK3tlzP/Ypz0ipB2np/3OGyEoQpkOtgx0OJl\n"
+        "TrhODp+3Ar+z/4Y22+/qrduv4XUq5y+20IX7WE18Nn4ajwCLepLILbUSZDw6umUa\n"
+        "BoT5IlrlS7Dk6pT8xuTasyEa5UuqnTDAh3bybPT/M0lCYM4zbIKDcM8slsNuV89L\n"
+        "gMd8CTY5fzlfvLYCiga4fPr0LF3J+xP5UU97tzAt9Z+gxD6KZ1bzO/IlhMuMKfpW\n"
+        "nk9sBxK7qCIPAgMBAAGjHTAbMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgIEMA0G\n"
+        "CSqGSIb3DQEBCwUAA4ICAQApOHIAVm7D9Jp5vW7S8j0xPWAAoQjlbI7dSTrTMrTU\n"
+        "Nbn7aj7It07hRyXhoM/VECpdvF2atZ2UBMQjxiZsRrKBx6wQJmY9YprmF0TZZ7BO\n"
+        "tttKBsXEyZDQgcpJ5wuaaTSviJwOkrYbkFok/bOvcVmkdKcNazC0ncJF83uwJDz2\n"
+        "13zByy7geln71u7BTHOFNTbcvQ0RME1abT+hhSqVR854wnAlRy2H1aqNGaSEIarq\n"
+        "Lzl4k8JDDxtb+DtHXEZxxynEUEZkW8/ybp+JXL4YF28S8P/IjBHOO2C8j5bp8lfY\n"
+        "cHZS+doNCjEeo85F+4D0h6rnm+eDvi+hl1zr4JkQ84ZpgpglA42kzUbnYJpkpkzY\n"
+        "ZNyQIoLxCY4+mdvu9tjrKSIPGrbHXC8mHE9gv1AyiXtJy/F4a/gGG4PMrBRuHHIO\n"
+        "WclsZa5ykUVP8sLucN+qw4v4tXBI1LiTyazPwfER5MfmL0z7v6lDbxvbeylKaSkK\n"
+        "5GwkAixIzIASCgOICqbXhSuxx1dFmIl5wqaJFqYn/++bwDKCkk/XttsjnsTjyR6m\n"
+        "3tGGpQ13I2CSLo9uiyvRyyPXvyOPdh+nNj+4hpSbiW/Oo1hIpmkDsPNRTrBtG5Zp\n"
+        "tSyzUWhL0oSQdmhIp7d0lRq215D8jIHt94KHZgNPK6w2DLFYcx/t0xYT4YtF1n2A\n"
+        "ig==\n"
+        "-----END CERTIFICATE-----");
+
+
+        TS_ASSERT(ta::CertUtils::isCertIssuedBy(myOrderedChain[0], myOrderedChain[1]));
+        TS_ASSERT(ta::CertUtils::isCertIssuedBy(myOrderedChain[1], myOrderedChain[2]));
+        TS_ASSERT(!ta::CertUtils::isCertIssuedBy(myOrderedChain[1], myOrderedChain[0]));
+        TS_ASSERT(!ta::CertUtils::isCertIssuedBy(myOrderedChain[2], myOrderedChain[1]));
+        TS_ASSERT(!ta::CertUtils::isCertIssuedBy(myOrderedChain[0], myOrderedChain[2]));
+        TS_ASSERT(!ta::CertUtils::isCertIssuedBy(myOrderedChain[2], myOrderedChain[0]));
+
+        TS_ASSERT(!ta::CertUtils::isCertIssuedBy(myOrderedChain[0], myOrderedChain[0]));
+        TS_ASSERT(!ta::CertUtils::isCertIssuedBy(myOrderedChain[1], myOrderedChain[1]));
+        TS_ASSERT(ta::CertUtils::isCertIssuedBy(myOrderedChain[2], myOrderedChain[2])); // self-signed
+
         // Issued certificate with self signed parent certificate
         TS_ASSERT(ta::CertUtils::isCertFileIssuedBy("CA/signingcertkey.pem", "CA/signingcertissuercert.pem"));
 
@@ -862,6 +975,8 @@ public:
 
         // Same certificate file: not self-signed
         TS_ASSERT(!ta::CertUtils::isCertFileIssuedBy("CA/signingcertkey.pem", "CA/signingcertkey.pem"));
+
+
     }
 
     void test_parse_pfx_without_chain()

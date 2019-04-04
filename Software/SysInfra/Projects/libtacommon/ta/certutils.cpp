@@ -1404,7 +1404,7 @@ namespace ta
             // The necessary call to openssl_add_all_algorithms() is already done
 
             X509_LOOKUP* lookupfile = X509_STORE_add_lookup(cert_ctx, X509_LOOKUP_file());
-            if (lookupfile == NULL)
+            if (!lookupfile)
             {
                 TA_THROW_MSG(std::runtime_error, "X509_STORE_add_lookup failed");
             }
@@ -1413,14 +1413,6 @@ namespace ta
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("X509_LOOKUP_load_file failed. %s") % ERR_error_string(ERR_get_error(), NULL));
             }
-
-            X509_LOOKUP* lookupdir = X509_STORE_add_lookup(cert_ctx, X509_LOOKUP_hash_dir());
-            if (lookupdir == NULL)
-            {
-                TA_THROW_MSG(std::runtime_error, "X509_STORE_add_lookup failed");
-            }
-
-            X509_LOOKUP_add_dir(lookupdir, NULL, X509_FILETYPE_DEFAULT);
 
             return verifyPEMCertIsIssuedByStore(aCertFilePath, cert_ctx);
         }
