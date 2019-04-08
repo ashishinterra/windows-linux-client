@@ -524,28 +524,44 @@ namespace ta
             return result;
         }
 
-        wstring toWide(const string& aStr)
+#ifdef WIN32
+        wstring utf8ToWide(const string& aStr)
         {
-            size_t myWsLen = mbstowcs(NULL, aStr.c_str(), 0);
-            if (myWsLen == (size_t)(-1))
-                TA_THROW_MSG(std::invalid_argument, "Invalid multibyte string");
-            wchar_t* myPtr = new wchar_t[myWsLen];
-            mbstowcs(myPtr, aStr.c_str(), myWsLen);
-            wstring myRetVal(myPtr, myWsLen);
-            delete[]myPtr;
+            if (aStr.empty())
+            {
+                return std::wstring();
+            }
+            const size_t myWsLen = MultiByteToWideChar(CP_UTF8, 0, aStr.c_str(), -1, NULL, 0);
+            wchar_t* wstr = new wchar_t[myWsLen];
+            if (!MultiByteToWideChar(CP_UTF8, 0, aStr.c_str(), -1, wstr, myWsLen))
+            {
+                const string myMsg = str(boost::format("Failed to convert UTF8 string to UTF16. Last error: %d") % ::GetLastError());
+                delete[] wstr;
+                TA_THROW_MSG(std::invalid_argument, myMsg);
+            }
+            wstring myRetVal(wstr);
+            delete[] wstr;
             return myRetVal;
         }
-        string toMbyte(const wstring& aWstr)
+        string toUtf8(const wstring& aWstr)
         {
-            size_t myMbyteLen = wcstombs(NULL, aWstr.c_str(), aWstr.length()*sizeof(wchar_t) + 1);
-            if (myMbyteLen == (size_t)(-1))
-                TA_THROW_MSG(std::invalid_argument, "Invalid wide character string");
-            char* myPtr = new char[myMbyteLen];
-            wcstombs(myPtr, aWstr.c_str(), myMbyteLen);
-            string myRetVal(myPtr, myMbyteLen);
-            delete[]myPtr;
+            if (aWstr.empty())
+            {
+                return std::string();
+            }
+            const size_t myStrLen = WideCharToMultiByte(CP_UTF8, 0, &aWstr[0], (int)aWstr.size(), NULL, 0, NULL, NULL);
+            char* mySzUtf8 = new char[myStrLen];
+            if (!WideCharToMultiByte(CP_UTF8, 0, &aWstr[0], (int)aWstr.size(), mySzUtf8, myStrLen, NULL, NULL))
+            {
+                const string myMsg = str(boost::format("Failed to convert UTF16 string to UTF8. Last error: %d") % ::GetLastError());
+                delete[]mySzUtf8;
+                TA_THROW_MSG(std::invalid_argument, myMsg);
+            }
+            std::string myRetVal(mySzUtf8, myStrLen);
+            delete []mySzUtf8;
             return myRetVal;
         }
+#endif // _WIN32
 
         bool wildcardMatch(const string& aString, const string& aTempl)
         {

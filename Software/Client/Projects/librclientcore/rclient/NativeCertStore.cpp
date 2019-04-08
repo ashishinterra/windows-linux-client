@@ -180,7 +180,7 @@ namespace rclient
                     TA_THROW_MSG(NativeCertStoreError, "Container name is empty");
                 wstring myContainerNameW = myCryptKeyProvInfoPtr->pwszContainerName;
                 boost::to_lower(myContainerNameW);
-                string myContainerName = ta::Strings::toMbyte(myContainerNameW);
+                string myContainerName = ta::Strings::toUtf8(myContainerNameW);
                 myContainerName += '\0';
                 vector<unsigned char> myMd5ContainerNameBin = ta::HashUtils::getMd5Bin(myContainerName);
                 TA_ASSERT(myMd5ContainerNameBin.size() == 16);
@@ -687,7 +687,7 @@ namespace rclient
                     ta::StringArray* pEnumArg = (ta::StringArray*)pvArg;
                     const LPCWSTR pwszSystemStore = (LPCWSTR)pvSystemStore;
 
-                    pEnumArg->push_back(ta::Strings::toMbyte(pwszSystemStore));
+                    pEnumArg->push_back(ta::Strings::toUtf8(pwszSystemStore));
                     return TRUE;
                 }
             public:
@@ -807,7 +807,7 @@ namespace rclient
                 CRYPT_DATA_BLOB myPFX;
                 myPFX.cbData = (DWORD)aPfx.data.size();
                 myPFX.pbData = (BYTE*)ta::getSafeBuf(aPfx.data);
-                std::wstring myPassUni = ta::Strings::toWide(aPfx.password);
+                std::wstring myPassUni = ta::Strings::utf8ToWide(aPfx.password);
 
                 // Extract PFX to the temporary store
                 ta::ScopedResource<HCERTSTORE> myTempStore(::PFXImportCertStore(&myPFX, myPassUni.c_str(), 0), closeCertStore);

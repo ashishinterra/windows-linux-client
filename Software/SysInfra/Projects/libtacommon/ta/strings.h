@@ -109,9 +109,10 @@ namespace ta
            Complexity: O(n log(n)), where n = aTempl.size()
          */
         ta::StringSet parseTemplate(const std::string& aTempl);
-
-        std::wstring toWide(const std::string& aStr);
-        std::string  toMbyte(const std::wstring& aWstr);
+#ifdef _WIN32
+        std::wstring utf8ToWide(const std::string& aStr);
+        std::string  toUtf8(const std::wstring& aWstr);
+#endif
 
 
         // Case-sensitive wildcard match.

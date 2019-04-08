@@ -361,10 +361,10 @@ namespace rclient
             return(mktime(&utime));
         }
 
-        std::string toMbyte(const UNICODE_STRING& aWstr)
+        std::string toUtf8(const UNICODE_STRING& aWstr)
         {
             const std::wstring wstr(aWstr.Buffer, aWstr.Length / sizeof(WCHAR));
-            return ta::Strings::toMbyte(wstr);
+            return ta::Strings::toUtf8(wstr);
         }
 
         KerberosExternalTicket::KerberosExternalName makeKerberosExternalName(const PKERB_EXTERNAL_NAME anExternalName)
@@ -378,7 +378,7 @@ namespace rclient
             myExternalNameStruct.nameCount = anExternalName->NameCount;
             for (int iName = 0; iName < anExternalName->NameCount; ++iName)
             {
-                myExternalNameStruct.names.push_back(toMbyte(anExternalName->Names[iName]));
+                myExternalNameStruct.names.push_back(toUtf8(anExternalName->Names[iName]));
             }
             return myExternalNameStruct;
         }
@@ -423,9 +423,9 @@ namespace rclient
             if (aTicket.TargetName)
                 myTicket.targetNames = makeKerberosExternalName(aTicket.TargetName);
 
-            myTicket.domainName = toMbyte(aTicket.DomainName);
-            myTicket.targetDomainName = toMbyte(aTicket.TargetDomainName);
-            myTicket.altTargetDomainName = toMbyte(aTicket.AltTargetDomainName);
+            myTicket.domainName = toUtf8(aTicket.DomainName);
+            myTicket.targetDomainName = toUtf8(aTicket.TargetDomainName);
+            myTicket.altTargetDomainName = toUtf8(aTicket.AltTargetDomainName);
 
             KerberosExternalTicket::KerberosCryptoKey myCryptoKey;
             myCryptoKey.keyType = aTicket.SessionKey.KeyType;

@@ -815,7 +815,7 @@ vector<string> IISUpdateTaskSettingDialog::getIisBindings()
             }
             ta::ScopedResource<BSTR> scopedBindingInformation(bstrBindingInformation, SysFreeString);
 
-            const string myBindingInformation = ta::Strings::toMbyte(bstrBindingInformation);
+            const string myBindingInformation = ta::Strings::toUtf8(bstrBindingInformation);
             if (!myBindingInformation.empty())
             {
                 myIisBindings.push_back(myBindingInformation);

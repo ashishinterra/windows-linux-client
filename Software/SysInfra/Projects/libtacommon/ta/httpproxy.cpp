@@ -143,7 +143,7 @@ namespace ta
                 }
 
                 WINHTTP_AUTOPROXY_OPTIONS myAutoProxyOptions = { 0 };
-                const wstring myPacUrlW = aPacUrl.empty() ? L"" : ta::Strings::toWide(aPacUrl);
+                const wstring myPacUrlW = aPacUrl.empty() ? L"" : ta::Strings::utf8ToWide(aPacUrl);
                 if (aPacUrl.empty())
                 {
                     myAutoProxyOptions.dwFlags = WINHTTP_AUTOPROXY_AUTO_DETECT;
@@ -157,7 +157,7 @@ namespace ta
 
                 // If obtaining the PAC script requires NTLM/Negotiate authentication, automatically supply the domain credentials of the client.
                 myAutoProxyOptions.fAutoLogonIfChallenged = TRUE;
-                wstring myDestUrlW = ta::Strings::toWide(aDestUrl);
+                wstring myDestUrlW = ta::Strings::utf8ToWide(aDestUrl);
                 WINHTTP_PROXY_INFO myProxyInfo = { 0 };
 
                 if (!::WinHttpGetProxyForUrl(myHttpSession, myDestUrlW.c_str(), &myAutoProxyOptions, &myProxyInfo))
@@ -187,7 +187,7 @@ namespace ta
                     return boost::none;
                 }
 
-                const string myProxyString = ta::Strings::toMbyte(myProxyInfo.lpszProxy);
+                const string myProxyString = ta::Strings::toUtf8(myProxyInfo.lpszProxy);
                 DEBUGDEVLOG(boost::format("Parsed proxy string '%s' for '%s' from %s") % myProxyString % aDestUrl % fmtPacInfo(aPacUrl));
 
                 vector<NetUtils::RemoteAddress> myProxies;
@@ -318,14 +318,14 @@ namespace ta
             else if (myProxyCfg.lpszAutoConfigUrl)
             {
                 // Proxy goes from PAC script which location is set manually
-                return extractProxyFromPac(aDestUrl, ta::Strings::toMbyte(myProxyCfg.lpszAutoConfigUrl));
+                return extractProxyFromPac(aDestUrl, ta::Strings::toUtf8(myProxyCfg.lpszAutoConfigUrl));
             }
             else if (myProxyCfg.lpszProxy)
             {
                 // Proxy location is manually configured
-                return extractManualProxy(ta::Strings::toMbyte(myProxyCfg.lpszProxy),
+                return extractManualProxy(ta::Strings::toUtf8(myProxyCfg.lpszProxy),
                                           myDestHost,
-                                          myProxyCfg.lpszProxyBypass ? ta::Strings::toMbyte(myProxyCfg.lpszProxyBypass) : "");
+                                          myProxyCfg.lpszProxyBypass ? ta::Strings::toUtf8(myProxyCfg.lpszProxyBypass) : "");
             }
             else
             {

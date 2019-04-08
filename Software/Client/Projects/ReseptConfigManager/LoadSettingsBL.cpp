@@ -241,7 +241,7 @@ namespace
                 }
                 if (!aConfirmationPromptCb(myUserPrompt, aConfirmationPromptCbCookie))
                 {
-                    anErrorMsg = "Loading settings is canceled by the user (no downgrade desired for provider " + aContentConfig.getProviderName() + ")";
+                    anErrorMsg = "Loading settings is cancelled by the user (no downgrade desired for provider " + aContentConfig.getProviderName() + ")";
                     return false;
                 }
             }

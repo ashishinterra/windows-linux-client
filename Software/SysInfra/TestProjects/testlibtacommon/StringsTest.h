@@ -365,18 +365,21 @@ public:
     }
     void testWideMbyteConversions()
     {
-        std::wstring myWstr;
-        string myStr = "AbCd";
-        TS_ASSERT_THROWS_NOTHING(myWstr = ta::Strings::toWide(myStr));
-        TS_ASSERT_EQUALS(myWstr, L"AbCd");
-        TS_ASSERT_THROWS_NOTHING(myStr = ta::Strings::toMbyte(myWstr));
-        TS_ASSERT_EQUALS(myStr, "AbCd");
+#ifdef _WIN32
+        using ta::Strings::utf8ToWide;
+        using ta::Strings::toUtf8;
 
-        myStr = "";
-        TS_ASSERT_THROWS_NOTHING(myWstr = ta::Strings::toWide(myStr));
-        TS_ASSERT_EQUALS(myWstr, L"");
-        TS_ASSERT_THROWS_NOTHING(myStr = ta::Strings::toMbyte(myWstr));
-        TS_ASSERT_EQUALS(myStr, "");
+        const std::string myStrUtf8 = "андрей-ü";
+        const std::wstring myStrUtf16 = L"\x430\x43D\x434\x440\x435\x439-\xFC";
+
+        TS_ASSERT_EQUALS(utf8ToWide(myStrUtf8), myStrUtf16);
+        TS_ASSERT_EQUALS(toUtf8(myStrUtf16), myStrUtf8);
+
+        TS_ASSERT_EQUALS(utf8ToWide(""), L"");
+        TS_ASSERT_EQUALS(toUtf8(L""), "");
+#else
+        TS_SKIP("The test is for Windows only");
+#endif
     }
 
     void testWildcardMatch()

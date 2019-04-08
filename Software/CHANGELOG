@@ -9,6 +9,8 @@ Support import of settings created in v5.2.0-v5.5.3, v4.6.0 and v4.6.2
     - ADDED: Allow specifying subject in S/MIME notification email templates
     - ADDED: Allow uploading multiple DER and PEM certs for auth. modules, client login CA and Db validation CA
     - ADDED: Notify a requestor and a recipient of GlobalSign PS1 S/MIME certificate about placed and pending orders
+    - ADDED: Allow using coupon code for GlobalSign PS1 orders
+    - ADDED: Allow using campaign code for GlobalSign mSSL and PS1 orders
     - CHANGED: Disallow PR generation by service admin, service operator and self-service
 
 CHANGED shared Db schema:
