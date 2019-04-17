@@ -192,7 +192,7 @@ For more extensive testing make sure the KeyTalk test server demo.keytalkdemo.co
 
 ### Setup the system
 
-Install Windows 7 x86 SP1 including all the latest updates
+Install Windows 7 SP1 including all the latest updates (x86 for building 32-bit version and x64 for building 64-bit version of KeyTalk client)
 
 Install MSVS 2013 Professional with Update 4
 
@@ -222,7 +222,7 @@ Install the resulted msi.
 
 Start `KeyTalk Configuration Manager` from Start Menu and customize with RCCD from `Software\Client\TestProjects\Common\RCCDs\v2\githubtest.rccd`
 
-Start `KeyTalk 5.2` from Start Menu and login with user `test` and password `test`
+Start `KeyTalk 5.X` from Start Menu and login with user `test` and password `test`
 
 ### Signing
 
