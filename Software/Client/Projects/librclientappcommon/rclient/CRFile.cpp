@@ -72,7 +72,7 @@ namespace rclient
         size_t myNumChallenges = 0 ;
         theConfig.getListInfo(crfile::challengesList, myNumChallenges);
 
-        for (size_t iChallenge=0; iChallenge < myNumChallenges; ++iChallenge)
+        for (unsigned int iChallenge=0; iChallenge < myNumChallenges; ++iChallenge)
         {
             string myUser;
             if ( !theConfig.getValue(getChallengesPath(iChallenge, crfile::UserKey), myUser, ta::LibConfigWrapper::settingGetTolerateIfNotExist) )
@@ -94,7 +94,7 @@ namespace rclient
             foreach (const ta::StringDict::value_type& kvp, aFilter)
             {
                 found = false; // reset every pair check
-                for (size_t iUserChallenge=0; iUserChallenge < myNumUserChallenges; ++iUserChallenge)
+                for (unsigned int iUserChallenge = 0; iUserChallenge < myNumUserChallenges; ++iUserChallenge)
                 {
                     string myName;
                     string myValue;
@@ -125,7 +125,7 @@ namespace rclient
             size_t myNumUserRespones = 0 ;
             theConfig.getListInfo(getUserResponseList(iChallenge), myNumUserRespones);
 
-            for (size_t iResponse=0; iResponse < myNumUserRespones; ++iResponse)
+            for (unsigned int iResponse = 0; iResponse < myNumUserRespones; ++iResponse)
             {
                 string myName;
                 if( theConfig.getValue(getResponseNamePath(iChallenge, iResponse), myName, ta::LibConfigWrapper::settingGetTolerateIfNotExist) )
@@ -151,7 +151,7 @@ namespace rclient
         size_t myNumChallenges = 0 ;
         theConfig.getListInfo(crfile::challengesList, myNumChallenges);
 
-        for (size_t iChallenge=0; iChallenge < myNumChallenges; ++iChallenge)
+        for (unsigned int iChallenge = 0; iChallenge < myNumChallenges; ++iChallenge)
         {
             bool   valid = true;
 

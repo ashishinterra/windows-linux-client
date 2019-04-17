@@ -1,4 +1,5 @@
 #include "ReseptClientApp.h"
+#include "EmailUtils.h"
 #include "CommonUtils.h"
 #include "rclient/Settings.h"
 #include "rclient/NativeCertStore.h"
@@ -115,7 +116,7 @@ namespace rclient
             }
         }
 
-        void requestCertificate(rclient::RcdpHandler& anRcdpHandler, OnPfxCb aOnPfx, OnPemCb aOnPem)
+        AddressBookConfig requestCertificate(rclient::RcdpHandler& anRcdpHandler, OnPfxCb aOnPfx, OnPemCb aOnPem)
         {
             const resept::CertFormat myCertFormat = rclient::Settings::getCertFormat();
             const bool myWithChain = rclient::Settings::isCertChain();
@@ -142,6 +143,7 @@ namespace rclient
             {
                 TA_THROW_MSG(std::runtime_error, boost::format("Unsupported certificate format in settings %s") % str(myCertFormat));
             }
+            return myCertResponse.address_book_config;
         }
 
         //@return whether the password has been changed
@@ -835,7 +837,8 @@ namespace rclient
                 }
             } // while true
 
-            pImpl->requestCertificate(myRcdpHandler, aOnPfx, aOnPem);
+            const AddressBookConfig myAddressBookConfig = pImpl->requestCertificate(myRcdpHandler, aOnPfx, aOnPem);
+            EmailUtils::applyAddressBooks(myAddressBookConfig);
 
             myRcdpHandler.eoc();
             return exitSuccess;

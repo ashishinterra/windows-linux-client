@@ -27,6 +27,10 @@
 #include <exception>
 #include <string>
 
+#if !defined(S_ISDIR)
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
+
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #if defined(LIBCONFIGXX_STATIC)
 #define LIBCONFIGXX_API

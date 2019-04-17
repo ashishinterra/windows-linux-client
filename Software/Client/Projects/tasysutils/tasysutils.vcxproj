@@ -5,6 +5,10 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{916F7B81-5965-43A8-9DFA-76DEE61B36AD}</ProjectGuid>
@@ -18,10 +22,20 @@
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\WinClientCommon.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\WinClientCommon.props" />
   </ImportGroup>
@@ -36,12 +50,19 @@
     <GenerateManifest>true</GenerateManifest>
     <EmbedManifest>true</EmbedManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>true</GenerateManifest>
+    <EmbedManifest>true</EmbedManifest>
+    <OutDir>..\Export\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>..\libtaclientcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level4</WarningLevel>
@@ -53,7 +74,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/SAFESEH /NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>Dbghelp.lib;libtacommon.lib;libtaclientcommon.lib;Advapi32.lib;shlwapi.lib;libeay32.lib;ssleay32.lib;Psapi.lib;ws2_32.lib;winhttp.lib;Rpcrt4.lib;Iphlpapi.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Dbghelp.lib;libtacommon.lib;libtaclientcommon.lib;Advapi32.lib;shlwapi.lib;libcrypto.lib;libssl.lib;Psapi.lib;ws2_32.lib;winhttp.lib;Rpcrt4.lib;Iphlpapi.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -67,6 +88,42 @@
     </Manifest>
     <PostBuildEvent>
       <Command />
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\libtaclientcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4290;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalOptions>/wd4512 /wd4127 %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>Dbghelp.lib;libtacommon.lib;libtaclientcommon.lib;Advapi32.lib;shlwapi.lib;libcrypto.lib;libssl.lib;Psapi.lib;ws2_32.lib;winhttp.lib;Rpcrt4.lib;Iphlpapi.lib;libcurl_a.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+    <PostBuildEvent>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

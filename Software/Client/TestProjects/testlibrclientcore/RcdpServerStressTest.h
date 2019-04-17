@@ -168,7 +168,7 @@ class RcdpServerStressTest : public CxxTest::TestSuite
                 ++myNumOfFinshedHandlers;
                 TS_TRACE(str(boost::format("Completed %d handlers") % myNumOfFinshedHandlers).c_str());
             }
-            const unsigned int myElapsedTimeSec = time(NULL) - myStartTime;
+            const unsigned int myElapsedTimeSec = boost::numeric_cast<unsigned int>(time(NULL) - myStartTime);
 
             // Wait for done, verify
             if (theNumberOfSucceededTests == aNumThreads)
@@ -249,7 +249,7 @@ public:
             }
             TS_ASSERT(myIsCertReceived);
         }
-        const unsigned int myElapsedTimeSec = time(NULL) - myStartTime;
+        const unsigned int myElapsedTimeSec = boost::numeric_cast<unsigned int>(time(NULL) - myStartTime);
         TS_TRACE(str(boost::format("Get %d certificates (sequentially) within %d seconds (%.02lf sec per RCDP session)\n") % myTotalCertsReceived % myElapsedTimeSec % ((double)myElapsedTimeSec/(double)myTotalCertsReceived)).c_str());
         TS_ASSERT(myElapsedTimeSec <= myExpectedMaxAvgRequestLatencySec * myNumberOfRequests);
     }

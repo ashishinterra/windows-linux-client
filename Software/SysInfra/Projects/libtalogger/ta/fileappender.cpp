@@ -33,7 +33,7 @@ namespace ta
 
         string formatLogMsgBrief(const LogEvent& aLogEvent)
         {
-            const string myTempl = "%s %s <%5u> <<%5u>> [%-" + Strings::toString(LogLevel::getMaxStrLen()) + "s]%s %s%s";
+            const string myTempl = "%s %s <%5u> <<%5u>> [%-" + Strings::toString(boost::numeric_cast<int>(LogLevel::getMaxStrLen())) + "s]%s %s%s";
             const string myMsg = str(boost::format("%s(): %s") % aLogEvent.func
                                      % aLogEvent.msg);
             return str(boost::format(myTempl) % LogAppender::getTimeStamp()
@@ -47,7 +47,7 @@ namespace ta
         }
         string formatLogMsgFull(const LogEvent& aLogEvent)
         {
-            const string myTempl = "%s %s <%5u> <<%5u>> [%-" + Strings::toString(LogLevel::getMaxStrLen()) + "s]%s %s%s";
+            const string myTempl = "%s %s <%5u> <<%5u>> [%-" + Strings::toString(boost::numeric_cast<int>(LogLevel::getMaxStrLen())) + "s]%s %s%s";
             const string myMsg = str(boost::format("%s(), file %s:%u: %s") % aLogEvent.func
                                      % aLogEvent.file
                                      % aLogEvent.line

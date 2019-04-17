@@ -5,7 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cassert>
-#ifdef WIN32
+#ifdef _WIN32
 #include <cfloat>
 #include <string.h>
 #else
@@ -196,7 +196,7 @@ namespace ta
         string toString(double aNumber)
         {
             ostringstream myOs;
-#ifdef WIN32
+#ifdef _WIN32
             if (_isnan(aNumber))
 #else
             if (std::isnan(aNumber))
@@ -524,14 +524,14 @@ namespace ta
             return result;
         }
 
-#ifdef WIN32
+#ifdef _WIN32
         wstring utf8ToWide(const string& aStr)
         {
             if (aStr.empty())
             {
                 return std::wstring();
             }
-            const size_t myWsLen = MultiByteToWideChar(CP_UTF8, 0, aStr.c_str(), -1, NULL, 0);
+            const int myWsLen = MultiByteToWideChar(CP_UTF8, 0, aStr.c_str(), -1, NULL, 0);
             wchar_t* wstr = new wchar_t[myWsLen];
             if (!MultiByteToWideChar(CP_UTF8, 0, aStr.c_str(), -1, wstr, myWsLen))
             {
@@ -549,7 +549,7 @@ namespace ta
             {
                 return std::string();
             }
-            const size_t myStrLen = WideCharToMultiByte(CP_UTF8, 0, &aWstr[0], (int)aWstr.size(), NULL, 0, NULL, NULL);
+            const int myStrLen = WideCharToMultiByte(CP_UTF8, 0, &aWstr[0], (int)aWstr.size(), NULL, 0, NULL, NULL);
             char* mySzUtf8 = new char[myStrLen];
             if (!WideCharToMultiByte(CP_UTF8, 0, &aWstr[0], (int)aWstr.size(), mySzUtf8, myStrLen, NULL, NULL))
             {

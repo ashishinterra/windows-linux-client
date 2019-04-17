@@ -387,6 +387,85 @@ namespace ta
 
         ///////////////////////////////////////////////////////////////////////////////
         // DumpStack
+#ifdef _WIN64
+        static void DumpStack(HANDLE LogFile, PCONTEXT Context)
+        {
+            DWORD64* pStack = &Context->Rsp;
+            hprintf(LogFile, _T("\r\n\r\nStack:\r\n"));
+
+            __try
+            {
+                // Esp contains the bottom of the stack, or at least the bottom of
+                // the currently used area.
+                DWORD64 dwStackTop = __readgsqword(0x08);
+                DWORD64* pStackTop = &dwStackTop;
+
+                if (pStackTop > pStack + MaxStackDump)
+                    pStackTop = pStack + MaxStackDump;
+
+                int Count = 0;
+
+                DWORD64* pStackStart = pStack;
+
+                int nDwordsPrinted = 0;
+
+                while (pStack + 1 <= pStackTop)
+                {
+                    if ((Count % StackColumns) == 0)
+                    {
+                        pStackStart = pStack;
+                        nDwordsPrinted = 0;
+                        hprintf(LogFile, _T("0x%016x: "), pStack);
+                    }
+
+                    if ((++Count % StackColumns) == 0 || pStack + 2 > pStackTop)
+                    {
+                        hprintf(LogFile, _T("%016x "), *pStack);
+                        nDwordsPrinted++;
+
+                        int n = nDwordsPrinted;
+                        while (n < 4)
+                        {
+                            hprintf(LogFile, _T("         "));
+                            n++;
+                        }
+
+                        for (int i = 0; i < nDwordsPrinted; i++)
+                        {
+                            DWORD64 dwStack = *pStackStart;
+                            for (int j = 0; j < 4; j++)
+                            {
+                                char c = (char)(dwStack & 0xFF);
+                                if (c < 0x20 || c > 0x7E)
+                                    c = '.';
+#ifdef _UNICODE
+                                WCHAR w = (WCHAR)c;
+                                hprintf(LogFile, _T("%c"), w);
+#else
+                                hprintf(LogFile, _T("%c"), c);
+#endif
+                                dwStack = dwStack >> 16;
+                            }
+                            pStackStart++;
+                        }
+
+                        hprintf(LogFile, _T("\r\n"));
+                    }
+                    else
+                    {
+                        hprintf(LogFile, _T("%016x "), *pStack);
+                        nDwordsPrinted++;
+                    }
+                    pStack++;
+                }
+                hprintf(LogFile, _T("\r\n"));
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER)
+            {
+                hprintf(LogFile, _T("Exception encountered during stack dump.\r\n"));
+            }
+        }
+#else
         static void DumpStack(HANDLE LogFile, PCONTEXT Context)
         {
             DWORD* pStack = &Context->Esp;
@@ -472,7 +551,31 @@ namespace ta
                 hprintf(LogFile, _T("Exception encountered during stack dump.\r\n"));
             }
         }
+#endif
 
+#ifdef _WIN64
+        static void DumpInstructinPointer(HANDLE LogFile, PCONTEXT Context)
+        {
+            // Since the crash may have been caused by an instruction pointer that was bad,
+            // this code needs to be wrapped in an exception handler, in case there
+            // is no memory to read. If the dereferencing of code[] fails, the
+            // exception handler will print '??'.
+            hprintf(LogFile, _T("\r\nBytes at CS:EIP:\r\n"));
+            BYTE* code = (BYTE*)Context->Rip;
+            for (int codebyte = 0; codebyte < NumCodeBytes; codebyte++)
+            {
+                __try
+                {
+                    hprintf(LogFile, _T("%02x "), code[codebyte]);
+
+                }
+                __except(EXCEPTION_EXECUTE_HANDLER)
+                {
+                    hprintf(LogFile, _T("?? "));
+                }
+            }
+        }
+#else
         static void DumpInstructinPointer(HANDLE LogFile, PCONTEXT Context)
         {
             // Since the crash may have been caused by an instruction pointer that was bad,
@@ -488,15 +591,32 @@ namespace ta
                     hprintf(LogFile, _T("%02x "), code[codebyte]);
 
                 }
-                __except(EXCEPTION_EXECUTE_HANDLER)
+                __except (EXCEPTION_EXECUTE_HANDLER)
                 {
                     hprintf(LogFile, _T("?? "));
                 }
             }
         }
+#endif
 
         ///////////////////////////////////////////////////////////////////////////////
         // DumpRegisters
+#ifdef _WIN64
+        static void DumpRegisters(HANDLE LogFile, PCONTEXT Context)
+        {
+            // Print out the register values in an XP error window compatible format.
+            hprintf(LogFile, _T("\r\n"));
+            hprintf(LogFile, _T("Context:\r\n"));
+            hprintf(LogFile, _T("RDI:    0x%016x  RSI: 0x%016x  RAX:   0x%016x\r\n"),
+                    Context->Rdi, Context->Rsi, Context->Rax);
+            hprintf(LogFile, _T("RBX:    0x%016x  RCX: 0x%016x  RDX:   0x%016x\r\n"),
+                    Context->Rbx, Context->Rcx, Context->Rdx);
+            hprintf(LogFile, _T("RIP:    0x%016x  RBP: 0x%016x  SegCs: 0x%08x\r\n"),
+                    Context->Rip, Context->Rbp, Context->SegCs);
+            hprintf(LogFile, _T("EFlags: 0x%08x  RSP: 0x%016x  SegSs: 0x%08x\r\n"),
+                    Context->EFlags, Context->Rsp, Context->SegSs);
+        }
+#else
         static void DumpRegisters(HANDLE LogFile, PCONTEXT Context)
         {
             // Print out the register values in an XP error window compatible format.
@@ -511,6 +631,7 @@ namespace ta
             hprintf(LogFile, _T("EFlags: 0x%08x  ESP: 0x%08x  SegSs: 0x%08x\r\n"),
                     Context->EFlags, Context->Esp, Context->SegSs);
         }
+#endif
 
 
 
@@ -556,8 +677,21 @@ namespace ta
             // VirtualQuery can be used to get the allocation base associated with a
             // code address, which is the same as the ModuleHandle. This can be used
             // to get the filename of the module that the crash happened in.
-            if (::VirtualQuery((void*)Context->Eip, &MemInfo, sizeof(MemInfo)) &&
+#ifdef _WIN64
+            if (::VirtualQuery((void*)Context->Rip, &MemInfo, sizeof(MemInfo)) &&
                     (::GetModuleFileName((HINSTANCE)MemInfo.AllocationBase,  szCrashModulePathName, sizeof(szCrashModulePathName)-2) > 0))
+            {
+                pszCrashModuleFileName = GetFilePart(szCrashModulePathName);
+            }
+
+            hprintf(hLogFile, _T("%s (PID %d) caused %s (0x%08x) \r\nin module %s at %04x:%016x.\r\n\r\n"),
+                    myShortName.c_str(), myPid, GetExceptionDescription(Exception->ExceptionCode),
+                    Exception->ExceptionCode,
+                    pszCrashModuleFileName, Context->SegCs, Context->Rip);
+            hprintf(hLogFile, _T("Exception handler called in %s.\r\n"), aModuleName.c_str());
+#else
+            if (::VirtualQuery((void*)Context->Eip, &MemInfo, sizeof(MemInfo)) &&
+                    (::GetModuleFileName((HINSTANCE)MemInfo.AllocationBase, szCrashModulePathName, sizeof(szCrashModulePathName) - 2) > 0))
             {
                 pszCrashModuleFileName = GetFilePart(szCrashModulePathName);
             }
@@ -567,6 +701,7 @@ namespace ta
                     Exception->ExceptionCode,
                     pszCrashModuleFileName, Context->SegCs, Context->Eip);
             hprintf(hLogFile, _T("Exception handler called in %s.\r\n"), aModuleName.c_str());
+#endif
 
             DumpSystemInformation(hLogFile);
 

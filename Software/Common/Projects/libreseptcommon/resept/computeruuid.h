@@ -14,7 +14,7 @@ namespace resept
             enum id
             {
                 Predefined = 0,    // Predefined value
-#ifdef WIN32
+#ifdef _WIN32
                 First = 1,
 
                 // Do not define component enumeration values above this line

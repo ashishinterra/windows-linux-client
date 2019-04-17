@@ -5,6 +5,10 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{78B0AC5F-D0EE-4F91-B4E3-C4EB4350B57C}</ProjectGuid>
@@ -18,10 +22,20 @@
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\WinClientCommon.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\WinClientCommon.props" />
   </ImportGroup>
@@ -36,6 +50,13 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ExtensionsToDeleteOnClean>*.obj%3b*.ilk%3b*.tlb%3b*.tli%3b*.tlh%3b*.tmp%3b*.rsp%3b*.pgc%3b*.pgd%3b$(TargetPath)</ExtensionsToDeleteOnClean>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>true</GenerateManifest>
+    <OutDir>..\Export\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
       <Message>Generating test...</Message>
@@ -44,7 +65,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>../../Projects/libtacommon;../../Projects/libtalogger;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);../../../Import/cxxtest;../../../Import/$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;CXXTEST_HAVE_EH;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;CXXTEST_HAVE_EH;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -52,13 +73,66 @@
       <DisableSpecificWarnings>4290;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libtacommon.lib;libtalogger.lib;libconfig++.lib;ws2_32.lib;Dbghelp.lib;Psapi.lib;winhttp.lib;Setupapi.lib;Iphlpapi.lib;libeay32.lib;ssleay32.lib;crypt32.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libtacommon.lib;libtalogger.lib;libconfig++.lib;ws2_32.lib;Dbghelp.lib;Psapi.lib;winhttp.lib;Setupapi.lib;Iphlpapi.lib;libcrypto.lib;libssl.lib;crypt32.lib;libcurl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+    <PostBuildEvent>
+      <Message>Copying files...</Message>
+      <Command>copy ..\..\Projects\Export\libtalogger.dll "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy log.conf.win32  "$(OutDir)log.conf"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy naive_http_server.py "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy naive_http_server.py "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy test.html "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy blob.tst "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy *.bmp "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy *.png "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+DEL /Q "$(OutDir)CA\"
+xcopy /E /Y "..\CA"  "$(OutDir)CA\"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy orig.data "$(OutDir)CA\"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PreBuildEvent>
+      <Message>Generating test...</Message>
+      <Command>call TestGen.bat</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>../../Projects/libtacommon;../../Projects/libtalogger;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);../../../Import/cxxtest;../../../Import/$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;CXXTEST_HAVE_EH;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4290;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libtacommon.lib;libtalogger.lib;libconfig++.lib;ws2_32.lib;Dbghelp.lib;Psapi.lib;winhttp.lib;Setupapi.lib;Iphlpapi.lib;libcrypto.lib;libssl.lib;crypt32.lib;libcurl_a.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>

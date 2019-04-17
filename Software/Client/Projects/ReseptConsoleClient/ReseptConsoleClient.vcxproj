@@ -5,6 +5,10 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8AFF0D6D-885A-4D04-B834-7F0DDA5F6E8C}</ProjectGuid>
@@ -17,10 +21,19 @@
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\WinClientCommon.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\WinClientCommon.props" />
   </ImportGroup>
@@ -34,11 +47,17 @@
     <LinkIncremental />
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental />
+    <GenerateManifest>true</GenerateManifest>
+    <OutDir>..\Export\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\librclientappcommon;..\librclientcore;..\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;QT_THREAD_SUPPORT;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>QT_THREAD_SUPPORT;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <PrecompiledHeader />
@@ -50,7 +69,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/SAFESEH /NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>librclientappcommon.lib;librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;libconfig++.lib;libyaml-cppmd.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>librclientappcommon.lib;librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;libconfig++.lib;libyaml-cppmd.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;crypt32.lib;winhttp.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>..\Export;..\..\..\Common\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_SERIALIZE_LIB_DIR);..\..\..\Import\$(BOOST_PROGRAMOPTIONS_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -59,6 +78,50 @@
       <EnableCOMDATFolding />
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+    <PostBuildEvent>
+      <Command>copy RunScheduledScripts.ps1  ..\Export
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy UpdateIISCertificate.ps1 ..\Export
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy RunSilent.vbs ..\Export
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy RunSilentAsync.vbs ..\Export
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy GenerateKeyTalkUuid.vbs ..\Export
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\librclientappcommon;..\librclientcore;..\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\$(OPENSSL_INCLUDE_DIR);..\..\..\Import\$(BOOST_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>QT_THREAD_SUPPORT;QT_NO_DEBUG;NDEBUG;QT_CORE_LIB;QT_GUI_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/wd4512 /wd4127 %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NXCompat /DynamicBase %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>librclientappcommon.lib;librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;libconfig++.lib;libyaml-cppmd.lib;Qt5Core.lib;Qt5Gui.lib;Qt5Widgets.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;crypt32.lib;winhttp.lib;libcurl_a.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(ProjectName).exe</OutputFile>
+      <AdditionalLibraryDirectories>..\Export;..\..\..\Common\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_SERIALIZE_LIB_DIR);..\..\..\Import\$(BOOST_PROGRAMOPTIONS_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>
+      </OptimizeReferences>
+      <EnableCOMDATFolding>
+      </EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>

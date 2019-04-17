@@ -32,7 +32,7 @@ namespace ta
             }
             ~ScopedCryptProvider()
             {
-                CryptReleaseContext(myCryptProv, 0);
+                ::CryptReleaseContext(myCryptProv, 0);
             }
         };
 
@@ -209,43 +209,43 @@ namespace ta
             const CERT_RDN_ATTR rgCnAttr = {
                 szOID_COMMON_NAME,
                 CERT_RDN_PRINTABLE_STRING,
-                myCnVec.size(),
+                boost::numeric_cast<DWORD>(myCnVec.size()),
                 &myCnVec[0]
             };
             const CERT_RDN_ATTR rgCAttr = {
                 szOID_COUNTRY_NAME,
                 CERT_RDN_PRINTABLE_STRING,
-                myCVec.size(),
+                boost::numeric_cast<DWORD>(myCVec.size()),
                 &myCVec[0]
             };
             const CERT_RDN_ATTR rgStAttr = {
                 szOID_STATE_OR_PROVINCE_NAME,
                 CERT_RDN_PRINTABLE_STRING,
-                myStVec.size(),
+                boost::numeric_cast<DWORD>(myStVec.size()),
                 &myStVec[0]
             };
             const CERT_RDN_ATTR rgLAttr = {
                 szOID_LOCALITY_NAME,
                 CERT_RDN_PRINTABLE_STRING,
-                myLVec.size(),
+                boost::numeric_cast<DWORD>(myLVec.size()),
                 &myLVec[0]
             };
             const CERT_RDN_ATTR rgOAttr = {
                 szOID_ORGANIZATION_NAME,
                 CERT_RDN_PRINTABLE_STRING,
-                myOVec.size(),
+                boost::numeric_cast<DWORD>(myOVec.size()),
                 &myOVec[0]
             };
             const CERT_RDN_ATTR rgOuAttr = {
                 szOID_ORGANIZATIONAL_UNIT_NAME,
                 CERT_RDN_PRINTABLE_STRING,
-                myOuVec.size(),
+                boost::numeric_cast<DWORD>(myOuVec.size()),
                 &myOuVec[0]
             };
             const CERT_RDN_ATTR rgEAttr = {
                 szOID_RSA_emailAddr,
                 CERT_RDN_PRINTABLE_STRING,
-                myEVec.size(),
+                boost::numeric_cast<DWORD>(myEVec.size()),
                 &myEVec[0]
             };
 
@@ -254,7 +254,7 @@ namespace ta
             const CERT_NAME_INFO myCertNameInfo = { 1, rgRDN };
 
             vector<unsigned char> myNameEncoded = doCryptEncodeObject(myCertNameInfo);
-            CERT_NAME_BLOB SubjNameBlob = { myNameEncoded.size(), &myNameEncoded[0] };
+            CERT_NAME_BLOB SubjNameBlob = { boost::numeric_cast<DWORD>(myNameEncoded.size()), &myNameEncoded[0] };
 
             CERT_REQUEST_INFO myCertReqInfo;
             myCertReqInfo.Subject = SubjNameBlob;

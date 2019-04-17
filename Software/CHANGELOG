@@ -1,7 +1,7 @@
 CHANGE LOG of KeyTalk
 =================================================================
 
-server-5.5.3, in development
+server-5.5.3, 17 April 2019
 ----------------------
 Support upgrades from v5.2.1 and higher
 Supports RCDP 2.3.0, 2.2.0, 2.1.0 and 2.0.0
@@ -9,9 +9,15 @@ Support import of settings created in v5.2.0-v5.5.3, v4.6.0 and v4.6.2
     - ADDED: Allow specifying subject in S/MIME notification email templates
     - ADDED: Allow uploading multiple DER and PEM certs for auth. modules, client login CA and Db validation CA
     - ADDED: Notify a requestor and a recipient of GlobalSign PS1 S/MIME certificate about placed and pending orders
+    - ADDED: Notify a requestor of GlobalSign PS1 S/MIME certificate about declined orders
     - ADDED: Allow using coupon code for GlobalSign PS1 orders
     - ADDED: Allow using campaign code for GlobalSign mSSL and PS1 orders
+    - ADDED: Show submitted request status on self-service S/MIME certificate request page
+    - ADDED: Allow issuing GlobalSign IntranetSSL certificates for private domains, i.e. not restricted by domain-id
+    - ADDED: Enable KeyTalk client to automatically set Address Book to Outlook (KEYTALK-512)
     - CHANGED: Disallow PR generation by service admin, service operator and self-service
+    - CHANGED: Split self-service page on slot management page and S/MIME certificate request page
+    - CHANGED: Use email coming from SAN overwrites of internal modules in the subject of the generated GlobalSign ePKI cert
 
 CHANGED shared Db schema:
   - version 9.0-> 10.0
@@ -19,7 +25,7 @@ CHANGED shared Db schema:
 
 client-5.5.2, in development
 ----------------------
-
+    - ADDED: Enable KeyTalk client to automatically set Address Book to Outlook (KEYTALK-512)
 
 server-5.5.2, 13 March 2019
 ----------------------

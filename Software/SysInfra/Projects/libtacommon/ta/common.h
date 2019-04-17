@@ -39,6 +39,13 @@ namespace boost {
 #define TA_UNIQUE_PTR std::auto_ptr
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN64
+#define TA_WIN64
+#else
+#define TA_WIN32
+#endif
+#endif
 
 #define UNUSED(x)
 
@@ -375,6 +382,15 @@ namespace ta
     {
         std::map<T,U> myRetVal(aDict);
         myRetVal.erase(aKey);
+        return myRetVal;
+    }
+
+    // return the first aNumElems elements of the original sequence
+    template <class T>
+    T head(const T& aSequence, const size_t aNumElems)
+    {
+        const size_t myNumElems = (aNumElems >= aSequence.size()) ? aSequence.size() : aNumElems;
+        const T myRetVal(aSequence.begin(), aSequence.begin() + myNumElems);
         return myRetVal;
     }
 

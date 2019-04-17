@@ -26,7 +26,9 @@ namespace ta
             tm getLocalTime(const time_t aTimestamp = time(NULL))
             {
                 tm myTm;
-#ifdef _WIN32
+#ifdef TA_WIN64
+                _localtime64_s(&myTm, &aTimestamp);
+#elif defined(TA_WIN32)
                 _localtime32_s(&myTm, &aTimestamp);
 #else
                 localtime_r(&aTimestamp, &myTm);
@@ -38,7 +40,9 @@ namespace ta
             {
                 time_t myTimestampNow = time(NULL);
                 tm myUtcNow;
-#ifdef _WIN32
+#ifdef TA_WIN64
+                _gmtime64_s(&myUtcNow, &myTimestampNow);
+#elif defined(TA_WIN32)
                 _gmtime32_s( &myUtcNow, &myTimestampNow);
 #else
                 gmtime_r( &myTimestampNow,  &myUtcNow);
@@ -91,7 +95,9 @@ namespace ta
         {
             time_t myNow = time(NULL);
             tm myUtcNowTm;
-#ifdef _WIN32
+#ifdef TA_WIN64
+            _gmtime64_s(&myUtcNowTm, &myNow);
+#elif defined(TA_WIN32)
             _gmtime32_s( &myUtcNowTm, &myNow);
 #else
             gmtime_r(&myNow, &myUtcNowTm);
@@ -107,7 +113,9 @@ namespace ta
         string timestampToIso8601(const time_t aTimestamp)
         {
             tm myTm;
-#ifdef _WIN32
+#ifdef TA_WIN64
+            _gmtime64_s(&myTm, &aTimestamp);
+#elif defined(TA_WIN32)
             _gmtime32_s( &myTm, &aTimestamp);
 #else
             gmtime_r(&aTimestamp, &myTm);
@@ -206,7 +214,9 @@ namespace ta
         {
             time_t myNow = time(NULL);
             tm myUtcNowTm;
-#ifdef _WIN32
+#ifdef TA_WIN64
+            _gmtime64_s(&myUtcNowTm, &myNow);
+#elif defined(TA_WIN32)
             _gmtime32_s( &myUtcNowTm, &myNow);
 #else
             gmtime_r(&myNow, &myUtcNowTm);
@@ -233,7 +243,9 @@ namespace ta
         string timestampToUtcStr(const time_t aTimestamp, const bool aWithSecondPrecision)
         {
             tm myUtcTm;
-#ifdef _WIN32
+#ifdef TA_WIN64
+            _gmtime64_s(&myUtcTm, &aTimestamp);
+#elif defined(TA_WIN32)
             _gmtime32_s(&myUtcTm, &aTimestamp);
 #else
             gmtime_r(&aTimestamp, &myUtcTm);

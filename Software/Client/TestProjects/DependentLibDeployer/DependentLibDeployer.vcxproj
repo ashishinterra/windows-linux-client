@@ -1,9 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -18,10 +22,20 @@
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\WinClientCommon.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\WinClientCommon.props" />
   </ImportGroup>
@@ -32,10 +46,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\Export\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
-    <NMakeBuildCommandLine>nmake /NOLOGO OutDir=$(OutDir) VcInstallDir="$(VCINSTALLDIR)</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>nmake /NOLOGO rebuild OutDir=$(OutDir) VcInstallDir="$(VCINSTALLDIR)</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>nmake /NOLOGO clean OutDir=$(OutDir)</NMakeCleanCommandLine>
+    <NMakeBuildCommandLine>nmake /NOLOGO build OutDir=..\Export\ _Platform=$(PlatformShortName) VcInstallDir="$(VCINSTALLDIR)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /NOLOGO rebuild OutDir=..\Export\ _Platform=$(PlatformShortName) VcInstallDir="$(VCINSTALLDIR)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /NOLOGO clean OutDir=..\Export\</NMakeCleanCommandLine>
     <NMakeOutput />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <NMakeBuildCommandLine>nmake /NOLOGO build OutDir=..\Export\ _Platform=$(PlatformShortName) VcInstallDir="$(VCINSTALLDIR)</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /NOLOGO rebuild OutDir=..\Export\ _Platform=$(PlatformShortName) VcInstallDir="$(VCINSTALLDIR)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>nmake /NOLOGO clean OutDir=..\Export\</NMakeCleanCommandLine>
+    <NMakeOutput />
+    <OutDir>..\Export\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>

@@ -18,7 +18,7 @@
 #include "boost/algorithm/string.hpp"
 #include "boost/static_assert.hpp"
 #include "boost/bind.hpp"
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #endif
 #include <map>
@@ -34,7 +34,7 @@ namespace resept
     {
         namespace Components
         {
-#ifdef WIN32
+#ifdef _WIN32
             const std::string names[] =
             {
                 "Predefined",
@@ -277,7 +277,7 @@ namespace resept
                     myCs += myHwId;
                     break;
                 }
-#ifdef WIN32
+#ifdef _WIN32
                 case Components::Hdd:
                 case Components::Nic:
                 case Components::Hdc:
@@ -420,7 +420,7 @@ namespace resept
                 {
                     try
                     {
-#ifdef WIN32
+#ifdef _WIN32
                         myHwId = ta::SysInfo::getWinProductId();
 #elif defined(__linux__)
                         myHwId = ta::OsInfoUtils::getPlatformShortName();
@@ -436,7 +436,7 @@ namespace resept
                     myCs += myHwId;
                     break;
                 }
-#ifdef WIN32
+#ifdef _WIN32
                 case Components::OsRegisteredOwner:
                 {
 

@@ -504,14 +504,14 @@ namespace rclient
                     return myRemovedCertsSha1Fingerprints;
                 }
 
-                unsigned int removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
+                size_t removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
                 {
                     DEBUGLOG(boost::format("Deleting certificate from %s store having %s %s") % str(theStoreType) % str(aCertAttr) % anAttrVal);
                     if (theReadOnly)
                     {
                         TA_THROW_MSG(NativeCertStoreDeleteError, "Cannot remove certificate from the " + str(theStoreType) + " store because the store is opened read-only");
                     }
-                    unsigned int myNumOfDeleted = 0;
+                    size_t myNumOfDeleted = 0;
 
                     for (PCCERT_CONTEXT myCertCtx = ::CertEnumCertificatesInStore(theStore, NULL);
                             myCertCtx;
@@ -627,7 +627,7 @@ namespace rclient
                     }
 
                     const vector<unsigned char> myDerCert = ta::CertUtils::convPem2Der(aPemCert);
-                    PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext(X509_ASN_ENCODING, &myDerCert[0], myDerCert.size());
+                    PCCERT_CONTEXT pDesiredCert = ::CertCreateCertificateContext(X509_ASN_ENCODING, &myDerCert[0], boost::numeric_cast<DWORD>(myDerCert.size()));
                     if (!pDesiredCert)
                     {
                         TA_THROW_MSG(NativeCertStoreImportError, boost::format("Cannot create certificate context for PEM certificate:\n%s") % aPemCert);
@@ -845,14 +845,14 @@ namespace rclient
             {
                 DEBUGLOG("Importing DER to Win32");
                 Store store(storePersonal);
-                PCCERT_CONTEXT myCertCtx = ::CertCreateCertificateContext((X509_ASN_ENCODING | PKCS_7_ASN_ENCODING), ta::getSafeBuf(aDerCert), aDerCert.size());
+                PCCERT_CONTEXT myCertCtx = ::CertCreateCertificateContext((X509_ASN_ENCODING | PKCS_7_ASN_ENCODING), ta::getSafeBuf(aDerCert), boost::numeric_cast<DWORD>(aDerCert.size()));
                 if (myCertCtx == NULL)
                 {
                     TA_THROW_MSG(NativeCertStoreImportError, boost::format("CertCreateCertificateContext failed. Errorcode: %d") % GetLastError());
                 }
                 ScopedResource<PCCERT_CONTEXT> scopedCertCtx(myCertCtx, ::CertFreeCertificateContext);
 
-                if (!::CertAddEncodedCertificateToStore(store, (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING), ta::getSafeBuf(aDerCert), aDerCert.size(), CERT_STORE_ADD_REPLACE_EXISTING, &myCertCtx))
+                if (!::CertAddEncodedCertificateToStore(store, (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING), ta::getSafeBuf(aDerCert), boost::numeric_cast<DWORD>(aDerCert.size()), CERT_STORE_ADD_REPLACE_EXISTING, &myCertCtx))
                 {
                     TA_THROW_MSG(NativeCertStoreImportError, boost::format("CertAddEncodedCertificateToStore failed. Errorcode: %d") % GetLastError());
                 }
@@ -1069,7 +1069,7 @@ namespace rclient
                     return myRemovedCertsSha1Fingerprints;
                 }
 
-                unsigned int removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, const ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
+                size_t removeCertKeysByAttr(const CertAttribute aCertAttr, const string& anAttrVal, const ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
                 {
                     DEBUGLOG(boost::format("Deleting certificates from %s store having %s %s") % str(theStoreType) % str(aCertAttr) % anAttrVal);
                     if (theReadOnly)
@@ -1077,7 +1077,7 @@ namespace rclient
                         TA_THROW_MSG(NativeCertStoreDeleteError, "Cannot remove certificate from the " + str(theStoreType) + " store because the store is opened read-only");
                     }
 
-                    unsigned int myNumFilesRemoved = 0;
+                    size_t myNumFilesRemoved = 0;
                     fs::directory_iterator it(getStoreDir()), eod;
 
                     foreach(fs::path const& p, std::make_pair(it, eod))
@@ -1373,7 +1373,7 @@ namespace rclient
             }
         }
 
-        unsigned int deleteReseptUserCerts()
+        size_t deleteReseptUserCerts()
         {
             try
             {
@@ -1398,7 +1398,7 @@ namespace rclient
             }
         }
 
-        unsigned int deleteUserCertsForIssuerCN(const string& anIssuerCn, const ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
+        size_t deleteUserCertsForIssuerCN(const string& anIssuerCn, const ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt)
         {
             try
             {
@@ -1585,24 +1585,24 @@ namespace rclient
             }
         }
 
-        unsigned int deleteFromRootStoreByCN(const string& aSubjCN, const ErrorPolicy anErrorPolicy)
+        size_t deleteFromRootStoreByCN(const string& aSubjCN, const ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeRoot);
             return myStore.removeCertKeysByAttr(certAttrSubjCn, aSubjCN, anErrorPolicy, certsSmimeKeep);
         }
-        unsigned int deleteFromIntermediateStoreByCN(const string& aSubjCN, ErrorPolicy anErrorPolicy)
+        size_t deleteFromIntermediateStoreByCN(const string& aSubjCN, ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeIntermediate);
             return myStore.removeCertKeysByAttr(certAttrSubjCn, aSubjCN, anErrorPolicy, certsSmimeKeep);
         }
 
-        unsigned int deleteFromRootStoreByFingerprint(const string& aSha1Fingerprint, ErrorPolicy anErrorPolicy)
+        size_t deleteFromRootStoreByFingerprint(const string& aSha1Fingerprint, ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeRoot);
             return myStore.removeCertKeysByAttr(certAttrSha1Finterprint, aSha1Fingerprint, anErrorPolicy, certsSmimeKeep);
         }
 
-        unsigned int deleteFromIntermediateStoreByFingerprint(const string& aSha1Fingerprint, ErrorPolicy anErrorPolicy)
+        size_t deleteFromIntermediateStoreByFingerprint(const string& aSha1Fingerprint, ErrorPolicy anErrorPolicy)
         {
             Store myStore(storeIntermediate);
             return myStore.removeCertKeysByAttr(certAttrSha1Finterprint, aSha1Fingerprint, anErrorPolicy, certsSmimeKeep);

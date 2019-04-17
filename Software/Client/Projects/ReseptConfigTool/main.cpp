@@ -3,6 +3,7 @@
 #include "rclient/TaskSettings.h"
 #include "rclient/NativeCertStore.h"
 #include "rclient/KerberosAuthenticator.h"
+#include "rclient/EmailUtils.h"
 #include "rclient/RcdpHandler.h"
 #include <windows.h>
 #endif
@@ -172,7 +173,7 @@ int main(int argc, char *argv[])
     try
     {
         const vector<string> argvec(argv, argv + argc); // First argument program name, parameters are 1-based
-        const unsigned int myNumArgs = argvec.size() - 1;
+        const size_t myNumArgs = argvec.size() - 1;
 
         if (false) // Added to have consistent structure (only "else if") in #ifdefs below
         {
@@ -216,12 +217,14 @@ int main(int argc, char *argv[])
                 if (requestAuthRequirements().use_kerberos_authentication)
                 {
                     int myDelaySec = 0;
-                    const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelaySec);
+                    rclient::AddressBookConfig myAddressBookConfig;
+                    const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelaySec, myAddressBookConfig);
                     switch (myAuthResult)
                     {
                     // Stop and exit on success, (re)new(ed) certificate has been installed
                     case rclient::KerberosAuthenticator::Result::success:
                         DEBUGLOG("Successfully authenticated with Kerberos");
+                        rclient::EmailUtils::applyAddressBooks(myAddressBookConfig);
                         return exitSuccess;
                     case rclient::KerberosAuthenticator::Result::kerberosFailure:
                         // Authentication failed due to Kerberos-related issue, fallback to Desktop Client

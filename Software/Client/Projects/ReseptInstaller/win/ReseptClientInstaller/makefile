@@ -11,7 +11,7 @@ LIGHT_ARGS = -wx -sw1076
 IN_DIR     = ..\..\..\Export
 OUT_DIR     = ..\..\..\Export
 !INCLUDE ..\..\..\..\version
-OUT_FILE    = KeyTalkClient-$(version).msi
+OUT_FILE    = KeyTalkClient-$(version)-$(PlatformShortName).msi
 
 !IFDEF NOSIGN
 MakeInstaller: $(OUT_FILE) CopyMsiHelperScripts

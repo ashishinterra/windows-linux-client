@@ -1,7 +1,7 @@
-Instructions for building and installing boost-1.64 with MSVS 2013 for KeyTalk on Windows 7
+Instructions for building and installing boost-1.64 with MSVS 2013 for KeyTalk on Windows 7 or 10
 ------------------------------------------------------------------------------------------------
 
-1. Open MSVS command prompt (from Tools > Visual Studio Command Prompt or call C:\Program Files\Microsoft Visual Studio 12.0\Common7\Tools\vsvars32.bat in your command prompt)
+1. Open MSVS command prompt (from Tools > Visual Studio Command Prompt or call "C:\Program Files\Microsoft Visual Studio 12.0\VC\vcvarsall.bat [x86 or amd64]" in your command prompt)
 
 2. setup build engine:
   cd <boost-src-dir>\tools\build
@@ -28,4 +28,3 @@ the rest libraries:
 5. Change in the value of BOOST_VERSION_DIR in WinClientCommon.props
 
 6. Rebuild KeyTalk and retest KeyTalk client with new boost
-

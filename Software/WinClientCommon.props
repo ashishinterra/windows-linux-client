@@ -5,29 +5,30 @@
     <BOOST_VERSION_DIR>boost-1.64</BOOST_VERSION_DIR>
     <BOOST_LIB_DIR>$(BOOST_VERSION_DIR)\bin.v2\libs</BOOST_LIB_DIR>
     <BOOST_INCLUDE_DIR>$(BOOST_VERSION_DIR)</BOOST_INCLUDE_DIR>
-    <BOOST_CHRONO_LIB_DIR>$(BOOST_LIB_DIR)\chrono\msvc-$(VisualStudioVersion)</BOOST_CHRONO_LIB_DIR>
-    <BOOST_DATETIME_LIB_DIR>$(BOOST_LIB_DIR)\date_time\msvc-$(VisualStudioVersion)</BOOST_DATETIME_LIB_DIR>
-    <BOOST_FILESYSTEM_LIB_DIR>$(BOOST_LIB_DIR)\filesystem\msvc-$(VisualStudioVersion)</BOOST_FILESYSTEM_LIB_DIR>
-    <BOOST_PROGRAMOPTIONS_LIB_DIR>$(BOOST_LIB_DIR)\program_options\msvc-$(VisualStudioVersion)</BOOST_PROGRAMOPTIONS_LIB_DIR>
-    <BOOST_REGEX_LIB_DIR>$(BOOST_LIB_DIR)\regex\msvc-$(VisualStudioVersion)</BOOST_REGEX_LIB_DIR>
-    <BOOST_SERIALIZE_LIB_DIR>$(BOOST_LIB_DIR)\serialization\msvc-$(VisualStudioVersion)</BOOST_SERIALIZE_LIB_DIR>
-    <BOOST_SYSTEM_LIB_DIR>$(BOOST_LIB_DIR)\system\msvc-$(VisualStudioVersion)</BOOST_SYSTEM_LIB_DIR>
-    <BOOST_THREAD_LIB_DIR>$(BOOST_LIB_DIR)\thread\msvc-$(VisualStudioVersion)</BOOST_THREAD_LIB_DIR>
+    <BOOST_CHRONO_LIB_DIR>$(BOOST_LIB_DIR)\chrono\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_CHRONO_LIB_DIR>
+    <BOOST_DATETIME_LIB_DIR>$(BOOST_LIB_DIR)\date_time\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_DATETIME_LIB_DIR>
+    <BOOST_FILESYSTEM_LIB_DIR>$(BOOST_LIB_DIR)\filesystem\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_FILESYSTEM_LIB_DIR>
+    <BOOST_PROGRAMOPTIONS_LIB_DIR>$(BOOST_LIB_DIR)\program_options\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_PROGRAMOPTIONS_LIB_DIR>
+    <BOOST_REGEX_LIB_DIR>$(BOOST_LIB_DIR)\regex\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_REGEX_LIB_DIR>
+    <BOOST_SERIALIZE_LIB_DIR>$(BOOST_LIB_DIR)\serialization\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_SERIALIZE_LIB_DIR>
+    <BOOST_SYSTEM_LIB_DIR>$(BOOST_LIB_DIR)\system\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_SYSTEM_LIB_DIR>
+    <BOOST_THREAD_LIB_DIR>$(BOOST_LIB_DIR)\thread\msvc-$(VisualStudioVersion)-$(Platform)</BOOST_THREAD_LIB_DIR>
     <CURL_LIB_VERSION_DIR>curl-7.54</CURL_LIB_VERSION_DIR>
     <CURL_INCLUDE_DIR>$(CURL_LIB_VERSION_DIR)\include\win32</CURL_INCLUDE_DIR>
-    <CURL_LIB_DIR>$(CURL_LIB_VERSION_DIR)\lib\win32\shared_crt</CURL_LIB_DIR>
+    <CURL_LIB_DIR>$(CURL_LIB_VERSION_DIR)\lib\$(Platform)\shared_crt</CURL_LIB_DIR>
+    <MAPI_INCLUDE_DIR>outlook-2010-mapi-headers</MAPI_INCLUDE_DIR>
     <LIBCONFIG_LIB_VERSION_DIR>libconfig-1.5</LIBCONFIG_LIB_VERSION_DIR>
     <LIBCONFIG_INCLUDE_DIR>$(LIBCONFIG_LIB_VERSION_DIR)</LIBCONFIG_INCLUDE_DIR>
-    <LIBCONFIG_LIB_DIR>$(LIBCONFIG_LIB_VERSION_DIR)\lib\win32\shared_crt</LIBCONFIG_LIB_DIR>
+    <LIBCONFIG_LIB_DIR>$(LIBCONFIG_LIB_VERSION_DIR)\lib\$(Platform)\shared_crt</LIBCONFIG_LIB_DIR>
     <YAMLCPP_LIB_VERSION_DIR>yaml-cpp-0.5.3</YAMLCPP_LIB_VERSION_DIR>
     <YAMLCPP_INCLUDE_DIR>$(YAMLCPP_LIB_VERSION_DIR)\include</YAMLCPP_INCLUDE_DIR>
-    <YAMLCPP_LIB_DIR>$(YAMLCPP_LIB_VERSION_DIR)\lib\win32\shared_crt</YAMLCPP_LIB_DIR>
-    <OPENSSL_LIB_VERSION_DIR>openssl-1.0.2</OPENSSL_LIB_VERSION_DIR>
+    <YAMLCPP_LIB_DIR>$(YAMLCPP_LIB_VERSION_DIR)\lib\$(Platform)\shared_crt</YAMLCPP_LIB_DIR>
+    <OPENSSL_LIB_VERSION_DIR>openssl-1.1.1</OPENSSL_LIB_VERSION_DIR>
     <OPENSSL_INCLUDE_DIR>$(OPENSSL_LIB_VERSION_DIR)\inc32</OPENSSL_INCLUDE_DIR>
-    <OPENSSL_LIB_DIR>$(OPENSSL_LIB_VERSION_DIR)\lib\win32\shared_crt</OPENSSL_LIB_DIR>
+    <OPENSSL_LIB_DIR>$(OPENSSL_LIB_VERSION_DIR)\lib\$(Platform)\shared_crt</OPENSSL_LIB_DIR>
     <ZLIB_LIB_VERSION_DIR>zlib-1.2.8</ZLIB_LIB_VERSION_DIR>
     <ZLIB_INCLUDE_DIR>$(ZLIB_LIB_VERSION_DIR)</ZLIB_INCLUDE_DIR>
-    <ZLIB_LIB_DIR>$(ZLIB_LIB_VERSION_DIR)\lib\win32</ZLIB_LIB_DIR>
+    <ZLIB_LIB_DIR>$(ZLIB_LIB_VERSION_DIR)\lib\$(Platform)</ZLIB_LIB_DIR>
     <WIX_VERSION_DIR>wix-3.11</WIX_VERSION_DIR>
     <UTF8CPP_INCLUDE_DIR>utf8cpp\source</UTF8CPP_INCLUDE_DIR>
   </PropertyGroup>
@@ -90,6 +91,10 @@
     </BuildMacro>
     <BuildMacro Include="CURL_LIB_DIR">
       <Value>$(CURL_LIB_DIR)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="MAPI_INCLUDE_DIR">
+      <Value>$(MAPI_INCLUDE_DIR)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
     <BuildMacro Include="LIBCONFIG_LIB_VERSION_DIR">

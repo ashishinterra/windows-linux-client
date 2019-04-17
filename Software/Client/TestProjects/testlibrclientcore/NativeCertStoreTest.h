@@ -77,7 +77,7 @@ public:
         TS_ASSERT_EQUALS(myNumValidCerts, 1);
 
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
+        size_t myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
         myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
@@ -94,7 +94,7 @@ public:
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
 
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
+        size_t myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 1);
         myNumValidCerts = rclient::NativeCertStore::validateReseptUserCert().size();
@@ -117,7 +117,7 @@ public:
         // then (the cert does not exist for KeyTalk)
         TS_ASSERT_EQUALS(myNumValidCerts, 0);
         // when
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
+        size_t myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
         // then
         TS_ASSERT_EQUALS(myNumOfDeleted, 0);
 
@@ -155,7 +155,7 @@ public:
         TS_ASSERT_EQUALS(rclient::NativeCertStore::validateReseptUserCert().size(), 1);
 
         // When
-        unsigned int myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
+        size_t myNumOfDeleted = rclient::NativeCertStore::deleteReseptUserCerts();
 
         // Then
         TS_ASSERT_EQUALS(myNumOfDeleted, 2);
@@ -322,7 +322,7 @@ public:
         TS_ASSERT(ta::isElemExist(myNoSmimeFingerprint, myFingerprints));
 
         //when
-        int myDeletedCertCount = deleteReseptUserCerts();
+        size_t myDeletedCertCount = deleteReseptUserCerts();
 
         //then
         TS_ASSERT_EQUALS(myDeletedCertCount, 1);

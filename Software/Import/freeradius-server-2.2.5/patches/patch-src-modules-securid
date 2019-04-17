@@ -1,0 +1,696 @@
+Index: src/modules/rlm_securid/acestub.c
+===================================================================
+--- src/modules/rlm_securid/acestub.c	(revision 0)
++++ src/modules/rlm_securid/acestub.c	(working copy)
+@@ -0,0 +1,153 @@
++#include "acestub.h"
++#include "rlm_securid.h"
++
++int SD_Init(SDI_HANDLE* handle)
++{
++    *handle = 1;
++    return ACM_OK;
++}
++
++int SD_Lock(SDI_HANDLE handle, SD_CHAR* user)
++{
++    if (handle == SDI_HANDLE_NONE)
++    {
++        return ACM_ERROR;
++    }
++    return ACM_OK;
++}
++
++int SD_CheckUserCredsForNewSession(SDI_HANDLE handle, const struct rlm_securid_t* conf, SD_CHAR* pass, SD_CHAR* user)
++{
++    if (handle == SDI_HANDLE_NONE)
++    {
++        return ACM_ERROR;
++    }
++
++    // Simple authentication
++    if (strcmp(user, conf->username) == 0)
++    {
++        radlog(L_INFO, "Performing SecurID simple authentication");
++        return strcmp(pass, conf->tokencode) == 0 ? ACM_OK : ACM_ACCESS_DENIED;
++    }
++
++    // Initial phase of Next Token mode
++    if (strcmp(user, conf->next_token_username) == 0)
++    {
++        radlog(L_INFO, "Performing initial phase of SecurID Next Token authentication");
++        return strcmp(pass, conf->next_token_initial_tokencode) == 0 ? ACM_NEXT_CODE_REQUIRED : ACM_ACCESS_DENIED;
++    }
++
++    // Initial phase of NEW SYSTEM PIN mode
++    if (strcmp(user, conf->new_system_pin_username) == 0)
++    {
++        radlog(L_INFO, "Performing initial phase of SecurID New System Pin authentication");
++        return strcmp(pass, conf->new_system_pin_initial_tokencode) == 0 ? ACM_NEW_PIN_REQUIRED : ACM_ACCESS_DENIED;
++    }
++
++    // Initial phase of NEW USER PIN mode
++    if (strcmp(user, conf->new_user_pin_username) == 0)
++    {
++        radlog(L_INFO, "Performing initial phase of SecurID New User Pin authentication");
++        return strcmp(pass, conf->new_user_pin_initial_tokencode) == 0 ? ACM_NEW_PIN_REQUIRED : ACM_ACCESS_DENIED;
++    }
++
++    return ACM_ACCESS_DENIED;
++}
++
++int SD_CheckUserCredsForNewPin(SDI_HANDLE handle, const struct rlm_securid_t* conf, SD_CHAR* pass, SD_CHAR* user)
++{
++    if (handle == SDI_HANDLE_NONE)
++    {
++        return ACM_ERROR;
++    }
++
++    if (strcmp(user, conf->new_system_pin_username) == 0)
++    {
++        radlog(L_INFO, "Performing tokencode check of SecurID New System Pin authentication after the pin has been changed by user [%s]", user);
++        return strcmp(pass, conf->new_system_pin_new_tokencode) == 0 ? ACM_OK : ACM_ACCESS_DENIED;
++    }
++
++    if (strcmp(user, conf->new_user_pin_username) == 0)
++    {
++        radlog(L_INFO, "Performing tokencode check of SecurID New User Pin authentication after the pin has been selected by user [%s]", user);
++        return strcmp(pass, conf->new_user_pin_new_tokencode) == 0 ? ACM_OK : ACM_ACCESS_DENIED;
++    }
++
++    return ACM_ACCESS_DENIED;
++}
++
++int SD_Next(SDI_HANDLE handle, const struct rlm_securid_t* conf, SD_CHAR* pass)
++{
++    if (handle == SDI_HANDLE_NONE)
++    {
++        return ACM_ERROR;
++    }
++    radlog(L_INFO, "Performing phase 2 of SecurID Next Token authentication");
++    return strcmp(pass, conf->next_token_new_tokencode) == 0 ? ACM_OK : ACM_ACCESS_DENIED;
++}
++
++int SD_ChangePin(const struct _securid_session_t * session, const SD_CHAR* pincode, struct rlm_securid_t* conf)
++{
++    if (!session || session->sdiHandle == SDI_HANDLE_NONE || !pincode)
++    {
++        return ACM_ERROR;
++    }
++
++    if (strcmp(session->identity, conf->new_system_pin_username) == 0)
++    {
++        radlog(L_INFO, "Updating PIN for %s with system pin %s", session->identity, pincode);
++        free(conf->new_system_pin_new_pincode);
++        conf->new_system_pin_new_pincode = strdup(pincode);
++        return ACM_NEW_PIN_ACCEPTED;
++    }
++    if (strcmp(session->identity, conf->new_user_pin_username) == 0)
++    {
++        radlog(L_INFO, "Updating PIN for %s with user-selected pin %s", session->identity, pincode);
++        free(conf->new_user_pin_new_pincode);
++        conf->new_user_pin_new_pincode = strdup(pincode);
++        return ACM_NEW_PIN_ACCEPTED;
++    }
++
++    return ACM_ERROR;
++}
++
++void SD_Close(SDI_HANDLE handle)
++{
++}
++
++
++int AceGetPinParams(const struct _securid_session_t * session, const struct rlm_securid_t* conf, struct SD_PIN* pin_params)
++{
++    if (!session || session->sdiHandle == SDI_HANDLE_NONE)
++    {
++        return ACM_ERROR;
++    }
++
++    if (strcmp(session->identity, conf->new_system_pin_username) == 0)
++    {
++        pin_params->Selectable = CANNOT_CHOOSE_PIN;
++    }
++    if (strcmp(session->identity, conf->new_user_pin_username) == 0)
++    {
++        pin_params->Alphanumeric = 0;
++        pin_params->Min = 4;
++        pin_params->Max = 8;
++        pin_params->Selectable = USER_SELECTABLE_EXT;
++    }
++
++    return ACM_OK;
++}
++
++void AceGetSystemPin(const struct _securid_session_t * session, const struct rlm_securid_t* conf, char* pin, unsigned int pin_buflen)
++{
++    if (!session || session->sdiHandle == SDI_HANDLE_NONE)
++    {
++        return;
++    }
++    if (strcmp(session->identity, conf->new_system_pin_username) == 0)
++    {
++        strlcpy(pin, conf->new_system_pin_new_pincode, pin_buflen);
++    }
++}
++
++
+Index: src/modules/rlm_securid/acestub.h
+===================================================================
+--- src/modules/rlm_securid/acestub.h	(revision 0)
++++ src/modules/rlm_securid/acestub.h	(working copy)
+@@ -0,0 +1,47 @@
++/*
++ Stub for ACE server used for test purposes only
++*/
++#ifndef _ACESTUB_H
++#define _ACESTUB_H
++
++#define SDI_HANDLE      int
++#define SDI_HANDLE_NONE 0
++#define SD_CHAR         char
++
++#define ACM_OK                 0
++#define ACM_ACCESS_DENIED      1
++#define ACM_INVALID_SERVER     2
++#define ACM_NEW_PIN_REQUIRED   3
++#define ACM_NEXT_CODE_REQUIRED 4
++#define ACM_NEW_PIN_ACCEPTED   5
++#define ACM_ERROR              6
++
++#define CANNOT_CHOOSE_PIN     100
++#define USER_SELECTABLE       101
++#define USER_SELECTABLE_EXT   102
++
++struct SD_PIN
++{
++    int Min;
++    int Max;
++    int Selectable;
++    int Alphanumeric;
++};
++
++struct rlm_securid_t;
++struct _securid_session_t;
++
++int SD_Init(SDI_HANDLE* handle);
++int SD_Lock(SDI_HANDLE handle, SD_CHAR* user);
++int SD_CheckUserCredsForNewSession(SDI_HANDLE handle, const struct rlm_securid_t* conf, SD_CHAR* pass, SD_CHAR* user);
++int SD_CheckUserCredsForNewPin(SDI_HANDLE handle, const struct rlm_securid_t* conf, SD_CHAR* pass, SD_CHAR* user);
++int SD_Next(SDI_HANDLE handle, const struct rlm_securid_t* conf, SD_CHAR* pass);
++int SD_ChangePin(const struct _securid_session_t * session, const SD_CHAR* pincode, struct rlm_securid_t* conf);
++void SD_Close(SDI_HANDLE handle);
++
++
++int AceGetPinParams(const struct _securid_session_t * session, const struct rlm_securid_t* conf, struct SD_PIN* pin_params);
++void AceGetSystemPin(const struct _securid_session_t * session, const struct rlm_securid_t* conf, char* pin, unsigned int pin_buflen);
++
++
++#endif
+Index: src/modules/rlm_securid/Makefile
+===================================================================
+--- src/modules/rlm_securid/Makefile	(revision 15087)
++++ src/modules/rlm_securid/Makefile	(working copy)
+@@ -10,25 +10,12 @@
+ #
+ #	SET THE TARGET
+ #
+-TARGET	    =
+-#TARGET      = rlm_securid
++TARGET	= rlm_securid
+ 
+-SRCS        = rlm_securid.c mem.c
++SRCS	= rlm_securid.c mem.c acestub.c
+ 
+-#
+-#	SET THE CORRECT PATH TO THE SECURID FILES 
+-#
+-ACE_PATH = /path/to/SECURID81
+-ARCH = lnx
+-
+ HEADERS    = rlm_securid.h
+-RLM_LIBS   = -laceclnt 
+ 
+-#
+-#  YOU WILL PROBABLY NEED TO COPY $(ACE_PATH/lib/$(ARCH) to /usr/lib
+-#
+-RLM_CFLAGS =     -I$(ACE_PATH)/inc -DUNIX
+-
+ include ../rules.mak
+ 
+ $(LT_OBJS): $(HEADERS)
+Index: src/modules/rlm_securid/mem.c
+===================================================================
+--- src/modules/rlm_securid/mem.c	(revision 15087)
++++ src/modules/rlm_securid/mem.c	(working copy)
+@@ -126,10 +126,10 @@
+ 		/* this is a NEW session (we are not inserting an updated session) */
+ 		inst->last_session_id++;
+ 		session->session_id = inst->last_session_id;
+-		RDEBUG2("Creating a new session with id=%d\n",session->session_id);
++		radlog(L_INFO,"Creating a new session with id=%d\n",session->session_id);
+ 	}
+ 	snprintf(session->state,sizeof(session->state)-1,"FRR-CH %d|%d",session->session_id,session->trips+1);
+-	RDEBUG2("Inserting session id=%d identity='%s' state='%s' to the session list",
++	radlog(L_INFO,"Inserting session id=%d identity='%s' state='%s' to the session list",
+ 			 session->session_id,SAFE_STR(session->identity),session->state);
+
+
+@@ -203,11 +203,12 @@
+ 	 */
+ 	state = pairfind(request->packet->vps, PW_STATE);
+ 	if (!state) {
++        radlog(L_INFO,"rlm_securid: session not found (no state present)");
+ 		return NULL;
+ 	}
+
+ 	if (state->length != SECURID_STATE_LEN) {
+-		radlog(L_ERR,"rlm_securid: Invalid State variable. length=%d",state->length);
++		radlog(L_ERR,"rlm_securid: Invalid State variable. length=%d",(int)state->length);
+ 		return NULL;
+ 	}
+
+@@ -231,10 +232,10 @@
+ 		return NULL;
+ 	}
+
+-	RDEBUG2("Session found identity='%s' state='%s', released from the list",
++	radlog(L_INFO,"Session found identity='%s' state='%s', released from the list",
+ 			 SAFE_STR(session->identity),session->state);
+ 	if (session->trips >= inst->max_trips_per_session) {
+-		RDEBUG2("More than %d authentication packets for this SECURID session.  Aborted.",inst->max_trips_per_session);
++		radlog(L_INFO,"More than %d authentication packets for this SECURID session.  Aborted.",inst->max_trips_per_session);
+ 		securid_session_free(inst,request,session);
+ 		return NULL;
+ 	}
+Index: src/modules/rlm_securid/README
+===================================================================
+--- src/modules/rlm_securid/README	(revision 15087)
++++ src/modules/rlm_securid/README	(working copy)
+@@ -1,5 +1,5 @@
+   This module implements SecurID token checking.  It should be listed
+-in the "aythenticate" section.
++in the "authenticate" section.
+
+   The module configuration is in the "securid" file.  You will need to
+ copy it by hand to the raddb/modules/directory.
+Index: src/modules/rlm_securid/rlm_securid.c
+===================================================================
+--- src/modules/rlm_securid/rlm_securid.c	(revision 15087)
++++ src/modules/rlm_securid/rlm_securid.c	(working copy)
+@@ -22,6 +22,7 @@
+  *
+  * Copyright 2011 The FreeRADIUS server project
+  * Copyright 2011  Alan DeKok <aland@networkradius.com>
++ * Copyright 2013  Andrei Korostelev - added ACE stub for testing
+  */
+ 
+ #include <freeradius-devel/ident.h>
+@@ -42,14 +43,28 @@
+ 
+ 
+ static const CONF_PARSER module_config[] = {
+-	{ "timer_expire", PW_TYPE_INTEGER,
+-	  offsetof(rlm_securid_t, timer_limit), NULL, "600"},
+-	{ "max_sessions", PW_TYPE_INTEGER,
+-	  offsetof(rlm_securid_t, max_sessions), NULL, "2048"},
+-	{ "max_trips_per_session", PW_TYPE_INTEGER,
+-	  offsetof(rlm_securid_t, max_trips_per_session), NULL, NULL},
+-	{ "max_round_trips", PW_TYPE_INTEGER,
+-	  offsetof(rlm_securid_t, max_trips_per_session), NULL, "6"},
++	{ "timer_expire", PW_TYPE_INTEGER, offsetof(rlm_securid_t, timer_limit), NULL, "600"},
++	{ "max_sessions", PW_TYPE_INTEGER, offsetof(rlm_securid_t, max_sessions), NULL, "2048"},
++	{ "max_trips_per_session", PW_TYPE_INTEGER, offsetof(rlm_securid_t, max_trips_per_session), NULL, NULL},
++	{ "max_round_trips", PW_TYPE_INTEGER,  offsetof(rlm_securid_t, max_trips_per_session), NULL, "6"},
++    
++    { "username",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, username), NULL,  "SecuridUser"},
++    { "tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, tokencode), NULL,  "000000"},
++    
++    { "next_token_username",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, next_token_username), NULL,  "SecuridNextTokenUser"},
++    { "next_token_initial_tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, next_token_initial_tokencode), NULL,  "000001"},
++    { "next_token_new_tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, next_token_new_tokencode), NULL,  "000002"},
++    
++    { "new_system_pin_username",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_system_pin_username), NULL,  "SecuridNewSystemPinUser"},
++    { "new_system_pin_initial_tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_system_pin_initial_tokencode), NULL,  "000004"},
++    { "new_system_pin_new_pincode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_system_pin_new_pincode), NULL,  "000000"},
++    { "new_system_pin_new_tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_system_pin_new_tokencode), NULL,  "000005"},
++        
++    { "new_user_pin_username",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_user_pin_username), NULL,  "SecuridNewUserPinUser"},
++    { "new_user_pin_initial_tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_user_pin_initial_tokencode), NULL,  "000006"},
++    { "new_user_pin_new_pincode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_user_pin_new_pincode), NULL,  "111111"},
++    { "new_user_pin_new_tokencode",  PW_TYPE_STRING_PTR, offsetof(rlm_securid_t, new_user_pin_new_tokencode), NULL,  "000007"},
++    
+ 	{ NULL, -1, 0, NULL, NULL }		/* end the list */
+ };
+ 
+@@ -78,7 +93,7 @@
+ {
+ 	rlm_securid_t *inst = (rlm_securid_t *) instance;
+ 	int         acmRet;
+-	SD_PIN pinParams;
++	struct SD_PIN pinParams = {};
+ 	char newPin[10];
+ 	char format[30];
+ 	SECURID_SESSION *pSecurid_session=NULL;
+@@ -100,6 +115,7 @@
+ 	if (pSecurid_session == NULL) {
+ 		/* securid session not found */
+ 		SDI_HANDLE  sdiHandle = SDI_HANDLE_NONE;
++        radlog(L_INFO,"No session found for user [%s]",username);
+ 
+ 		acmRet = SD_Init(&sdiHandle);
+ 		if (acmRet != ACM_OK) {
+@@ -113,20 +129,18 @@
+ 			return -2;
+ 		}
+ 
+-		acmRet = SD_Check(sdiHandle, (SD_CHAR*) passcode,
+-				  (SD_CHAR*) username);
++		acmRet = SD_CheckUserCredsForNewSession(sdiHandle, inst, (SD_CHAR*) passcode, (SD_CHAR*) username);
+ 		switch (acmRet) {
+ 		case ACM_OK:
+ 			/* we are in now */
+-			RDEBUG("SecurID authentication successful for %s.",
+-			       username);
++			radlog(L_INFO, "SecurID authentication successful for %s.", username);
+ 			SD_Close(sdiHandle);
+ 
+ 			return RC_SECURID_AUTH_SUCCESS;
+ 
+ 		case ACM_ACCESS_DENIED:         
+ 			/* not this time */
+-			RDEBUG("SecurID Access denied for %s", username);
++			radlog(L_ERR,"SecurID Access denied for %s", username);
+ 			SD_Close(sdiHandle);
+ 			return RC_SECURID_AUTH_ACCESS_DENIED_FAILURE;
+ 
+@@ -135,8 +149,7 @@
+ 			return RC_SECURID_AUTH_INVALID_SERVER_FAILURE;
+ 
+ 		case ACM_NEW_PIN_REQUIRED:
+-			RDEBUG2("SeecurID new pin required for %s",
+-				username);
++			radlog(L_INFO,"SecurID new pin required for %s",	username);
+ 
+ 			/* create a new session */
+ 			pSecurid_session = securid_session_alloc();
+@@ -145,7 +158,7 @@
+ 			pSecurid_session->identity = strdup(username);
+ 			 
+ 			/* Get PIN requirements */
+-			acmRet = AceGetPinParams(sdiHandle, &pinParams);
++			acmRet = AceGetPinParams(pSecurid_session, inst, &pinParams);
+ 			 
+ 			/* If a system-generated PIN is required */
+ 			if (pinParams.Selectable == CANNOT_CHOOSE_PIN) {
+@@ -176,8 +189,7 @@
+ 			return RC_SECURID_AUTH_CHALLENGE;
+ 
+ 		case ACM_NEXT_CODE_REQUIRED:
+-			RDEBUG2("Next securid token code required for %s",
+-				username);
++			radlog(L_INFO,"Next securid token code required for %s",	username);
+ 
+ 			/* create a new session */
+ 			pSecurid_session = securid_session_alloc();
+@@ -198,15 +210,15 @@
+ 		}
+ 	} else {
+ 		/* existing session found */
+-		RDEBUG("Continuing previous session found for user [%s]",username);
++		radlog(L_INFO,"Continuing previous session found for user [%s]",username);
+ 
+ 		/* continue previous session */
+ 		switch (pSecurid_session->securidSessionState) {
+ 		case NEXT_CODE_REQUIRED_STATE:
+-			DEBUG2("Securid NEXT_CODE_REQUIRED_STATE: User [%s]",username);
++			radlog(L_INFO,"Securid NEXT_CODE_REQUIRED_STATE: User [%s]",username);
+ 			/* next token code mode */
+ 
+-			acmRet = SD_Next(pSecurid_session->sdiHandle, (SD_CHAR*)passcode);
++			acmRet = SD_Next(pSecurid_session->sdiHandle, inst, (SD_CHAR*)passcode);
+ 			if (acmRet == ACM_OK) {
+ 				radlog(L_INFO,"Next SecurID token accepted for [%s].",pSecurid_session->identity);
+ 				rc = RC_SECURID_AUTH_SUCCESS;
+@@ -221,8 +233,7 @@
+ 			return rc;
+ 
+ 		case NEW_PIN_REQUIRED_STATE:
+-			RDEBUG2("SecurID NEW_PIN_REQUIRED_STATE for %s",
+-				username);
++			radlog(L_INFO, "SecurID NEW_PIN_REQUIRED_STATE for %s", username);
+ 
+ 			/* save the previous pin */
+ 			if (pSecurid_session->pin) {
+@@ -241,16 +252,15 @@
+ 			return RC_SECURID_AUTH_CHALLENGE;
+ 			  
+ 		case NEW_PIN_USER_CONFIRM_STATE:
+-			RDEBUG2("SecurID NEW_PIN_USER_CONFIRM_STATE: User [%s]",username);
++			radlog(L_INFO, "SecurID NEW_PIN_USER_CONFIRM_STATE: User [%s]",username);
+ 			/* compare previous pin and current pin */
+ 			if (!pSecurid_session->pin || strcmp(pSecurid_session->pin,passcode)) {
+ 				RDEBUG2("Pin confirmation failed. Pins do not match [%s] and [%s]",
+-				       SAFE_STR(pSecurid_session->pin),
+-				       passcode);
++				       SAFE_STR(pSecurid_session->pin),  passcode);
+ 				/* pins do not match */
+ 
+ 				/* challenge the user again */
+-				AceGetPinParams(pSecurid_session->sdiHandle, &pinParams);
++				AceGetPinParams(pSecurid_session, inst, &pinParams);
+ 				if (pinParams.Alphanumeric) {
+ 					strcpy(format, "alphanumeric characters");
+ 				} else {
+@@ -268,10 +278,10 @@
+ 
+ 			} else {
+ 				/* pins match */
+-				RDEBUG2("Pin confirmation succeeded. Pins match");
+-				acmRet = SD_Pin(pSecurid_session->sdiHandle, (SD_CHAR*)passcode);
++				radlog(L_INFO, "Pin confirmation succeeded. Pins match");
++				acmRet = SD_ChangePin(pSecurid_session, (SD_CHAR*)passcode, inst);
+ 				if (acmRet == ACM_NEW_PIN_ACCEPTED) {
+-					RDEBUG("New SecurID pin accepted for %s.",pSecurid_session->identity);
++					radlog(L_INFO, "New SecurID pin accepted for %s.",pSecurid_session->identity);
+ 
+ 					pSecurid_session->securidSessionState = NEW_PIN_AUTH_VALIDATE_STATE;
+ 
+@@ -281,27 +291,27 @@
+ 					rc = RC_SECURID_AUTH_CHALLENGE;
+ 					strlcpy(replyMsgBuffer," \r\n\r\nWait for the code on your card to change, then enter new PIN and TokenCode\r\n\r\nEnter PASSCODE:", replyMsgBufferSize);
+ 				} else {
+-					RDEBUG("SecurID: New SecurID pin rejected for %s.",pSecurid_session->identity);
+-					SD_Pin(pSecurid_session->sdiHandle, (SD_CHAR*)"");  /* cancel PIN */
++					radlog(L_INFO, "SecurID: New SecurID pin rejected for %s.",pSecurid_session->identity);
++					SD_ChangePin(pSecurid_session, (SD_CHAR*)"", inst);  /* cancel PIN */
+ 					
+ 
+ 					rc = RC_SECURID_AUTH_FAILURE;
+ 
+ 					/* deallocate session */
+-					securid_session_free(inst, request,
+-							     pSecurid_session);
++					securid_session_free(inst, request, pSecurid_session);
+ 				}
+ 			}
+-			return rc;		  
++			return rc;
++         // validate tokencode generated by a token device with new pin
+ 		case NEW_PIN_AUTH_VALIDATE_STATE:
+-			acmRet = SD_Check(pSecurid_session->sdiHandle, (SD_CHAR*)passcode, (SD_CHAR*)username);
++			acmRet = SD_CheckUserCredsForNewPin(pSecurid_session->sdiHandle, inst, (SD_CHAR*)passcode, (SD_CHAR*)username);
+ 			if (acmRet == ACM_OK) {
+-				RDEBUG("New SecurID passcode accepted for %s.",
++				radlog(L_INFO, "New SecurID tokencode accepted for %s.",
+ 				       pSecurid_session->identity);
+ 				rc = RC_SECURID_AUTH_SUCCESS;
+ 
+ 			} else {
+-				radlog(L_INFO,"SecurID: New passcode rejected for [%s].",pSecurid_session->identity);
++				radlog(L_INFO,"SecurID: New tokencode rejected for [%s].",pSecurid_session->identity);
+ 				rc = RC_SECURID_AUTH_FAILURE;
+ 			}
+ 
+@@ -311,7 +321,7 @@
+ 			return rc;
+ 		case NEW_PIN_SYSTEM_ACCEPT_STATE:
+ 			if (!strcmp(passcode, "y")) {
+-				AceGetSystemPin(pSecurid_session->sdiHandle, newPin);
++				AceGetSystemPin(pSecurid_session, inst, newPin, sizeof(newPin));
+ 					
+ 				/* Save the PIN for the next session
+ 				 * continuation */
+@@ -328,17 +338,15 @@
+ 					
+ 				/* insert the updated session in the
+ 				 * session list */
+-				securid_sessionlist_add(inst, request,
+-							pSecurid_session);
++				securid_sessionlist_add(inst, request,	pSecurid_session);
+ 					
+ 				rc = RC_SECURID_AUTH_CHALLENGE;
+ 
+ 			} else {
+-				SD_Pin(pSecurid_session->sdiHandle, (SD_CHAR*)""); //Cancel new PIN
++				SD_ChangePin(pSecurid_session, (SD_CHAR*)"", inst); //User is not prepared to set a new PIN
+ 					
+ 				/* deallocate session */
+-				securid_session_free(inst, request,
+-						     pSecurid_session);
++				securid_session_free(inst, request, pSecurid_session);
+ 					
+ 				rc = RC_SECURID_AUTH_FAILURE;
+ 			}
+@@ -346,20 +354,27 @@
+ 			return rc;				
+ 			 
+ 		case NEW_PIN_SYSTEM_CONFIRM_STATE:
+-			acmRet = SD_Pin(pSecurid_session->sdiHandle, (SD_CHAR*)pSecurid_session->pin);
+-			if (acmRet == ACM_NEW_PIN_ACCEPTED) {
+-				strlcpy(replyMsgBuffer," \r\n\r\nPin Accepted. Wait for the code on your card to change, then enter new PIN and TokenCode\r\n\r\nEnter PASSCODE:",replyMsgBufferSize);
+-				pSecurid_session->securidSessionState = NEW_PIN_AUTH_VALIDATE_STATE;
+-				/* insert the updated session in the session list */
+-				securid_sessionlist_add(inst,request,pSecurid_session);
+-				rc = RC_SECURID_AUTH_CHALLENGE;
++            if (!strcmp(passcode, "y")) {
++                acmRet = SD_ChangePin(pSecurid_session, (SD_CHAR*)pSecurid_session->pin, inst);
++                if (acmRet == ACM_NEW_PIN_ACCEPTED) {
++                    strlcpy(replyMsgBuffer," \r\n\r\nPin Accepted. Wait for the code on your card to change, then enter new PIN and TokenCode\r\n\r\nEnter PASSCODE:",replyMsgBufferSize);
++                    pSecurid_session->securidSessionState = NEW_PIN_AUTH_VALIDATE_STATE;
++                    /* insert the updated session in the session list */
++                    securid_sessionlist_add(inst,request,pSecurid_session);
++                    rc = RC_SECURID_AUTH_CHALLENGE;
+ 
+-			} else {
+-				SD_Pin(pSecurid_session->sdiHandle, (SD_CHAR*)""); //Cancel new PIN
+-				strlcpy(replyMsgBuffer," \r\n\r\nPin Rejected. Wait for the code on your card to change, then try again.\r\n\r\nEnter PASSCODE:",replyMsgBufferSize);
++                } else {
++                    SD_ChangePin(pSecurid_session, (SD_CHAR*)"", inst); //Cancel new PIN
++                    strlcpy(replyMsgBuffer," \r\n\r\nPin Rejected. Wait for the code on your card to change, then try again.\r\n\r\nEnter PASSCODE:",replyMsgBufferSize);
++                    /* deallocate session */
++                    securid_session_free(inst, request, pSecurid_session);
++                    rc = RC_SECURID_AUTH_FAILURE;
++                }
++            } else {
++				SD_ChangePin(pSecurid_session, (SD_CHAR*)"", inst); //User rejected to set a new PIN
++					
+ 				/* deallocate session */
+-				securid_session_free(inst, request,
+-						     pSecurid_session);
++				securid_session_free(inst, request,  pSecurid_session);
+ 				rc = RC_SECURID_AUTH_FAILURE;
+ 			}
+ 				
+@@ -369,7 +384,7 @@
+ 		case NEW_PIN_USER_SELECT_STATE:
+ 			if (!strcmp(passcode, "y")) {
+ 				/* User has opted for a system-generated PIN */
+-				AceGetSystemPin(pSecurid_session->sdiHandle, newPin);
++				AceGetSystemPin(pSecurid_session, inst, newPin, sizeof(newPin));
+ 				snprintf(replyMsgBuffer, replyMsgBufferSize,
+ 					 "\r\nYour new PIN is: %s\r\nDo you accept this [y/n]?",
+ 					 newPin);
+@@ -382,8 +397,7 @@
+ 
+ 			} else {
+ 				/* User has opted for a user-defined PIN */
+-				AceGetPinParams(pSecurid_session->sdiHandle,
+-						&pinParams);
++				AceGetPinParams(pSecurid_session, inst, &pinParams);
+ 				if (pinParams.Alphanumeric) {
+ 					strcpy(format, "alphanumeric characters");
+ 				} else {
+@@ -518,11 +532,9 @@
+ 	username = request->username->vp_strvalue;
+ 	password = request->password->vp_strvalue;
+ 	
+-	RDEBUG("User [%s] login attempt with password [%s]",
+-	       username, password);
++	radlog(L_INFO, "User [%s] login attempt with password [%s]", username, password);
+ 	
+-	rcode = securidAuth(inst, request, username, password,
+-			    buffer, sizeof(buffer));
++	rcode = securidAuth(inst, request, username, password, buffer, sizeof(buffer));
+ 	
+ 	switch (rcode) {
+ 	case RC_SECURID_AUTH_SUCCESS:
+@@ -541,7 +553,7 @@
+ 
+ 		/* Mark the packet as a Acceess-Challenge Packet */
+ 		request->reply->code = PW_ACCESS_CHALLENGE;
+-		RDEBUG("Sending Access-Challenge.");
++		radlog(L_INFO, "Sending Access-Challenge.");
+ 		rcode = RLM_MODULE_HANDLED;
+ 		break;
+ 
+Index: src/modules/rlm_securid/rlm_securid.h
+===================================================================
+--- src/modules/rlm_securid/rlm_securid.h	(revision 15087)
++++ src/modules/rlm_securid/rlm_securid.h	(working copy)
+@@ -6,7 +6,7 @@
+ #include <freeradius-devel/modules.h>
+ #include <freeradius-devel/rad_assert.h>
+ 
+-#include "acexport.h"
++#include "acestub.h"
+ 
+ #define SAFE_STR(s) s==NULL?"EMPTY":s
+ 
+@@ -78,6 +78,24 @@
+ 	int		timer_limit;
+ 	int		max_sessions;
+ 	int		max_trips_per_session;
++    
++	char*	username;
++	char*	tokencode;
++    
++    char*   next_token_username;
++	char*	next_token_initial_tokencode;
++	char*	next_token_new_tokencode;
++     
++    char*   new_system_pin_username;
++    char*   new_system_pin_initial_tokencode;
++	char*	new_system_pin_new_pincode;
++	char*	new_system_pin_new_tokencode;   
++    
++    char*   new_user_pin_username;
++    char*   new_user_pin_initial_tokencode;
++	char*	new_user_pin_new_pincode;
++	char*	new_user_pin_new_tokencode;
++    
+ } rlm_securid_t;
+ 
+ /* Memory Management */
+Index: src/modules/rlm_securid/securid
+===================================================================
+--- src/modules/rlm_securid/securid	(revision 15087)
++++ src/modules/rlm_securid/securid	(working copy)
+@@ -17,4 +17,26 @@
+ 	#  is forced to fail/
+ 	#
+ 	max_round_trips = 6
++
++
++    # Tokencode for simple authentication
++    username = "SecuridUser"
++    tokencode = "111111"
++
++    # Credentials for NEXT TOKEN mode
++    next_token_username = "SecuridNextTokenUser"
++    next_token_initial_tokencode = "222222"
++    next_token_new_tokencode  = "333333"
++
++    # Credentials for NEW SYSTEM-PUSHED PIN mode
++    new_system_pin_username = "SecuridNewSystemPinUser"
++    new_system_pin_initial_tokencode = "444444"
++    new_system_pin_new_pincode = "123456"
++    new_system_pin_new_tokencode = "555555"
++
++    # Credentials for NEW USER-SELECTED PIN mode
++    new_user_pin_username = "SecuridNewUserPinUser"
++    new_user_pin_initial_tokencode = "666666"
++    new_user_pin_new_pincode = "234567"
++    new_user_pin_new_tokencode = "777777"
+ }

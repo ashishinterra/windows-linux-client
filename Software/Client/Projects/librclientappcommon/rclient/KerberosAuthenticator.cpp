@@ -125,11 +125,12 @@ namespace rclient
             }
 
 
-            bool requestCertificate(RcdpHandler& anRdcpClient)
+            bool requestCertificate(RcdpHandler& anRdcpClient, AddressBookConfig& anAddressBookConfig)
             {
                 const resept::CertFormat myCertFormat = Settings::getCertFormat();
                 const bool myWithChain = Settings::isCertChain();
                 const CertResponse myCertResponse = anRdcpClient.getCert(myCertFormat, myWithChain);
+                anAddressBookConfig = myCertResponse.address_book_config;
 
                 // Import/save certificate
                 if (myCertFormat == resept::certformatP12)
@@ -172,7 +173,7 @@ namespace rclient
         * Results are divided in successful process (success), Kerberos related issues (kerberosFailure) and other server related issues (auth***) and 'other' (defaultFailure)
         * Catching exceptions is the responsibility of the caller
         */
-        Result authenticateAndInstall(int& aDelaySec)
+        Result authenticateAndInstall(int& aDelaySec, AddressBookConfig& anAddressBookConfig)
         {
             // Get LogonId
             const ta::OsUserInfo::UserLogonId myLogonId = ta::OsUserInfo::getCurrentUserLogonId();
@@ -231,7 +232,7 @@ namespace rclient
             case resept::AuthResult::Locked:
                 if (myAuthResponse.auth_result.delay > 0)
                 {
-                    aDelaySec = myAuthResponse.auth_result.delay;
+                    aDelaySec = boost::numeric_cast<int>(myAuthResponse.auth_result.delay);
                     WARNLOG(boost::format("Kerberos Authentication locked for another %i seconds") % aDelaySec);
                     return Result::authLockedWithDelay;
                 }
@@ -249,7 +250,8 @@ namespace rclient
             }
 
             // Request & install certificate
-            if (!requestCertificate(myRcdpClient))
+
+            if (!requestCertificate(myRcdpClient, anAddressBookConfig))
             {
                 ERRORLOG("Could not request certificate with Kerberos authenticated RcdpClient");
                 return Result::defaultFailure;

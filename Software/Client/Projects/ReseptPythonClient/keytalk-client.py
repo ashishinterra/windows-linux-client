@@ -760,7 +760,8 @@ class PublicApi(object):
             conf.PUBLIC_API_REQUEST_ADDRESS_BOOK_LIST,
             conf.PUBLIC_API_RESPONSE_ADDRESS_BOOK_LIST)
         books = response_payload[conf.PUBLIC_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS] or []
-        return books
+        apply_address_books = response_payload[conf.PUBLIC_API_RESPONSE_PARAM_NAME_APPLY_ADDRESS_BOOKS] == "true"
+        return books, apply_address_books
 
 
 #
@@ -1039,9 +1040,11 @@ def retrieve_address_books():
 
     api = PublicApi()
 
-    assert api.retrieve_address_books(service="CUST_ANO_INTERNAL") == []
-    assert api.retrieve_address_books(
-        service="CUST_PASSWD_AD") == [
+    address_books, apply_address_books = api.retrieve_address_books(service="CUST_ANO_INTERNAL")
+    assert address_books == []
+    assert apply_address_books == False
+    address_books, apply_address_books = api.retrieve_address_books(service="CUST_PASSWD_AD")
+    assert address_books == [
         {
             'ldap_svr_url': 'ldaps://WIN2012-RESEPT-AD.Resept.2012.local',
             'search_base': 'dc=Resept,dc=2012,dc=local'},
@@ -1049,6 +1052,7 @@ def retrieve_address_books():
             'ldap_svr_url': 'ldap://addressbook.example.com',
             'search_base': 'people,dc=example,dc=com'},
     ]
+    assert apply_address_books
 
     try:
         api.retrieve_address_books(service="NON_EXISTING_SERVICE")

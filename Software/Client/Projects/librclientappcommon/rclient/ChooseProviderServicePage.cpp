@@ -5,6 +5,7 @@
 #include "ConfigUsersDialog.h"
 #include "CommonUtils.h"
 #include "AuthDelayedMessageBox.h"
+#include "EmailUtils.h"
 #include "rclient/Settings.h"
 #include "rclient/NativeCertStore.h"
 #include "rclient/KerberosAuthenticator.h"
@@ -63,7 +64,8 @@ namespace rclient
             if (myAuthReqs.use_kerberos_authentication)
             {
                 int myDelay = 0;
-                const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelay);
+                AddressBookConfig myAddressBookConfig;
+                const rclient::KerberosAuthenticator::Result myAuthResult = rclient::KerberosAuthenticator::authenticateAndInstall(myDelay, myAddressBookConfig);
                 // Only fallback to normal flow when authentication fails because of Kerberos. Exit if it fails for other reasons
                 // And of course allow the user to retry when account is Locked with a set delay
                 switch (myAuthResult)
@@ -71,6 +73,7 @@ namespace rclient
                 case rclient::KerberosAuthenticator::Result::success:
                 {
                     DEBUGLOG("Got TGT alright, skipping the rest of the app");
+                    EmailUtils::applyAddressBooks(myAddressBookConfig);
                     throw KerberosAuthSuccessException(this);
                 }
                 case rclient::KerberosAuthenticator::kerberosFailure:

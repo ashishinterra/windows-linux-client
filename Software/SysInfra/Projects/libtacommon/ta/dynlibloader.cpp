@@ -15,7 +15,7 @@ using std::string;
 
 namespace ta
 {
-#ifdef WIN32
+#ifdef _WIN32
     namespace
     {
         enum FindRefRetVal { Ok, InvalidLib};

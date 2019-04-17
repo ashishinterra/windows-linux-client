@@ -1049,7 +1049,7 @@ namespace ta
         {
             return getMyIpv4faces();
         }
-#endif // WIN32
+#endif // _WIN32
 
 #ifndef _WIN32
         Ifaces getMyIpv4faces(const SkipLoopBack aSkipLoopBack, const SkipDocker aSkipDocker)

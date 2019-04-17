@@ -494,8 +494,8 @@ namespace ta
             ScopedResource<RSA*> myRsa(RSA_new(), RSA_free);
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-            BIGNUM *n = BN_bin2bn(getSafeBuf(aModulus), aModulus.size(), NULL);
-            BIGNUM *e = BN_bin2bn(getSafeBuf(aPubExponent), aPubExponent.size(), NULL);
+            BIGNUM *n = BN_bin2bn(getSafeBuf(aModulus), boost::numeric_cast<int>(aModulus.size()), NULL);
+            BIGNUM *e = BN_bin2bn(getSafeBuf(aPubExponent), boost::numeric_cast<int>(aPubExponent.size()), NULL);
 
             // RSA_set0_key will transfer memory management of n and e to myRsa
             if (RSA_set0_key(myRsa, n, e, NULL) != 1)
@@ -503,8 +503,8 @@ namespace ta
                 TA_THROW_MSG(RsaError, "Failed to retrieve RSA key size");
             }
 #else
-            myRsa->n = BN_bin2bn(getSafeBuf(aModulus), aModulus.size(), NULL);
-            myRsa->e = BN_bin2bn(getSafeBuf(aPubExponent), aPubExponent.size(), NULL);
+            myRsa->n = BN_bin2bn(getSafeBuf(aModulus), boost::numeric_cast<int>(aModulus.size()), NULL);
+            myRsa->e = BN_bin2bn(getSafeBuf(aPubExponent), boost::numeric_cast<int>(aPubExponent.size()), NULL);
 #endif
 
             return getKeySizeBits(myRsa);
@@ -621,9 +621,9 @@ namespace ta
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
             // set modulus, public and private exponent
-            BIGNUM *n = BN_bin2bn(getSafeBuf(aKey.n), aKey.n.size(), NULL);
-            BIGNUM *e = BN_bin2bn(getSafeBuf(aKey.e), aKey.e.size(), NULL);
-            BIGNUM *d = BN_bin2bn(getSafeBuf(aKey.d), aKey.d.size(), NULL);
+            BIGNUM *n = BN_bin2bn(getSafeBuf(aKey.n), boost::numeric_cast<int>(aKey.n.size()), NULL);
+            BIGNUM *e = BN_bin2bn(getSafeBuf(aKey.e), boost::numeric_cast<int>(aKey.e.size()), NULL);
+            BIGNUM *d = BN_bin2bn(getSafeBuf(aKey.d), boost::numeric_cast<int>(aKey.d.size()), NULL);
             // RSA_set0_key will transfer memory management of n, e and d to myRsa
             if (RSA_set0_key(myRsa, n, e, d) != 1)
             {
@@ -631,8 +631,8 @@ namespace ta
             }
 
             // set factors
-            BIGNUM * p = BN_bin2bn(getSafeBuf(aKey.p), aKey.p.size(), NULL);
-            BIGNUM * q = BN_bin2bn(getSafeBuf(aKey.q), aKey.q.size(), NULL);
+            BIGNUM * p = BN_bin2bn(getSafeBuf(aKey.p), boost::numeric_cast<int>(aKey.p.size()), NULL);
+            BIGNUM * q = BN_bin2bn(getSafeBuf(aKey.q), boost::numeric_cast<int>(aKey.q.size()), NULL);
             // RSA_set0_factors will transfer memory management of p and q to myRsa
             if (RSA_set0_factors(myRsa, p, q) != 1)
             {
@@ -640,9 +640,9 @@ namespace ta
             }
 
             // set params
-            BIGNUM * dmp1 = BN_bin2bn(getSafeBuf(aKey.dmp1), aKey.dmp1.size(), NULL);
-            BIGNUM * dmq1 = BN_bin2bn(getSafeBuf(aKey.dmq1), aKey.dmq1.size(), NULL);
-            BIGNUM * iqmp = BN_bin2bn(getSafeBuf(aKey.iqmp), aKey.iqmp.size(), NULL);
+            BIGNUM * dmp1 = BN_bin2bn(getSafeBuf(aKey.dmp1), boost::numeric_cast<int>(aKey.dmp1.size()), NULL);
+            BIGNUM * dmq1 = BN_bin2bn(getSafeBuf(aKey.dmq1), boost::numeric_cast<int>(aKey.dmq1.size()), NULL);
+            BIGNUM * iqmp = BN_bin2bn(getSafeBuf(aKey.iqmp), boost::numeric_cast<int>(aKey.iqmp.size()), NULL);
             // RSA_set0_crt_params will transfer memory management of dmp1, dmq1 and iqmp to myRsa
             if (RSA_set0_crt_params(myRsa, dmp1, dmq1, iqmp) != 1)
             {
@@ -650,18 +650,18 @@ namespace ta
             }
 #else
             // set modulus, public and private exponent
-            myRsa->n = BN_bin2bn(getSafeBuf(aKey.n), aKey.n.size(), NULL);
-            myRsa->e = BN_bin2bn(getSafeBuf(aKey.e), aKey.e.size(), NULL);
-            myRsa->d = BN_bin2bn(getSafeBuf(aKey.d), aKey.d.size(), NULL);
+            myRsa->n = BN_bin2bn(getSafeBuf(aKey.n), boost::numeric_cast<int>(aKey.n.size()), NULL);
+            myRsa->e = BN_bin2bn(getSafeBuf(aKey.e), boost::numeric_cast<int>(aKey.e.size()), NULL);
+            myRsa->d = BN_bin2bn(getSafeBuf(aKey.d), boost::numeric_cast<int>(aKey.d.size()), NULL);
 
             // set factors
-            myRsa->p = BN_bin2bn(getSafeBuf(aKey.p), aKey.p.size(), NULL);
-            myRsa->q = BN_bin2bn(getSafeBuf(aKey.q), aKey.q.size(), NULL);
+            myRsa->p = BN_bin2bn(getSafeBuf(aKey.p), boost::numeric_cast<int>(aKey.p.size()), NULL);
+            myRsa->q = BN_bin2bn(getSafeBuf(aKey.q), boost::numeric_cast<int>(aKey.q.size()), NULL);
 
             // set params
-            myRsa->dmp1 = BN_bin2bn(getSafeBuf(aKey.dmp1), aKey.dmp1.size(), NULL);
-            myRsa->dmq1 = BN_bin2bn(getSafeBuf(aKey.dmq1), aKey.dmq1.size(), NULL);
-            myRsa->iqmp = BN_bin2bn(getSafeBuf(aKey.iqmp), aKey.iqmp.size(), NULL);
+            myRsa->dmp1 = BN_bin2bn(getSafeBuf(aKey.dmp1), boost::numeric_cast<int>(aKey.dmp1.size()), NULL);
+            myRsa->dmq1 = BN_bin2bn(getSafeBuf(aKey.dmq1), boost::numeric_cast<int>(aKey.dmq1.size()), NULL);
+            myRsa->iqmp = BN_bin2bn(getSafeBuf(aKey.iqmp), boost::numeric_cast<int>(aKey.iqmp.size()), NULL);
 
 #endif
 
@@ -718,16 +718,16 @@ namespace ta
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
             // set modulus and public exponent
-            BIGNUM *n = BN_bin2bn(getSafeBuf(aKey.n), aKey.n.size(), NULL);
-            BIGNUM *e = BN_bin2bn(getSafeBuf(aKey.e), aKey.e.size(), NULL);
+            BIGNUM *n = BN_bin2bn(getSafeBuf(aKey.n), boost::numeric_cast<int>(aKey.n.size()), NULL);
+            BIGNUM *e = BN_bin2bn(getSafeBuf(aKey.e), boost::numeric_cast<int>(aKey.e.size()), NULL);
             // RSA_set0_key will transfer memory management of n and e to myRsa
             if (RSA_set0_key(myRsa, n, e, NULL) != 1)
             {
                 TA_THROW_MSG(RsaError, "Failed to set RSA modulus and public exponent");
             }
 #else
-            myRsa->n = BN_bin2bn(getSafeBuf(aKey.n), aKey.n.size(), NULL);
-            myRsa->e = BN_bin2bn(getSafeBuf(aKey.e), aKey.e.size(), NULL);
+            myRsa->n = BN_bin2bn(getSafeBuf(aKey.n), boost::numeric_cast<int>(aKey.n.size()), NULL);
+            myRsa->e = BN_bin2bn(getSafeBuf(aKey.e), boost::numeric_cast<int>(aKey.e.size()), NULL);
 #endif
 
             ScopedResource<BIO*> pubKeyBio(BIO_new(BIO_s_mem()), BIO_free);

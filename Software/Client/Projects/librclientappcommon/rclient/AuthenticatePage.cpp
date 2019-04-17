@@ -6,6 +6,7 @@
 #include "WaitDialog.h"
 #include "CommonUtils.h"
 #include "ConfigUsersDialog.h"
+#include "EmailUtils.h"
 #include "rclient/Settings.h"
 #include "rclient/RcdpRequest.h"
 #include "rclient/RcdpHandler.h"
@@ -388,14 +389,16 @@ namespace rclient
 
         // Request cert and finish
 
+        AddressBookConfig myAddressBookConfig;
         if (theAuthReqs.use_tpm_vsc)
         {
-            requestTpmVscCertificate();
+            myAddressBookConfig = requestTpmVscCertificate();
         }
         else
         {
-            requestCertificate();
+            myAddressBookConfig = requestCertificate();
         }
+        EmailUtils::applyAddressBooks(myAddressBookConfig);
 
         TimedNotificationBox::show(this, CertificateNotificationDelaySec, "Authenticated successfully", "Authenticated successfully.");
         return true;
@@ -876,7 +879,7 @@ namespace rclient
         }
     }
 
-    void AuthenticatePage::requestCertificate()
+    AddressBookConfig AuthenticatePage::requestCertificate()
     {
         WaitDialog myWaitDialog("Retrieving certificate...", this);
         const resept::CertFormat myCertFormat = Settings::getCertFormat();
@@ -906,9 +909,10 @@ namespace rclient
         theRcdpClient->eoc();
 
         theExecuteSync = myCertResponse.execute_sync;
+        return myCertResponse.address_book_config;
     }
 
-    void AuthenticatePage::requestTpmVscCertificate()
+    AddressBookConfig AuthenticatePage::requestTpmVscCertificate()
     {
         WaitDialog myWaitDialog("Retrieving certificate from Virtual Smart Card...", this);
 
@@ -920,7 +924,9 @@ namespace rclient
         const resept::CsrRequirements myCsrRequirements = theRcdpClient->getCsrRequirements();
         const string myCsr = ta::WinSmartCardUtil::requestCsr(myCsrRequirements);
         const bool myWithChain = rclient::Settings::isCertChain();
-        const string myCert = ta::vec2Str(theRcdpClient->signCSR(myCsr, myWithChain).cert);
+        const rclient::CertResponse myCertResponse = theRcdpClient->signCSR(myCsr, myWithChain);
+        const string myCert = ta::vec2Str(myCertResponse.cert);
         NativeCertStore::installCert(myCert);
+        return myCertResponse.address_book_config;
     }
 } // namespace rclient

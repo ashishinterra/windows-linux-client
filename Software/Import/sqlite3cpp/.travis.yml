@@ -1,0 +1,6 @@
+language: cpp
+install:
+  - sudo make deps
+script:
+  - make all
+  - make test

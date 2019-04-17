@@ -636,6 +636,7 @@ namespace resept
         const std::string V_2_2 = ${RCDP_VERSION_2_2};
         const std::string V_2_3 = ${RCDP_VERSION_2_3};
         const std::string V_2_4 = ${RCDP_VERSION_2_4};
+        const std::string V_2_4_1 = ${RCDP_VERSION_2_4_1};
 
         const std::string ServerSupportedRcdpVersions[] = ${SERVER_SUPPORTED_RCDPV2_VERSIONS};
 
@@ -773,6 +774,11 @@ namespace resept
         const std::string responseParamNameKeySize = ${RCDPV2_RESPONSE_PARAM_NAME_KEY_SIZE};
         const std::string responseParamNameSigningAlgo = ${RCDPV2_RESPONSE_PARAM_NAME_SIGNING_ALGO};
         const std::string responseParamNameSubject = ${RCDPV2_RESPONSE_PARAM_NAME_SUBJECT};
+        const std::string responseParamNameAddressBooks = ${RCDPV2_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
+        const std::string responseParamNameApplyAddressBooks = ${RCDPV2_RESPONSE_PARAM_NAME_APPLY_ADDRESS_BOOKS};
+        const std::string responseParamNameLdapSvrUrl = ${RCDPV2_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
+        const std::string responseParamNameSearchBase = ${RCDPV2_RESPONSE_PARAM_NAME_SEARCH_BASE};
+        const std::string responseParamNameVerificationCa = ${RCDPV2_RESPONSE_PARAM_NAME_VERIFICATION_CA};
 
         const std::string ResponseStrings[] = ${RCDPV2_RESPONSE_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == _LastResponse-_FirstResponse+1);
@@ -881,6 +887,7 @@ namespace resept
         const std::string V_1_0 = ${PUBLIC_API_VERSION_1_0};
         const std::string V_1_1 = ${PUBLIC_API_VERSION_1_1};
         const std::string V_1_2 = ${PUBLIC_API_VERSION_1_2};
+        const std::string V_1_2_1 = ${PUBLIC_API_VERSION_1_2_1};
 
         const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_PUBLIC_API_VERSIONS};
 
@@ -952,8 +959,9 @@ namespace resept
         const std::string responseParamNameReason = ${PUBLIC_API_RESPONSE_PARAM_NAME_REASON};
         const std::string responseParamNameAddressBooks = ${PUBLIC_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
         const std::string responseParamNameLdapSvrUrl = ${PUBLIC_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
-        const std::string  responseParamNameSearchBase = ${PUBLIC_API_RESPONSE_PARAM_NAME_SEARCH_BASE};
+        const std::string responseParamNameSearchBase = ${PUBLIC_API_RESPONSE_PARAM_NAME_SEARCH_BASE};
         const std::string responseParamNameVerificationCa = ${PUBLIC_API_RESPONSE_PARAM_NAME_VERIFICATION_CA};
+        const std::string responseParamNameApplyAddressBooks = ${PUBLIC_API_RESPONSE_PARAM_NAME_APPLY_ADDRESS_BOOKS};
 
         const std::string ResponseStrings[] = ${PUBLIC_API_RESPONSE_STRINGS};
         BOOST_STATIC_ASSERT(sizeof(ResponseStrings)/sizeof(ResponseStrings[0]) == _LastResponse-_FirstResponse+1);
@@ -985,6 +993,7 @@ namespace resept
     {
         const std::string V_1_0 = ${SELF_SERVICE_API_VERSION_1_0};
         const std::string V_1_1 = ${SELF_SERVICE_API_VERSION_1_1};
+        const std::string V_1_1_1 = ${SELF_SERVICE_API_VERSION_1_1_1};
 
         const std::string ServerSupportedApiVersions[] = ${SERVER_SUPPORTED_SELF_SERVICE_API_VERSIONS};
 
@@ -1058,6 +1067,7 @@ namespace resept
         const std::string responseParamNameEmail = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_EMAIL};
         const std::string responseParamNameOrderId = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ORDER_ID};
         const std::string responseParamNameAddressBooks = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_ADDRESS_BOOKS};
+        const std::string responseParamNameApplyAddressBooks = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_APPLY_ADDRESS_BOOKS};
         const std::string responseParamNameLdapSvrUrl = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_LDAP_SVR_URL};
         const std::string  responseParamNameSearchBase = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_SEARCH_BASE};
         const std::string responseParamNameVerificationCa = ${SELF_SERVICE_API_RESPONSE_PARAM_NAME_VERIFICATION_CA};

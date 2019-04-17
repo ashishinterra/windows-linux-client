@@ -1,0 +1,2101 @@
+Index: src/modules/rlm_eap/libeap/eap_aka.h
+===================================================================
+--- src/modules/rlm_eap/libeap/eap_aka.h	(revision 0)
++++ src/modules/rlm_eap/libeap/eap_aka.h	(working copy)
+@@ -0,0 +1,124 @@
++/*
++ * eap_aka.h    Header file containing the EAP-AKA types
++ *
++ * Version:     $Id: eap_aka.h 13908 2013-08-31 19:33:55Z korosteleva $
++ *
++ *   This program is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; either version 2 of the License, or
++ *   (at your option) any later version.
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *   GNU General Public License for more details.
++ *
++ *   You should have received a copy of the GNU General Public License
++ *   along with this program; if not, write to the Free Software
++ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * Copyright 2003  Michael Richardson <mcr@sandelman.ottawa.on.ca>
++ * Copyright 2006  Brian Phaneuf <bphaneuf@reefpoint.com>
++ *
++ */
++#ifndef _EAP_AKA_H
++#define _EAP_AKA_H
++
++#include "eap_types.h"
++#include "eap_sim.h"
++
++/* base for dictionary values */
++
++enum eapaka_subtype {
++  eapaka_challenge   = 1,
++  eapaka_authentication_reject = 2,
++  eapaka_notification= 12,
++  eapaka_reauth      = 13,
++  eapaka_client_error = 14,
++  eapaka_max_subtype
++};
++
++enum eapaka_clientstates {
++  eapaka_client_init = 0,
++  eapaka_client_start = 1,
++  eapaka_client_maxstates
++};
++
++enum eapaka_clienterrorcodes {
++  eapaka_client_unable_to_comply = 0,
++  eapaka_client_maxclienterrorcodes
++};
++
++/* server states
++ *
++ * in server_start, we send a EAP-AKA Start message.
++ *
++ */
++enum eapaka_serverstates {
++  eapaka_server_start = 0,
++  eapaka_server_challenge=1,
++  eapaka_server_success=2,
++  eapaka_server_maxstates
++};
++
++/*
++ * interfaces in eapakalib.c
++ */
++extern int map_eapaka_types(RADIUS_PACKET *r);
++extern int map_eapaka_basictypes(RADIUS_PACKET *r, EAP_PACKET *ep);
++extern int unmap_eapaka_types(RADIUS_PACKET *r);
++extern const char *aka_state2name(enum eapaka_clientstates state, char *buf, int buflen);
++extern const char *aka_clienterrorcode2name(enum eapaka_clienterrorcodes errorcode,
++                                            char *errorcodenamebuf,
++                                            int   errorcodenamebuflen);
++extern const char *aka_subtype2name(enum eapaka_subtype subtype, char *buf, int buflen);
++extern int unmap_eapaka_basictypes(RADIUS_PACKET *r,
++				   uint8_t *attr, unsigned int attrlen);
++
++
++/************************/
++/*   CRYPTO FUNCTIONS   */
++/************************/
++
++/*
++ * key derivation functions/structures
++ *
++ */
++
++#define EAPAKA_IK_SIZE      16
++#define EAPAKA_CK_SIZE      16
++
++struct eapaka_keys {
++  /* inputs */
++  unsigned char identity[MAX_STRING_LEN];
++  unsigned int  identitylen;
++  unsigned char autn[EAPSIM_AUTN_SIZE];
++  unsigned char rand[EAPSIM_RAND_SIZE];
++  unsigned char ik[EAPAKA_IK_SIZE];
++  unsigned char ck[EAPAKA_CK_SIZE];
++  unsigned char res[EAPSIM_RES_SIZE];
++
++  /* outputs */
++  unsigned char master_key[20];
++  unsigned char K_aut[EAPSIM_AUTH_SIZE];
++  unsigned char K_encr[16];
++  unsigned char msk[64];
++  unsigned char emsk[64];
++};
++
++
++/*
++ * interfaces in eapakalib.c
++ */
++extern int  eapaka_checkmac(VALUE_PAIR *rvps,
++			    uint8_t key[8],
++			    uint8_t calcmac[20]);
++
++/*
++ * in eapcrypto.c
++ */
++extern void eapaka_calculate_keys(struct eapaka_keys *ek);
++extern void eapaka_dump_mk(struct eapaka_keys *ek);
++
++
++#endif /* _EAP_AKA_H */
+Index: src/modules/rlm_eap/libeap/eap_sim.h
+===================================================================
+--- src/modules/rlm_eap/libeap/eap_sim.h	(revision 15087)
++++ src/modules/rlm_eap/libeap/eap_sim.h	(working copy)
+@@ -53,6 +53,9 @@
+ #define ATTRIBUTE_EAP_SIM_KC2           1213
+ #define ATTRIBUTE_EAP_SIM_KC3           1214
+ 
++#define ATTRIBUTE_EAP_AKA_IK            1215
++#define ATTRIBUTE_EAP_AKA_CK            1216
++
+ enum eapsim_subtype {
+   eapsim_start       = 10,
+   eapsim_challenge   = 11,
+@@ -81,6 +84,8 @@
+ };
+ 
+ #define PW_EAP_SIM_RAND                 1
++#define PW_EAP_SIM_AUTN                 2
++#define PW_EAP_SIM_RES                  3
+ #define PW_EAP_SIM_PADDING              6
+ #define PW_EAP_SIM_NONCE_MT             7
+ #define PW_EAP_SIM_PERMANENT_ID_REQ    10
+@@ -94,6 +99,7 @@
+ #define PW_EAP_SIM_COUNTER             19
+ #define PW_EAP_SIM_COUNTER_TOO_SMALL   20
+ #define PW_EAP_SIM_NONCE_S             21
++#define PW_EAP_SIM_CLIENT_ERROR_CODE   22
+ #define PW_EAP_SIM_IV                 129
+ #define PW_EAP_SIM_ENCR_DATA          130
+ #define PW_EAP_SIM_NEXT_PSEUDONUM     132
+@@ -125,6 +131,8 @@
+ #define EAPSIM_CALCMAC_SIZE 20
+ #define EAPSIM_NONCEMT_SIZE 16
+ #define EAPSIM_AUTH_SIZE    16
++#define EAPSIM_AUTN_SIZE    16
++#define EAPSIM_RES_SIZE     16
+ 
+ struct eapsim_keys {
+   /* inputs */
+Index: src/modules/rlm_eap/libeap/eap_types.h
+===================================================================
+--- src/modules/rlm_eap/libeap/eap_types.h	(revision 15087)
++++ src/modules/rlm_eap/libeap/eap_types.h	(working copy)
+@@ -53,6 +53,7 @@
+ #define PW_EAP_LEAP		17
+ #define PW_EAP_SIM              18
+ #define PW_EAP_TTLS		21
++#define PW_EAP_AKA		23
+ #define PW_EAP_PEAP		25
+ #define PW_EAP_MSCHAPV2		26
+ #define PW_EAP_CISCO_MSCHAPV2	29
+Index: src/modules/rlm_eap/libeap/eapakalib.c
+===================================================================
+--- src/modules/rlm_eap/libeap/eapakalib.c	(revision 0)
++++ src/modules/rlm_eap/libeap/eapakalib.c	(working copy)
+@@ -0,0 +1,519 @@
++/*
++ * eapakalib.c    based upon draft-haverinen-pppext-eap-aka-11.txt.
++ *
++ * The development of the EAP/AKA support was funded by Internet Foundation
++ * Austria (http://www.nic.at/ipa).
++ *
++ * code common to EAP-AKA clients and to servers.
++ *
++ * Version:     $Id: eapakalib.c 13908 2013-08-31 19:33:55Z korosteleva $
++ *
++ *   This program is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; either version 2 of the License, or
++ *   (at your option) any later version.
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *   GNU General Public License for more details.
++ *
++ *   You should have received a copy of the GNU General Public License
++ *   along with this program; if not, write to the Free Software
++ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * Copyright 2000-2003  The FreeRADIUS server project
++ * Copyright 2003  Michael Richardson <mcr@sandelman.ottawa.on.ca>
++ */
++
++/*
++ *  EAP-AKA PACKET FORMAT
++ *  ------- ------ ------
++ *
++ * EAP Request and Response Packet Format
++ * --- ------- --- -------- ------ ------
++ *  0                   1                   2                   3
++ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ * |     Code      |  Identifier   |            Length             |
++ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ * |     Type      |  AKA-Type     |   AKA-Length  |     value ... |
++ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ *
++ * with AKA-Type/AKA-Length/Value... repeating. AKA-Length is in units
++ * of 32 bits, and includes the Aka-Type/Aka-Length fields.
++ *
++ * The AKA-Type's are mapped to ATTRIBUTE_EAP_SIM_BASE+Aka-type and
++ * unmapped by these functions.
++ *
++ */
++
++#include <freeradius-devel/autoconf.h>
++#include <freeradius-devel/missing.h>
++#include <freeradius-devel/libradius.h>
++#include "eap_types.h"
++#include "eap_sim.h"
++#include "eap_aka.h"
++#include <freeradius-devel/sha1.h>
++ 
++
++static const char rcsid[] = "$Id: eapakalib.c 13908 2013-08-31 19:33:55Z korosteleva $";
++
++/*
++ * given a radius request with many attribues in the EAP-AKA range, build
++ * them all into a single EAP-AKA body.
++ *
++ */
++int map_eapaka_basictypes(RADIUS_PACKET *r, EAP_PACKET *ep)
++{
++	VALUE_PAIR       *vp;
++	int               encoded_size;
++	uint8_t          *encodedmsg, *attr;
++	unsigned int      id, eapcode;
++	unsigned char    *macspace;
++	unsigned char     subtype;
++
++	macspace = NULL;
++
++	/*
++	 * encodedmsg is now an EAP-AKA message.
++	 * it might be too big for putting into an EAP-Type-AKA
++	 *
++	 */
++	vp = pairfind(r->vps, ATTRIBUTE_EAP_SIM_SUBTYPE);
++	if(vp == NULL)
++	{
++		subtype = eapaka_challenge;
++	}
++	else
++	{
++		subtype = vp->lvalue;
++	}
++
++	vp = pairfind(r->vps, ATTRIBUTE_EAP_ID);
++	if(vp == NULL)
++	{
++		id = ((int)getpid() & 0xff);
++	}
++	else
++  {
++		id = vp->lvalue;
++	}
++
++	vp = pairfind(r->vps, ATTRIBUTE_EAP_CODE);
++	if(vp == NULL)
++	{
++		eapcode = PW_EAP_REQUEST;
++	}
++	else
++	{
++		eapcode = vp->lvalue;
++	}
++
++
++	/*
++	 * take a walk through the attribute list to see how much space
++	 * that we need to encode all of this.
++	 */
++	encoded_size = 0;
++	for(vp = r->vps; vp != NULL; vp = vp->next)
++	{
++		int roundedlen;
++		int vplen;
++
++		if(vp->attribute < ATTRIBUTE_EAP_SIM_BASE ||
++		   vp->attribute >= ATTRIBUTE_EAP_SIM_BASE+256)
++		{
++			continue;
++		}
++
++		vplen = vp->length;
++
++		/*
++		 * the AT_MAC attribute is a bit different, when we get to this
++		 * attribute, we pull the contents out, save it for later
++		 * processing, set the size to 16 bytes (plus 2 bytes padding).
++		 *
++ 		 * At this point, we only care about the size.
++		 */
++		if(vp->attribute == ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_MAC) {
++			vplen = 18;
++		}
++
++		/* round up to next multiple of 4, after taking in
++		 * account the type and length bytes
++		 */
++		roundedlen = (vplen + 2 + 3) & ~3;
++		encoded_size += roundedlen;
++	}
++
++	if (ep->code != PW_EAP_SUCCESS)
++		ep->code = eapcode;
++	ep->id = (id & 0xff);
++	ep->type.type = PW_EAP_AKA;
++
++	/*
++	 * if no attributes were found, do very little.
++	 *
++	 */
++	if(encoded_size == 0)
++	{
++	        encodedmsg = malloc(3);
++		/* FIX: could be NULL */
++
++		encodedmsg[0]=subtype;
++		encodedmsg[1]=0;
++		encodedmsg[2]=0;
++
++		ep->type.length = 3;
++		ep->type.data = encodedmsg;
++
++		return 0;
++	}
++
++
++	/*
++	 * figured out the length, so malloc some space for the results.
++	 *
++	 * Note that we do not bother going through an "EAP" stage, which
++	 * is a bit strange compared to the unmap, which expects to see
++	 * an EAP-AKA virtual attributes.
++	 *
++	 * EAP is 1-code, 1-identifier, 2-length, 1-type = 5 overhead.
++	 *
++	 * AKA code adds a subtype, and 2 bytes of reserved = 3.
++	 *
++	 */
++
++	/* malloc space for it */
++
++	encoded_size += 3;
++	encodedmsg = malloc(encoded_size);
++	if (encodedmsg == NULL) {
++		radlog(L_ERR, "eapaka: out of memory allocating %d bytes", encoded_size+5);
++		return 0;
++	}
++	memset(encodedmsg, 0, encoded_size);
++
++	/*
++	 * now walk the attributes again, sticking them in.
++	 *
++	 * we go three bytes into the encoded message, because there are two
++	 * bytes of reserved, and we will fill the "subtype" in later.
++	 *
++	 */
++	attr = encodedmsg+3;
++
++	for(vp = r->vps; vp != NULL; vp = vp->next)
++	{
++		int roundedlen;
++
++		if(vp->attribute < ATTRIBUTE_EAP_SIM_BASE ||
++		   vp->attribute >= ATTRIBUTE_EAP_SIM_BASE+256)
++		{
++			continue;
++		}
++
++		/*
++		 * the AT_MAC attribute is a bit different, when we get to this
++		 * attribute, we pull the contents out, set the size to 16 bytes
++     * (plus 2 bytes padding).
++		 *
++ 		 * At this point, we put in zeros, and remember where the
++		 * sixteen bytes go.
++		 */
++		if(vp->attribute == ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_MAC) {
++			roundedlen = 20;
++			memset(&attr[2], 0, 18);
++			macspace = &attr[4];
++		}
++		else {
++			roundedlen = (vp->length + 2 + 3) & ~3;
++			memset(attr, 0, roundedlen);
++			memcpy(&attr[2], vp->vp_strvalue, vp->length);
++		}
++		attr[0] = vp->attribute - ATTRIBUTE_EAP_SIM_BASE;
++		attr[1] = roundedlen >> 2;
++
++		attr += roundedlen;
++	}
++
++	encodedmsg[0] = subtype;
++
++	ep->type.length = encoded_size;
++	ep->type.data = encodedmsg;
++
++	/*
++	 * if macspace was set and we have a key,
++	 * then we should calculate the HMAC-SHA1 of the resulting EAP-AKA
++	 * packet
++	 */
++	vp = pairfind(r->vps, ATTRIBUTE_EAP_SIM_KEY);
++	if(macspace != NULL && vp != NULL)
++	{
++		unsigned char   *buffer;
++		eap_packet_t	*hdr;
++		uint16_t         hmaclen, total_length = 0;
++		unsigned char    sha1digest[20];
++
++		total_length = EAP_HEADER_LEN + 1 + encoded_size;
++		hmaclen = total_length;
++		buffer = (unsigned char *)malloc(hmaclen);
++		hdr = (eap_packet_t *)buffer;
++		if (!hdr) {
++			radlog(L_ERR, "rlm_eap: out of memory");
++			free(encodedmsg);
++			return 0;
++		}
++
++		hdr->code = eapcode & 0xFF;
++		hdr->id = (id & 0xFF);
++		total_length = htons(total_length);
++		memcpy(hdr->length, &total_length, sizeof(uint16_t));
++
++		hdr->data[0] = PW_EAP_AKA;
++
++		/* copy the data */
++		memcpy(&hdr->data[1], encodedmsg, encoded_size);
++
++		/* HMAC it! */
++		fr_hmac_sha1(buffer, hmaclen,
++			       vp->vp_strvalue, vp->length,
++			       sha1digest);
++
++		/* done with the buffer, free it */
++		free(buffer);
++
++		/* now copy the digest to where it belongs in the AT_MAC */
++                /* note that it is truncated to 128-bits */
++		memcpy(macspace, sha1digest, 16);
++	}
++
++	/* if we had an AT_MAC and no key, then fail */
++	if(macspace != NULL && vp == NULL)
++	{
++		if(encodedmsg != NULL)
++			free(encodedmsg);
++		return 0;
++	}
++
++	return 1;
++}
++
++int map_eapaka_types(RADIUS_PACKET *r)
++{
++	EAP_PACKET ep;
++	int ret;
++
++	memset(&ep, 0, sizeof(ep));
++	ret = map_eapaka_basictypes(r, &ep);
++	if(ret != 1) {
++		return ret;
++	}
++	eap_basic_compose(r, &ep);
++
++	return 1;
++}
++
++/*
++ * given a radius request with an EAP-AKA body, decode it into TLV pairs
++ *
++ * return value is TRUE if it succeeded, false if there was something
++ * wrong and the packet should be discarded.
++ *
++ */
++int unmap_eapaka_basictypes(RADIUS_PACKET *r,
++			    uint8_t *attr, unsigned int attrlen)
++{
++	VALUE_PAIR              *newvp;
++	int                     eapaka_attribute;
++	unsigned int            eapaka_len;
++	int                     es_attribute_count;
++
++	es_attribute_count=0;
++
++	/* big enough to have even a single attribute */
++	if(attrlen < 3) {
++		radlog(L_ERR, "eap: EAP-Aka attribute too short: %d < 3", attrlen);
++		return 0;
++	}
++  /***********************************************************************/
++  /* If the subtype is not authentication reject then it must be at least*/
++  /* 5 long.                                                             */
++  /***********************************************************************/
++  if (attr[0] != eapaka_authentication_reject)
++  {
++      if(attrlen < 5) {
++          radlog(L_ERR, "eap: EAP-Aka attribute too short: %d < 5", attrlen);
++          return 0;
++      }
++  }
++
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_SUBTYPE, PW_TYPE_INTEGER);
++	newvp->lvalue = attr[0];
++	newvp->length = 1;
++	pairadd(&(r->vps), newvp);
++
++	attr     += 3;
++	attrlen  -= 3;
++
++	/* now, loop processing each attribute that we find */
++	while(attrlen > 0)
++	{
++		if(attrlen < 2) {
++			radlog(L_ERR, "eap: EAP-Aka attribute %d too short: %d < 2", es_attribute_count, attrlen);
++			return 0;
++		}
++
++		eapaka_attribute = attr[0];
++		eapaka_len = attr[1] * 4;
++
++		if(eapaka_len > attrlen) {
++			radlog(L_ERR, "eap: EAP-Aka attribute %d (no.%d) has length longer than data (%d > %d)"
++			       , eapaka_attribute
++			       , es_attribute_count, eapaka_len, attrlen);
++			return 0;
++		}
++
++		if(eapaka_len > MAX_STRING_LEN) {
++			eapaka_len = MAX_STRING_LEN;
++		}
++		if (eapaka_len < 2) {
++			radlog(L_ERR, "eap: EAP-Aka attribute %d (no.%d) has length too small",
++			       eapaka_attribute, es_attribute_count);
++			       return 0;
++		}
++
++		newvp = paircreate(eapaka_attribute+ATTRIBUTE_EAP_SIM_BASE, PW_TYPE_OCTETS);
++		memcpy(newvp->vp_strvalue, &attr[2], eapaka_len-2);
++		newvp->length = eapaka_len-2;
++		pairadd(&(r->vps), newvp);
++		newvp = NULL;
++
++		/* advance pointers, decrement length */
++		attr += eapaka_len;
++		attrlen  -= eapaka_len;
++		es_attribute_count++;
++	}
++	return 1;
++}
++
++int unmap_eapaka_types(RADIUS_PACKET *r)
++{
++	VALUE_PAIR             *esvp;
++
++	esvp = pairfind(r->vps, ATTRIBUTE_EAP_BASE+PW_EAP_AKA);
++	if (esvp == NULL) {
++		radlog(L_ERR, "eap: EAP-Aka attribute not found");
++		return 0;
++	}
++
++	return unmap_eapaka_basictypes(r, esvp->vp_strvalue, esvp->length);
++}
++
++/*
++ * definitions changed to take a buffer for unknowns
++ * as this is more thread safe.
++ */
++const char *akastates[]={ "init", "start", "success",NULL };
++
++const char *aka_state2name(enum eapaka_clientstates state,
++			   char *statenamebuf,
++			   int   statenamebuflen)
++{
++	if(state >= eapaka_client_maxstates)
++	{
++		snprintf(statenamebuf, statenamebuflen,
++			 "eapstate:%d", state);
++		return statenamebuf;
++	}
++	else
++	{
++		return akastates[state];
++	}
++}
++const char *akaclienterrorcodes[]={ "unable to comply", NULL };
++
++const char *aka_clienterrorcode2name(enum eapaka_clienterrorcodes errorcode,
++			   char *errorcodenamebuf,
++			   int   errorcodenamebuflen)
++{
++	if(errorcode >= eapaka_client_maxclienterrorcodes)
++	{
++		snprintf(errorcodenamebuf, errorcodenamebuflen,
++			 "eapclienterrorcode:%d", errorcode);
++		return errorcodenamebuf;
++	}
++	else
++	{
++		return akaclienterrorcodes[errorcode];
++	}
++}
++
++static const char *subtypes[]={ "subtype0",
++                                "AKA-challenge",
++                                "AKA-authentication-reject",
++                                "subtype3",
++                                "subtype4",
++                                "subtype5",
++                                "subtype6",
++                                "subtype7",
++                                "subtype8",
++                                "subtype9",
++                                "start",
++                                "challenge",
++                                "notification",
++                                "reauth",
++                                "AKA-client-error",
++                                NULL };
++
++const char *aka_subtype2name(enum eapaka_subtype subtype,
++			     char *subtypenamebuf,
++			     int   subtypenamebuflen)
++{
++	if(subtype >= eapaka_max_subtype)
++	{
++		snprintf(subtypenamebuf, subtypenamebuflen,
++			 "illegal-subtype:%d", subtype);
++		return subtypenamebuf;
++	}
++	else
++	{
++		return subtypes[subtype];
++	}
++}
++
++
++
++void eapaka_calculate_keys(struct eapaka_keys *ek)
++{
++	fr_SHA1_CTX context;
++	uint8_t fk[160];
++	unsigned char buf[256];
++	unsigned char *p;
++	unsigned int  blen;
++
++	p = buf;
++	memcpy(p, ek->identity, ek->identitylen);   p = p+ek->identitylen;
++	memcpy(p, ek->ik, EAPAKA_IK_SIZE);       p = p+EAPAKA_IK_SIZE;
++	memcpy(p, ek->ck, EAPAKA_CK_SIZE);       p = p+EAPAKA_CK_SIZE;
++
++	blen = p - buf;
++
++	/* do the master key first */
++	fr_SHA1Init(&context);
++	fr_SHA1Update(&context, buf, blen);
++	fr_SHA1Final(ek->master_key, &context);
++
++	/*
++   * now use the PRF to expand it, generated K_aut, K_encr,
++	 * MSK and EMSK.
++	 */
++	fips186_2prf(ek->master_key, fk);
++
++	/* split up the result */
++	memcpy(ek->K_encr, fk +  0, 16);    /* 128 bits for encryption    */
++	memcpy(ek->K_aut,  fk + 16, EAPSIM_AUTH_SIZE); /*128 bits for auth */
++	memcpy(ek->msk,    fk + 32, 64);  /* 64 bytes for Master Session Key */
++	memcpy(ek->emsk,   fk + 96, 64);  /* 64- extended Master Session Key */
++}
+\ No newline at end of file
+Index: src/modules/rlm_eap/libeap/eapcommon.c
+===================================================================
+--- src/modules/rlm_eap/libeap/eapcommon.c	(revision 15087)
++++ src/modules/rlm_eap/libeap/eapcommon.c	(working copy)
+@@ -89,7 +89,7 @@
+   "20",
+   "ttls",			/* 21 */
+   "22",
+-  "23",
++  "aka",
+   "24",
+   "peap",			/* 25 */
+   "mschapv2",			/* 26 */
+Index: src/modules/rlm_eap/libeap/Makefile
+===================================================================
+--- src/modules/rlm_eap/libeap/Makefile	(revision 15088)
++++ src/modules/rlm_eap/libeap/Makefile	(working copy)
+@@ -6,7 +6,7 @@
+ 
+ include ../../../../Make.inc
+ 
+-SRCS		= eapcommon.c eapcrypto.c eapsimlib.c fips186prf.c
++SRCS		= eapcommon.c eapcrypto.c eapsimlib.c eapakalib.c fips186prf.c
+ ifneq ($(OPENSSL_LIBS),)
+ SRCS		+= cb.c eap_tls.c mppe_keys.c tls.c
+ endif
+Index: src/modules/rlm_eap/radeapclient.c
+===================================================================
+--- src/modules/rlm_eap/radeapclient.c	(revision 15087)
++++ src/modules/rlm_eap/radeapclient.c	(working copy)
+@@ -36,12 +36,13 @@
+ #include <freeradius-devel/conf.h>
+ #include <freeradius-devel/radpaths.h>
+ #include <freeradius-devel/md5.h>
+ 
+ #include "eap_types.h"
+ #include "eap_sim.h"
++#include "eap_aka.h"
+ 
+ extern int sha1_data_problems;
+ 
+ static int retries = 10;
+ static float timeout = 3;
+ static const char *secret = NULL;
+@@ -59,12 +60,13 @@
+ radlog_dest_t radlog_dest = RADLOG_STDERR;
+ const char *radlog_dir = NULL;
+ int debug_flag = 0;
+ char password[256];
+ 
+ struct eapsim_keys eapsim_mk;
++struct eapaka_keys eapaka_mk;
+ 
+ static void map_eap_types(RADIUS_PACKET *req);
+ static void unmap_eap_types(RADIUS_PACKET *rep);
+ static int map_eapsim_types(RADIUS_PACKET *r);
+ static int unmap_eapsim_types(RADIUS_PACKET *r);
+ 
+@@ -320,13 +322,13 @@
+ 
+ /*
+  * we got an EAP-Request/Sim/Start message in a legal state.
+  *
+  * pick a supported version, put it into the reply, and insert a nonce.
+  */
+-static int process_eap_start(RADIUS_PACKET *req,
++static int process_eap_sim_start(RADIUS_PACKET *req,
+ 			     RADIUS_PACKET *rep)
+ {
+ 	VALUE_PAIR *vp, *newvp;
+ 	VALUE_PAIR *anyidreq_vp, *fullauthidreq_vp, *permanentidreq_vp;
+ 	uint16_t *versions, selectedversion;
+ 	unsigned int i,versioncount;
+@@ -486,13 +488,13 @@
+  * use that to generate a new MAC.
+  *
+  * for the moment, we ignore the RANDs, then just plug in the SRES
+  * values.
+  *
+  */
+-static int process_eap_challenge(RADIUS_PACKET *req,
++static int process_eap_sim_challenge(RADIUS_PACKET *req,
+ 				 RADIUS_PACKET *rep)
+ {
+ 	VALUE_PAIR *newvp;
+ 	VALUE_PAIR *mac, *randvp;
+ 	VALUE_PAIR *sres1,*sres2,*sres3;
+ 	VALUE_PAIR *Kc1, *Kc2, *Kc3;
+@@ -708,13 +710,13 @@
+ 	 * look for the appropriate state, and process incoming message
+ 	 */
+ 	switch(state) {
+ 	case eapsim_client_init:
+ 		switch(subtype) {
+ 		case eapsim_start:
+-			newstate = process_eap_start(req, resp);
++			newstate = process_eap_sim_start(req, resp);
+ 			break;
+ 
+ 		case eapsim_challenge:
+ 		case eapsim_notification:
+ 		case eapsim_reauth:
+ 		default:
+@@ -727,17 +729,17 @@
+ 		break;
+ 
+ 	case eapsim_client_start:
+ 		switch(subtype) {
+ 		case eapsim_start:
+ 			/* NOT SURE ABOUT THIS ONE, retransmit, I guess */
+-			newstate = process_eap_start(req, resp);
++			newstate = process_eap_sim_start(req, resp);
+ 			break;
+ 
+ 		case eapsim_challenge:
+-			newstate = process_eap_challenge(req, resp);
++			newstate = process_eap_sim_challenge(req, resp);
+ 			break;
+ 
+ 		default:
+ 			fprintf(stderr, "radeapclient: sim in state %s message %s is illegal. Reply dropped.\n",
+ 				sim_state2name(state, statenamebuf, sizeof(statenamebuf)),
+ 				sim_subtype2name(subtype, subtypenamebuf, sizeof(subtypenamebuf)));
+@@ -835,12 +837,204 @@
+ 	pairreplace(&(rep->vps), state);
+ 
+ 	return 1;
+ }
+ 
+ 
++/*
++ * we got an EAP-Request/Aka/Challenge message in a legal state.
++ *
++ * use the RAND challenge to produce the SRES result, and then
++ * use that to generate a new MAC.
++ *
++ * for the moment, we ignore the RANDs, then just plug in the SRES
++ * values.
++ *
++ */
++static int process_eap_aka_challenge(RADIUS_PACKET *req,
++				 RADIUS_PACKET *rep)
++{
++	VALUE_PAIR *newvp;
++	VALUE_PAIR *mac, *randvp,*autn;
++  VALUE_PAIR *ik,*ck,*res,*local_autn;
++  VALUE_PAIR *username;
++	uint8_t calcmac[20];
++
++	/* look for the AT_MAC, AT_AUTN and the challenge data */
++	mac    = pairfind(req->vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_MAC);
++	randvp = pairfind(req->vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RAND);
++	autn   = pairfind(req->vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_AUTN);
++	if(mac == NULL || rand == NULL || autn == NULL) {
++		fprintf(stderr, "radeapclient: challenge message needs to contain RAND,AUTN and MAC\n");
++		return 0;
++	}
++
++	/*
++	 * now dig up the sres values from the response packet,
++	 * which were put there when we read things in.
++	 *
++	 */
++	res        = pairfind(rep->vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RES);
++	ik         = pairfind(rep->vps, ATTRIBUTE_EAP_AKA_IK);
++	ck         = pairfind(rep->vps, ATTRIBUTE_EAP_AKA_CK);
++	local_autn = pairfind(req->vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_AUTN);
++
++	if(res        == NULL ||
++	   ik         == NULL ||
++	   ck         == NULL ||
++	   local_autn == NULL) {
++		fprintf(stderr, "radeapclient: needs to have res,ik,ck, and autn set.\n");
++		return 0;
++	}
++  username = pairfind(rep->vps, PW_USER_NAME);
++  if(username == NULL)
++  {
++			fprintf(stderr, "radeapclient: We need to have a User-Name attribute!\n");
++			return 0;
++  }
++  memcpy(eapaka_mk.identity, username->vp_strvalue, strlen(username->vp_strvalue));
++  eapaka_mk.identitylen = strlen(username->vp_strvalue);
++    
++	memcpy(eapaka_mk.res , res->vp_strvalue       , strlen(res->vp_strvalue));
++	memcpy(eapaka_mk.ik  , ik->vp_strvalue        , sizeof(eapaka_mk.ik));
++	memcpy(eapaka_mk.ck  , ck->vp_strvalue        , sizeof(eapaka_mk.ck));
++	memcpy(eapaka_mk.autn, local_autn->vp_strvalue, sizeof(eapaka_mk.autn));
++
++	/* all set, calculate keys */
++	eapaka_calculate_keys(&eapaka_mk);
++
++
++	/* verify the MAC, now that we have all the keys. */
++	if(eapsim_checkmac(req->vps, eapaka_mk.K_aut,
++                     NULL,0,
++                     calcmac)) {
++      printf("MAC check succeed\n");
++	} else {
++		int i, j;
++		j=0;
++		printf("calculated MAC (");
++		for (i = 0; i < 20; i++) {
++			if(j==4) {
++				printf("_");
++				j=0;
++			}
++			j++;
++
++			printf("%02x", calcmac[i]);
++		}
++		printf(" did not match\n");
++		return 0;
++	}
++
++	/* form new response clear of any EAP stuff */
++	cleanresp(rep);
++
++	/* mark the subtype as being EAP-AKA/Response/Aka-Challenge */
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_SUBTYPE, PW_TYPE_INTEGER);
++	newvp->lvalue = eapaka_challenge;
++	pairreplace(&(rep->vps), newvp);
++
++	/*
++	 * fill the SIM_MAC with a field that will in fact get appended
++	 * to the packet before the MAC is calculated
++	 */
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RES, PW_TYPE_OCTETS);
++	memset(newvp->vp_strvalue,        0, 2); /* clear reserved bytes */
++	memcpy(&newvp->vp_strvalue[2], eapaka_mk.res, EAPSIM_RES_SIZE);
++	newvp->length = 2+EAPSIM_RES_SIZE;
++  pairreplace(&(rep->vps), newvp);
++
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_MAC,
++			   PW_TYPE_OCTETS);
++	memset(newvp->vp_strvalue,0x0,EAPSIM_CALCMAC_SIZE);
++	newvp->length = EAPSIM_CALCMAC_SIZE;
++	pairreplace(&(rep->vps), newvp);
++
++
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_KEY, PW_TYPE_OCTETS);
++	memcpy(newvp->vp_strvalue,    eapaka_mk.K_aut, EAPSIM_AUTH_SIZE);
++	newvp->length = EAPSIM_AUTH_SIZE;
++	pairreplace(&(rep->vps), newvp);
++
++  pairdelete(&(rep->vps),ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_AUTN);
++
++	return 1;
++}
++/*
++ * this code runs the EAP-AKA client state machine.
++ * the *request* is from the server.
++ * the *reponse* is to the server.
++ *
++ */
++static int respond_eap_aka(RADIUS_PACKET *req,
++			   RADIUS_PACKET *resp)
++{
++	enum eapaka_subtype subtype;
++	VALUE_PAIR *vp, *radstate, *eapid;
++	char  subtypenamebuf[32];
++
++	if ((radstate = paircopy2(req->vps, PW_STATE)) == NULL)
++	{
++		return 0;
++	}
++
++	if ((eapid = paircopy2(req->vps, ATTRIBUTE_EAP_ID)) == NULL)
++	{
++		return 0;
++	}
++
++
++	/*
++	 * map the attributes, and authenticate them.
++	 */
++	unmap_eapaka_types(req);
++
++	printf("<+++ EAP-aka decoded packet:\n");
++	vp_printlist(stdout, req->vps);
++
++	if((vp = pairfind(req->vps, ATTRIBUTE_EAP_SIM_SUBTYPE)) == NULL)
++	{
++		return 0;
++	}
++	subtype = vp->lvalue;
++
++	/*
++	 * look for the appropriate state, and process incoming message
++	 */
++  switch(subtype) {
++      case eapaka_challenge:
++          if (!process_eap_aka_challenge(req, resp))
++          {
++              return 0;
++          }
++          break;
++          
++      case eapaka_authentication_reject:
++      case eapaka_client_error:
++      case eapaka_notification:
++      case eapaka_reauth:
++      default:
++          fprintf(stderr, "radeapclient: aka in state client_init message %s is illegal. Reply dropped.\n",
++                  aka_subtype2name(subtype, subtypenamebuf, sizeof(subtypenamebuf)));
++          /* invalid state, drop message */
++          return 0;
++  }
++
++
++	/* copy the eap state object in */
++	pairreplace(&(resp->vps), eapid);
++
++	/* update stete info, and send new packet */
++	map_eapaka_types(resp);
++
++	/* copy the radius state object in */
++	pairreplace(&(resp->vps), radstate);
++
++	return 1;
++}
++
+ 
+ static int sendrecv_eap(RADIUS_PACKET *rep)
+ {
+ 	RADIUS_PACKET *req = NULL;
+ 	VALUE_PAIR *vp, *vpnext;
+ 	int tried_eap_md5 = 0;
+@@ -957,12 +1151,18 @@
+ 		case ATTRIBUTE_EAP_BASE+PW_EAP_SIM:
+ 			if(respond_eap_sim(req, rep))
+ 			{
+ 				goto again;
+ 			}
+ 			break;
++		case ATTRIBUTE_EAP_BASE+PW_EAP_AKA:
++			if(respond_eap_aka(req, rep))
++			{
++                goto again;
++			}
++			break;
+ 		}
+ 	}
+ 
+ 	return 1;
+ }
+ 
+Index: src/modules/rlm_eap/types/rlm_eap_aka/Makefile
+===================================================================
+--- src/modules/rlm_eap/types/rlm_eap_aka/Makefile	(revision 0)
++++ src/modules/rlm_eap/types/rlm_eap_aka/Makefile	(working copy)
+@@ -0,0 +1,17 @@
++#
++# $Id: Makefile 13908 2013-08-31 19:33:55Z korosteleva $
++#
++
++TARGET      = rlm_eap_aka
++SRCS        = rlm_eap_aka.c 
++HEADERS     =
++RLM_CFLAGS  = -I../.. -I../../libeap $(INCLTDL)
++#RLM_LIBS    = ../../libeap/libeap.la
++RLM_LIBS    =  ../../libeap/$(LIBPREFIX)freeradius-eap.la
++
++RLM_INSTALL =
++
++RLM_DIR=../../
++include ${RLM_DIR}../rules.mak
++
++$(LT_OBJS): $(HEADERS)
+Index: src/modules/rlm_eap/types/rlm_eap_aka/rlm_eap_aka.c
+===================================================================
+--- src/modules/rlm_eap/types/rlm_eap_aka/rlm_eap_aka.c	(revision 0)
++++ src/modules/rlm_eap/types/rlm_eap_aka/rlm_eap_aka.c	(working copy)
+@@ -0,0 +1,542 @@
++/*
++ * rlm_eap_aka.c    Handles that are called from eap for AKA
++ *
++ * The development of the EAP/AKA support derived/ported/modified from the
++ * FreeRadius EAP/SIM support which was funded by Internet Foundation
++ * Austria (http://www.nic.at/ipa).
++ *
++ * Version:     $Id: rlm_eap_aka.c 13914 2013-09-01 10:03:44Z korosteleva $
++ *
++ *   This program is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; either version 2 of the License, or
++ *   (at your option) any later version.
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *   GNU General Public License for more details.
++ *
++ *   You should have received a copy of the GNU General Public License
++ *   along with this program; if not, write to the Free Software
++ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * Copyright 2003  Michael Richardson <mcr@sandelman.ottawa.on.ca>
++ * Copyright 2003  The FreeRADIUS server project
++ *
++ */
++
++#include <freeradius-devel/autoconf.h>
++
++#include <stdio.h>
++#include <stdlib.h>
++
++#include "../../eap.h"
++#include "eap_types.h"
++#include "eap_sim.h"
++#include "eap_aka.h"
++
++#include <freeradius-devel/rad_assert.h>
++
++struct eap_aka_server_state {
++	enum eapaka_serverstates state;
++	struct eapaka_keys keys;
++	int  aka_id;
++};
++
++/*
++ * Add value pair to reply
++ */
++static void add_reply(VALUE_PAIR** vp,
++		      const char* name, const uint8_t *value, size_t len)
++{
++	VALUE_PAIR *reply_attr;
++	reply_attr = pairmake(name, "", T_OP_EQ);
++	if (!reply_attr) {
++		DEBUG("rlm_eap_aka: "
++		      "add_reply failed to create attribute %s: %s\n",
++		      name, fr_strerror());
++		return;
++	}
++
++	memcpy(reply_attr->vp_strvalue, value, len);
++	reply_attr->length = len;
++	pairadd(vp, reply_attr);
++}
++
++static void eap_aka_state_free(void *opaque)
++{
++	struct eap_aka_server_state *ess = (struct eap_aka_server_state *)opaque;
++
++	if (!ess) return;
++
++	free(ess);
++}
++
++/*
++ *	build a reply to be sent.
++ */
++static int eap_aka_compose(EAP_HANDLER *handler)
++{
++	/* we will set the ID on requests, since we have to HMAC it */
++	handler->eap_ds->set_request_id = 1;
++
++	return map_eapaka_basictypes(handler->request->reply,
++				     handler->eap_ds->request);
++}
++
++static int eap_aka_getchalans(VALUE_PAIR *vps,struct eap_aka_server_state *ess)
++{
++	VALUE_PAIR *vp;
++
++	vp = pairfind(vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RAND);
++	if(vp == NULL) {
++      /* bad, we can't find stuff! */
++      DEBUG2("   eap-aka can not find EAP-Sim-RAND");
++      return 0;
++	}
++	if(vp->length != EAPSIM_RAND_SIZE) {
++		DEBUG2("   EAP-Sim-RAND is not 16-bytes: %zu", vp->length);
++		return 0;
++	}
++	memcpy(ess->keys.rand, vp->vp_strvalue, EAPSIM_RAND_SIZE);
++
++	vp = pairfind(vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_AUTN);
++	if(vp == NULL) {
++      /* bad, we can't find stuff! */
++      DEBUG2("   eap-aka can not find EAP-Sim-AUTN attribute ");
++      return 0;
++	}
++	if(vp->length != EAPSIM_AUTN_SIZE) {
++      DEBUG2("   EAP-Sim-AUTN is not 16-bytes: %zu", vp->length);
++      return 0;
++	}
++	memcpy(ess->keys.autn, vp->vp_strvalue, EAPSIM_AUTN_SIZE);
++  
++	vp = pairfind(vps, ATTRIBUTE_EAP_AKA_IK);
++	if(vp == NULL) {
++      /* bad, we can't find stuff! */
++      DEBUG2("   eap-aka can not find EAP-Aka-IK attribute");
++      return 0;
++	}
++	if(vp->length != EAPAKA_IK_SIZE) {
++      DEBUG2("   EAP-Aka-IK is not 16-bytes: %zu", vp->length);
++      return 0;
++	}
++	memcpy(ess->keys.ik, vp->vp_strvalue, EAPAKA_IK_SIZE);
++  
++  vp = pairfind(vps, ATTRIBUTE_EAP_AKA_CK);
++	if(vp == NULL) {
++      /* bad, we can't find stuff! */
++      DEBUG2("   eap-aka can not find EAP-Aka-CK");
++      return 0;
++	}
++	if(vp->length != EAPAKA_CK_SIZE) {
++      DEBUG2("   EAP-Aka-CK is not 16-bytes: %zu", vp->length);
++      return 0;
++	}
++	memcpy(ess->keys.ck, vp->vp_strvalue, EAPAKA_CK_SIZE);
++  
++  vp = pairfind(vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RES);
++	if(vp == NULL) {
++      /* bad, we can't find stuff! */
++      DEBUG2("   eap-aka can not find EAP-Sim-RES");
++      return 0;
++	}
++#if 0	
++	if(vp->length != EAPSIM_RES_SIZE) {
++      DEBUG2("   EAP-Sim-RES is not 16-bytes: %d", vp->length);
++      return 0;
++	}
++	memcpy(ess->keys.res, vp->vp_strvalue, EAPSIM_RES_SIZE);
++#else
++	/* Res value should be copied for "vp->length" length */
++        DEBUG2("AT_RES value copied of length:( %zu)",vp->length);
++	memcpy(ess->keys.res, vp->vp_strvalue, vp->length);
++#endif
++	return 1;
++}
++
++/*
++ * this code sends the challenge itself.
++ *
++ * Challenges will come from one of three places eventually:
++ *
++ * 1  from attributes like ATTRIBUTE_EAP_AKA_RANDx
++ *            (these might be retrived from a database)
++ *
++ * 2  from internally implemented AKA authenticators
++ *            (a akaple one based upon XOR will be provided)
++ *
++ * 3  from some kind of SS7 interface.
++ *
++ * For now, they only come from attributes.
++ * It might be that the best way to do 2/3 will be with a different
++ * module to generate/calculate things.
++ *
++ */
++static int eap_aka_sendchallenge(EAP_HANDLER *handler)
++{
++	struct eap_aka_server_state *ess;
++	VALUE_PAIR **vps, *newvp;
++
++	ess = (struct eap_aka_server_state *)handler->opaque;
++	rad_assert(handler->request != NULL);
++	rad_assert(handler->request->reply);
++
++	/* these are the outgoing attributes */
++	vps = &handler->request->reply->vps;
++
++	rad_assert(vps != NULL);
++
++  pairdelete(vps,ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RES);
++  pairdelete(vps,ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RAND);
++  pairdelete(vps,ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_AUTN);
++  
++	/* okay, we got the challenges! Put them into an attribute */
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RAND,
++			   PW_TYPE_OCTETS);
++	memset(newvp->vp_strvalue,    0, 2); /* clear reserved bytes */
++	memcpy(newvp->vp_strvalue+2, ess->keys.rand, EAPSIM_RAND_SIZE);
++	newvp->length = 2+EAPSIM_RAND_SIZE;
++	pairadd(vps, newvp);
++
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_AUTN,
++			   PW_TYPE_OCTETS);
++	memset(newvp->vp_strvalue,    0, 2); /* clear reserved bytes */
++	memcpy(newvp->vp_strvalue+2, ess->keys.autn, EAPSIM_AUTN_SIZE);
++	newvp->length = 2+EAPSIM_AUTN_SIZE;
++	pairadd(vps, newvp);
++
++	/* set the EAP_ID - new value */
++	newvp = paircreate(ATTRIBUTE_EAP_ID, PW_TYPE_INTEGER);
++	newvp->lvalue = ess->aka_id++;
++	pairadd(vps, newvp);
++
++	/* make a copy of the identity */
++	ess->keys.identitylen = strlen(handler->identity);
++	memcpy(ess->keys.identity, handler->identity, ess->keys.identitylen);
++
++	/* all set, calculate keys! */
++	eapaka_calculate_keys(&ess->keys);
++
++	/*
++	 * need to include an AT_MAC attribute so that it will get
++	 * calculated. The NONCE_MT and the MAC are both 16 bytes, so
++	 * we store the NONCE_MT in the MAC for the encoder, which
++	 * will pull it out before it does the operation.
++	 */
++
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_MAC,
++			   PW_TYPE_OCTETS);
++	memcpy(newvp->vp_strvalue, ess->keys.autn, 16);
++	newvp->length = 16;
++	pairadd(vps, newvp);
++
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_KEY, PW_TYPE_OCTETS);
++	memcpy(newvp->vp_strvalue, ess->keys.K_aut, 16);
++	newvp->length = 16;
++	pairadd(vps, newvp);
++
++	/* the SUBTYPE, set to challenge. */
++	newvp = paircreate(ATTRIBUTE_EAP_SIM_SUBTYPE, PW_TYPE_INTEGER);
++	newvp->lvalue = eapaka_challenge;
++	pairadd(vps, newvp);
++
++
++	return 1;
++}
++
++#ifndef EAPTLS_MPPE_KEY_LEN
++#define EAPTLS_MPPE_KEY_LEN     32
++#endif
++
++/*
++ * this code sends the success message.
++ *
++ * the only work to be done is the add the appropriate SEND/RECV
++ * radius attributes derived from the MSK.
++ *
++ */
++static int eap_aka_sendsuccess(EAP_HANDLER *handler)
++{
++        unsigned char *p;
++	struct eap_aka_server_state *ess;
++	VALUE_PAIR **outvps;
++	VALUE_PAIR *newvp;
++
++	/* outvps is the data to the client. */
++	outvps= &handler->request->reply->vps;
++	ess = (struct eap_aka_server_state *)handler->opaque;
++
++	/* set the EAP_ID - new value */
++	newvp = paircreate(ATTRIBUTE_EAP_ID, PW_TYPE_INTEGER);
++	newvp->lvalue = ess->aka_id++;
++	pairreplace(outvps, newvp);
++
++	p = ess->keys.msk;
++	add_reply(outvps, "MS-MPPE-Recv-Key", p, EAPTLS_MPPE_KEY_LEN);
++	p += EAPTLS_MPPE_KEY_LEN;
++	add_reply(outvps, "MS-MPPE-Send-Key", p, EAPTLS_MPPE_KEY_LEN);
++	return 1;
++}
++
++
++/*
++ * run the server state machine.
++ */
++static void eap_aka_stateenter(EAP_HANDLER *handler,
++			       struct eap_aka_server_state *ess,
++			       enum eapaka_serverstates newstate)
++{
++	switch(newstate) {
++	case eapaka_server_challenge:
++		/*
++		 * send the EAP-AKA Challenge message.
++		 */
++		eap_aka_sendchallenge(handler);
++		break;
++
++	case eapaka_server_success:
++		/*
++		 * send the EAP Success message
++		 */
++  	        eap_aka_sendsuccess(handler);
++		handler->eap_ds->request->code = PW_EAP_SUCCESS;
++		break;
++
++	default:
++		/*
++		 * nothing to do for this transition.
++		 */
++		break;
++	}
++
++	ess->state = newstate;
++
++	/* build the target packet */
++	eap_aka_compose(handler);
++}
++
++/*
++ *	Initiate the EAP-AKA session by starting the state machine
++ *      and initiating the state.
++ */
++static int eap_aka_initiate(void *type_data, EAP_HANDLER *handler)
++{
++	struct eap_aka_server_state *ess;
++	VALUE_PAIR *outvps;
++	time_t n;
++
++	outvps = handler->request->reply->vps;
++
++	type_data = type_data;  /* shut up compiler */
++
++
++	ess = malloc(sizeof(struct eap_aka_server_state));
++	if(ess == NULL) {
++		DEBUG2("   no space for eap aka state");
++		return 0;
++	}
++
++	handler->opaque = ((void *)ess);
++	handler->free_opaque = eap_aka_state_free;
++
++	handler->stage = AUTHENTICATE;
++
++	/*
++	 * save the keying material, because it could change on a subsequent
++	 * retrival.
++	 *
++	 */
++	if(!eap_aka_getchalans(outvps,ess))
++	{
++      DEBUG2("   can not initiate aka, missing attributes");
++      return 0;
++	}
++  
++	/*
++	 * this value doesn't have be strong, but it is good if it
++	 * is different now and then
++	 */
++	time(&n);
++	ess->aka_id = (n & 0xff);
++
++	eap_aka_stateenter(handler, ess, eapaka_server_challenge);
++
++	return 1;
++}
++
++
++
++/*
++ * process an EAP-Aka/Response/Challenge
++ *
++ * verify that MAC that we received matches what we would have
++ * calculated from the packet.
++ *
++ */
++static int process_eap_aka_challenge(EAP_HANDLER *handler, VALUE_PAIR *vps)
++{
++	struct eap_aka_server_state *ess;
++	unsigned char calcmac[EAPSIM_CALCMAC_SIZE];
++	VALUE_PAIR *res;
++
++	ess = (struct eap_aka_server_state *)handler->opaque;
++
++	/* verify the MAC, now that we have all the keys. */
++	if(eapsim_checkmac(vps, ess->keys.K_aut,NULL,0,calcmac)) {
++		DEBUG2("MAC check succeed\n");
++	} else {
++		int i, j;
++		unsigned char macline[20*3];
++		char *m = macline;
++
++		j=0;
++		for (i = 0; i < EAPSIM_CALCMAC_SIZE; i++) {
++			if(j==4) {
++			  *m++ = '_';
++			  j=0;
++			}
++			j++;
++
++			sprintf(m, "%02x", calcmac[i]);
++			m = m + strlen(m);
++		}
++		DEBUG2("calculated MAC (%s) did not match", macline);
++		return 0;
++	}
++	res = pairfind(vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_RES);
++	if((res == NULL) || (res->length > 18 || res->length < 6))
++        {
++      /* bad, we can't find stuff! */
++		DEBUG2("AT_RES missing or invalid length from eap aka challenge response");
++		return 0;
++	}
++  const size_t res_len = res->length - 2;
++  if (memcmp(&res->vp_strvalue[2], ess->keys.res, res_len))
++  {
++    int i;
++    unsigned char resline[16*3];
++    unsigned char res_expected_line[16*3];
++    char *m = resline;
++    char *exp = res_expected_line;
++
++    for (i = 0; i < res_len; ++i)
++    {
++        sprintf(m, "%02x", res->vp_strvalue[2+i]);
++        sprintf(exp, "%02x", ess->keys.res[i]);
++        m += strlen(m);
++        exp += strlen(exp);
++    }
++    DEBUG2("AT_RES supplied (%s) does match configured value (%s), res_len:(%zu)",resline, res_expected_line, res_len);
++    return(1);
++  }
++  else
++  {
++      DEBUG2("AT_RES supplied matches configured value");
++  }
++
++
++	/* everything looks good, change states */
++	eap_aka_stateenter(handler, ess, eapaka_server_success);
++	return 1;
++}
++
++
++/*
++ *	Authenticate a previously sent challenge.
++ */
++static int eap_aka_authenticate(void *arg, EAP_HANDLER *handler)
++{
++	struct eap_aka_server_state *ess;
++	VALUE_PAIR *vp, *vps;
++	enum eapaka_subtype subtype;
++	int success;
++
++	arg = arg; /* shut up compiler */
++
++	ess = (struct eap_aka_server_state *)handler->opaque;
++
++	/* vps is the data from the client */
++	vps = handler->request->packet->vps;
++
++	success= unmap_eapaka_basictypes(handler->request->packet,
++					 handler->eap_ds->response->type.data,
++					 handler->eap_ds->response->type.length);
++
++	if(!success) {
++	  return 0;
++	}
++
++	/* see what kind of message we have gotten */
++	if((vp = pairfind(vps, ATTRIBUTE_EAP_SIM_SUBTYPE)) == NULL)
++	{
++		DEBUG2("   no subtype attribute was created, message dropped");
++		return 0;
++	}
++	subtype = vp->lvalue;
++
++	switch(ess->state) {
++	case eapaka_server_challenge:
++		switch(subtype) {
++		default:
++			/*
++			 * pretty much anything else here is illegal,
++			 * so we will retransmit the request.
++			 */
++			eap_aka_stateenter(handler, ess, eapaka_server_challenge);
++			return 1;
++
++    case eapaka_authentication_reject:
++        /* The client did not like the AUTN the server sent so give up.*/
++        DEBUG2("EAP-AKA Peer Rejected AT_AUTN");
++        return 0;
++    case eapaka_client_error:
++        if((vp = pairfind(vps, ATTRIBUTE_EAP_SIM_BASE+PW_EAP_SIM_CLIENT_ERROR_CODE)) == NULL)
++        {
++            DEBUG2("EAP-AKA Peer rejected AKA-Challenge with client-error message but "
++                   "has not supplied a client error code");
++        }
++        else
++        {
++            char client_error_code_string[64];
++            DEBUG2("Client rejected AKA-Challenge with client-error message client-error-code = %s",
++                   aka_clienterrorcode2name(vp->lvalue,
++                                            client_error_code_string,
++                                            64));
++        }
++        return 0;
++    case eapaka_challenge:
++			/*
++			 * a response to our EAP-Aka/Request/Challenge!
++			 *
++			 */
++			return process_eap_aka_challenge(handler, vps);
++		}
++		break;
++
++	default:
++		/* if we get into some other state, die, as this
++		 * is a coding error!
++		 */
++		DEBUG2("  illegal-unknown state reached in eap_aka_authenticate\n");
++		abort();
++ 	}
++
++	return 0;
++}
++
++/*
++ *	The module name should be the only globally exported symbol.
++ *	That is, everything else should be 'static'.
++ */
++EAP_TYPE rlm_eap_aka = {
++	"eap_aka",
++	NULL,				/* XXX attach */
++	eap_aka_initiate,		/* Start the initial request */
++	NULL,				/* XXX authorization */
++	eap_aka_authenticate,		/* authentication */
++	NULL				/* XXX detach */
++};
++
+Index: src/modules/rlm_eap/types/rlm_eap_sim/rlm_eap_sim.c
+===================================================================
+--- src/modules/rlm_eap/types/rlm_eap_sim/rlm_eap_sim.c	(revision 15087)
++++ src/modules/rlm_eap/types/rlm_eap_sim/rlm_eap_sim.c	(working copy)
+@@ -244,20 +244,14 @@
+ 	/* set the EAP_ID - new value */
+ 	newvp = paircreate(ATTRIBUTE_EAP_ID, PW_TYPE_INTEGER);
+ 	newvp->vp_integer = ess->sim_id++;
+ 	pairreplace(outvps, newvp);
+ 
+ 	/* make a copy of the identity */
+-	newvp = pairfind(*invps, ATTRIBUTE_EAP_SIM_BASE + PW_EAP_SIM_IDENTITY);
+-	if (newvp) {
+-		ess->keys.identitylen = newvp->length;
+-		memcpy(ess->keys.identity, newvp->vp_octets, newvp->length);
+-	} else {
+-		ess->keys.identitylen = strlen(handler->identity);
+-		memcpy(ess->keys.identity, handler->identity, ess->keys.identitylen);
+-	}
++	ess->keys.identitylen = strlen(handler->identity);
++	memcpy(ess->keys.identity, handler->identity, ess->keys.identitylen);
+ 
+ 	/* all set, calculate keys! */
+ 	eapsim_calculate_keys(&ess->keys);
+ 
+ #ifdef EAP_SIM_DEBUG_PRF
+ 	eapsim_dump_mk(&ess->keys);
+Index: src/tests/eapaka-01/check.gdb
+===================================================================
+--- src/tests/eapaka-01/check.gdb	(revision 0)
++++ src/tests/eapaka-01/check.gdb	(working copy)
+@@ -0,0 +1,2 @@
++file ../../main/radeapclient
++set args -x localhost auth testing123 <eapsim-in.txt
+\ No newline at end of file
+Index: src/tests/eapaka-01/client.sh
+===================================================================
+--- src/tests/eapaka-01/client.sh	(revision 0)
++++ src/tests/eapaka-01/client.sh	(working copy)
+@@ -0,0 +1,3 @@
++#!/bin/sh
++
++../../modules/lib/radeapclient -x localhost auth testing123 <eapaka-in.txt
+Index: src/tests/eapaka-01/eapaka-in.txt
+===================================================================
+--- src/tests/eapaka-01/eapaka-in.txt	(revision 0)
++++ src/tests/eapaka-01/eapaka-in.txt	(working copy)
+@@ -0,0 +1,11 @@
++User-Name = "eapaka"
++NAS-IP-Address = marajade.sandelman.ottawa.on.ca
++EAP-Code = Response
++EAP-Type-Identity = "eapaka"
++Message-Authenticator = 0
++NAS-Port = 0
++EAP-Sim-AUTN  = 0xa0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0
++EAP-Aka-IK    = 0xb0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0
++EAP-Aka-CK    = 0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0
++EAP-Sim-RES   = 0xd0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0
++EAP-Sim-RAND  = 0xe0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0
+\ No newline at end of file
+Index: src/tests/runtests.sh.orig
+===================================================================
+--- src/tests/runtests.sh.orig	(revision 0)
++++ src/tests/runtests.sh.orig	(working copy)
+@@ -0,0 +1,69 @@
++#!/bin/bash
++
++PORT=12340
++HOME_PORT=12350
++SECRET=testing123
++
++rm -f verbose.log
++RCODE=0
++
++rm -rf .cache
++mkdir .cache
++
++#
++#  Bootstrap the tests
++#
++for NAME in $@
++do
++  TOTAL=`grep TESTS $NAME | sed 's/.*TESTS//'`
++
++  #
++  #  Each test may have multiple variants.
++  #
++  for NUMBER in `echo $TOTAL`
++  do
++    cp $NAME .request
++    BASE=`echo $NAME | sed 's,.*/,,'`
++
++    #
++    #  Add the name of the test, and the variant to the request
++    #
++    echo "Test-Name = \"$BASE\"," >> .request
++    echo 'Test-Number = ' $NUMBER >> .request
++
++    mv .request .cache/$BASE:$NUMBER
++  done
++done
++
++echo "Running tests..."
++
++(cd .cache;ls -1  > ../.foo)
++rm -f .bar
++for x in `cat .foo`
++do
++   echo "-f .cache/$x" >> .bar
++done
++
++../main/radclient `cat .bar` -xFd . 127.0.0.1:$PORT auth $SECRET > radclient.log 2>&1
++
++for x in `cat .foo`
++do
++  RESULT=`egrep ^\\.cache/$x radclient.log | sed 's/.* //'`
++  if [ "$RESULT" = "2" ]; then
++      echo "$x : Success"
++    else
++      echo "$x : FAILED"
++      RCODE=1
++  fi
++done
++
++
++if [ "$RCODE" = "0" ]
++then
++    rm -f radiusd.log radclient.log 
++    echo "All tests succeeded"
++else
++    echo "See radclient.log for more details"
++fi
++
++exit $RCODE
+Index: src/modules/rlm_sim_files/rlm_sim_files.c
+--- src/modules/rlm_sim_files/rlm_sim_files.c	2012-09-10 12:51:34.000000000 +0100
++++ src/modules/rlm_sim_files/rlm_sim_files.c	2013-12-02 15:52:53.000000000 +0100
+@@ -39,15 +39,20 @@
+ /* FILE FORMAT
+  *
+  *
++ *
+  * The triplets file contains records of the form:
+  *
+- * IMSI            RAND                             SRES     Kc
+- * 232420100000015,30000000000000000000000000000000,30112233,445566778899AABB
++ * Type IMSI                 RAND                             SRES     Kc
++ * SIM, <0|1>232420100000015,30000000000000000000000000000000,30112233,445566778899AABB
++ *      IMSI                 RAND                             RES                                AUTN                               IK                                 CK
++ * AKA, <0|1>232420100000015,30000000000000000000000000000000,301122334455667788,3011223344556677889900AABBCCDDEEFF,3011223344556677889900AABBCCDDEEFF,3011223344556677889900AABBCCDDEEFF
++ * there must be *three* entries for EAP-SIM for every IMSI for it to be considered valid.
+  *
+- * there must be *three* entries for every IMSI for it to be considered valid.
++ * The first occurence of an entry determines the type of EAP method.
+  *
+  * Lines starting with # are ignored.
+  *
++ *
+  * Conveniently, this file format is produced by XXXX.
+ 
+  *
+@@ -76,7 +81,7 @@
+ static const CONF_PARSER module_config[] = {
+ 	{ "simtriplets",	PW_TYPE_STRING_PTR,
+ 	  offsetof(struct sim_file_instance, file),
+-	  NULL, "${raddbdir}/simtriplets.dat" },
++	  NULL, "/etc/freeradius/simtriplets.dat" },
+ 
+ 	{ NULL, -1, 0, NULL, NULL }
+ };
+@@ -118,11 +123,14 @@
+ 	VALUE_PAIR     **reply_pairs;
+ 	VALUE_PAIR     **config_pairs;
+ 	FILE            *triplets;
+-	char             tripbuf[sizeof("232420100000015,30000000000000000000000000000000,30112233,445566778899AABB")*2];
++	char			 type[sizeof("SIM")];
++	char             buf[sizeof(",0232420100000015,30000000000000000000000000000000,3011223344556677889900AABBCCDDEEFF,3011223344556677889900AABBCCDDEEFF,3011223344556677889900AABBCCDDEEFF,3011223344556677889900AABBCCDDEEFF")*2];
+ 	char             imsi[128], chal[256], kc[128], sres[128];
++	char             res[128], autn[256], ik[256], ck[256];
+ 	int              imsicount;
+ 	int              fieldcount;
+ 	int lineno;
++	int eap_type = 0; // 0 = EAP-SIM, 1 = EAP-AKA
+ 
+ 	reply_pairs = &request->reply->vps;
+ 	config_pairs = &request->config_items;
+@@ -144,82 +152,212 @@
+ 	imsicount = 0;
+ 	lineno = 0;
+ 
+-	while(fgets(tripbuf, sizeof(tripbuf), triplets) == tripbuf
+-	      && imsicount < 3)
++	while(fgets(buf, sizeof(buf), triplets) == buf )
+ 	{
+ 		char *f;
+ 		char *l;
+-		VALUE_PAIR *r, *k, *s;
+ 
+ 		lineno++;
+-		if(tripbuf[0]=='#') continue;
++
++		if(buf[0]=='#') continue;
+ 
+-		l = tripbuf;
+-		fieldcount = 0;
+-		chal[0]='0'; chal[1]='x';
+-		kc[0]='0';   kc[1]='x';
+-		sres[0]='0'; sres[1]='x';
++		memset( type, 0, sizeof(type));
++
++		l = buf;
++		f = strsep(&l, ",");
++		if(f)
++		{
++			strlcpy(type, f, sizeof(type));
++		}
++
++		if( strcmp(type,"SIM") == 0 ) // EAP-SIM triplet
++        {
++			VALUE_PAIR *r, *k, *s;
++
++			fieldcount = 0;
++			chal[0]='0'; chal[1]='x';
++			kc[0]='0';   kc[1]='x';
++			sres[0]='0'; sres[1]='x';
+ 
+-		f = strsep(&l, ",");
+-		if(f)
+-		{
+-			strlcpy(imsi, f, sizeof(imsi));
+-			fieldcount++;
+-		}
+-
+-		if(strcmp(imsi, name) != 0)
+-		{
+-			continue;
+-		}
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(imsi, f, sizeof(imsi));
++				fieldcount++;
++			}
++					/**/
++			if(strcmp(imsi, name) != 0)
++			{
++				continue;
++			}
+ 
+-		/* we found one */
+-		f = strsep(&l, ",");
+-		if(f)
+-		{
+-			strlcpy(chal + 2, f, sizeof(chal) - 2);
+-			fieldcount++;
+-		}
++					/**/
++			/* we found one */
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(chal + 2, f, sizeof(chal) - 2);
++				fieldcount++;
++			}
+ 
+-		f = strsep(&l, ",");
+-		if(f)
+-		{
+-			strlcpy(sres + 2, f, sizeof(sres) - 2);
+-			fieldcount++;
+-		}
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(sres + 2, f, sizeof(sres) - 2);
++				fieldcount++;
++			}
+ 
+-		f = strsep(&l, ",\n");
+-		if(f)
+-		{
+-			strlcpy(kc + 2, f, sizeof(kc) - 2);
+-			fieldcount++;
+-		}
++			f = strsep(&l, ",\n");
++			if(f)
++			{
++				strlcpy(kc + 2, f, sizeof(kc) - 2);
++				fieldcount++;
++			}
+ 
+-		if(fieldcount != 4)
+-		{
+-			radlog(L_ERR, "invalid number of fields %d at line %d",
+-			       fieldcount, lineno);
+-			/* complain about malformed line */
+-			continue;
+-		}
++			if(fieldcount != 4)
++			{
++				radlog(L_ERR, "invalid number of fields %d at line %d",
++					   fieldcount, lineno);
++				/* complain about malformed line */
++				continue;
++			}
+ 
+ 
+-		r = paircreate(ATTRIBUTE_EAP_SIM_RAND1 + imsicount, PW_TYPE_OCTETS);
+-		r = pairparsevalue(r, chal);
+-		pairadd(reply_pairs, r);
++			r = paircreate(ATTRIBUTE_EAP_SIM_RAND1 + imsicount, PW_TYPE_OCTETS);
++			r = pairparsevalue(r, chal);
++			pairadd(reply_pairs, r);
++			DEBUG("rlm_sim_files: "
++		      		"RAND: %d %s\n", imsicount, chal );
+ 
+-		k = paircreate(ATTRIBUTE_EAP_SIM_KC1 + imsicount, PW_TYPE_OCTETS);
+-		k = pairparsevalue(k, kc);
+-		if (!k) {
+-			DEBUG("ERROR: Syntax error in line %d", lineno);
+-			break;
+-		}
+-		pairadd(reply_pairs, k);
++			k = paircreate(ATTRIBUTE_EAP_SIM_KC1 + imsicount, PW_TYPE_OCTETS);
++			k = pairparsevalue(k, kc);
++			if (!k) {
++				DEBUG("ERROR: Syntax error in line %d", lineno);
++				break;
++			}
++			pairadd(reply_pairs, k);
++			DEBUG("rlm_sim_files: "
++		      		"KC: %d %s\n", imsicount, kc );
+ 
+-		s = paircreate(ATTRIBUTE_EAP_SIM_SRES1 + imsicount, PW_TYPE_OCTETS);
+-		s = pairparsevalue(s, sres);
+-		pairadd(reply_pairs, s);
++			s = paircreate(ATTRIBUTE_EAP_SIM_SRES1 + imsicount, PW_TYPE_OCTETS);
++			s = pairparsevalue(s, sres);
++			pairadd(reply_pairs, s);
++			DEBUG("rlm_sim_files: "
++		      		"SRES: %d %s\n", imsicount, sres );
+ 
+-		imsicount++;
++			imsicount++;
++
++		} // EAP-SIM triplet
++		else if( strcmp(type,"AKA") == 0 ) // EAP-AKA triplet
++		{
++			VALUE_PAIR *r, *i, *c, *an, *rs;
++			fieldcount = 0;
++			chal[0]='0'; chal[1]='x';
++			autn[0]='0'; autn[1]='x';
++			ck[0]='0';   ck[1]='x';
++			ik[0]='0';   ik[1]='x';
++			res[0]='0'; res[1]='x';
++
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(imsi, f, sizeof(imsi));
++				fieldcount++;
++			}
++					/**/
++			if(strcmp(imsi, name) != 0)
++			{
++				continue;
++			}
++
++			eap_type = 1; // eap-aka
++
++					/**/
++			/* we found one */
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(chal + 2, f, sizeof(chal) - 2);
++				fieldcount++;
++			}
++
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(res + 2, f, sizeof(res) - 2);
++				fieldcount++;
++			}
++
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(autn + 2, f, sizeof(autn) - 2);
++				fieldcount++;
++			}
++
++			f = strsep(&l, ",");
++			if(f)
++			{
++				strlcpy(ik + 2, f, sizeof(ik) - 2);
++				fieldcount++;
++			}
++
++			f = strsep(&l, ",\n");
++			if(f)
++			{
++				strlcpy(ck + 2, f, sizeof(ck) - 2);
++				fieldcount++;
++			}
++
++			if(fieldcount != 6)
++			{
++				radlog(L_ERR, "invalid number of fields %d at line %d",
++					   fieldcount, lineno);
++				/* complain about malformed line */
++				continue;
++			}
++
++
++			r = paircreate(ATTRIBUTE_EAP_SIM_BASE + PW_EAP_SIM_RAND, PW_TYPE_OCTETS);
++			r = pairparsevalue(r, chal);
++			pairadd(reply_pairs, r);
++			DEBUG("rlm_sim_files: "
++		      		"RAND: %s\n", chal );
++
++			an = paircreate(ATTRIBUTE_EAP_SIM_BASE + PW_EAP_SIM_AUTN, PW_TYPE_OCTETS);
++			an = pairparsevalue(an, autn);
++			rad_assert(an != NULL);
++			pairadd(reply_pairs, an);
++			DEBUG("rlm_sim_files: "
++		      		"AUTN: %s\n", autn );
++
++			rs = paircreate(ATTRIBUTE_EAP_SIM_BASE + PW_EAP_SIM_RES, PW_TYPE_OCTETS);
++			rs = pairparsevalue(rs, res);
++			rad_assert(rs != NULL);
++			pairadd(reply_pairs, rs);
++			DEBUG("rlm_sim_files: "
++		      		"RES: %s\n", res );
++
++			i = paircreate(ATTRIBUTE_EAP_AKA_IK, PW_TYPE_OCTETS);
++			i = pairparsevalue(i, ik);
++			rad_assert(i != NULL);
++			pairadd(reply_pairs, i);
++			DEBUG("rlm_sim_files: "
++		      		"IK: %s\n", ik );
++
++			c = paircreate(ATTRIBUTE_EAP_AKA_CK, PW_TYPE_OCTETS);
++			c = pairparsevalue(c, ck);
++			rad_assert(c != NULL);
++			pairadd(reply_pairs, c);
++			DEBUG("rlm_sim_files: "
++		      		"CK: %s\n", ck );
++
++			imsicount = 3; // this is a breaking condition, since we need only one record for EAP-AKA
++		} // EAP-AKA
++		else
++		{
++			continue;
++		}
+ 	}
+ 	fclose(triplets);
+ 
+@@ -232,16 +370,16 @@
+ 	}
+ 
+ 	DEBUG("rlm_sim_files: "
+-	      "authorized user/imsi %s\n", name);
++	      "authorized user/imsi %s, type: %s\n", name, (eap_type == 0 ? "EAP-SIM" : "EAP-AKA") );
+ 
+ 	/*
+ 	 * EAP module will also grab based upon presence of EAP packet
+ 	 * and it will add the Autz-Type entry.
+ 	 */
+ 
+-	if((reply_tmp = pairmake ("EAP-Type", "SIM", T_OP_EQ)))
++	if((reply_tmp = pairmake ("EAP-Type", (eap_type == 0 ? "SIM" : "AKA"), T_OP_EQ)))
+ 	{
+-		radlog(L_INFO, "rlm_sim_files: Adding EAP-Type: eap-sim");
++		radlog(L_INFO, "rlm_sim_files: Adding EAP-Type: %s", (eap_type == 0 ? "EAP-SIM" : "EAP-AKA"));
+ 		pairadd (config_pairs, reply_tmp);
+ 	}
+ 

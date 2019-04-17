@@ -52,7 +52,7 @@ namespace rclient
           @return  a number of removed certificates
           @throw NativeCertStoreDeleteError
         */
-        unsigned int deleteReseptUserCerts();
+        size_t deleteReseptUserCerts();
 
 
         /**
@@ -61,7 +61,7 @@ namespace rclient
           @return  a number of removed certificates
           @throw NativeCertStoreDeleteError
         */
-        unsigned int deleteUserCertsForIssuerCN(const std::string& anIssuerCn, ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt = certsSmimeKeep);
+        size_t deleteUserCertsForIssuerCN(const std::string& anIssuerCn, ErrorPolicy anErrorPolicy, const CertsSmimeOpt aSmimeCertsOpt = certsSmimeKeep);
 
         /**
            Imports PKCS#12 PFX into the personal store.
@@ -101,10 +101,10 @@ namespace rclient
           @note This function likely elevated system privileges and is normally called by an installer
           @throw NativeCertStoreDeleteError
         */
-        unsigned int deleteFromRootStoreByCN(const std::string& aSubjCN, ErrorPolicy anErrorPolicy);
-        unsigned int deleteFromIntermediateStoreByCN(const std::string& aSubjCN, ErrorPolicy anErrorPolicy);
-        unsigned int deleteFromRootStoreByFingerprint(const std::string& aSha1Fingerprint, ErrorPolicy anErrorPolicy);
-        unsigned int deleteFromIntermediateStoreByFingerprint(const std::string& aSha1Fingerprint, ErrorPolicy anErrorPolicy);
+        size_t deleteFromRootStoreByCN(const std::string& aSubjCN, ErrorPolicy anErrorPolicy);
+        size_t deleteFromIntermediateStoreByCN(const std::string& aSubjCN, ErrorPolicy anErrorPolicy);
+        size_t deleteFromRootStoreByFingerprint(const std::string& aSha1Fingerprint, ErrorPolicy anErrorPolicy);
+        size_t deleteFromIntermediateStoreByFingerprint(const std::string& aSha1Fingerprint, ErrorPolicy anErrorPolicy);
 
 #ifdef _WIN32
         /**

@@ -16,7 +16,7 @@
 #include "boost/filesystem/convenience.hpp"
 #include "boost/algorithm/string.hpp"
 
-#if (!defined(_WIN32)) && (!defined(WIN32))
+#if (!defined(_WIN32))
 #ifndef __USE_FILE_OFFSET64
 #define __USE_FILE_OFFSET64
 #endif

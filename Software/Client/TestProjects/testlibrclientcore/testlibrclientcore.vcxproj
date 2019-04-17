@@ -5,6 +5,10 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3C1458C6-1CC2-48D6-A2DC-8D97118B985A}</ProjectGuid>
@@ -18,10 +22,20 @@
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\WinClientCommon.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\WinClientCommon.props" />
   </ImportGroup>
@@ -35,6 +49,12 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>true</GenerateManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>true</GenerateManifest>
+    <OutDir>..\Export\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
       <Message>Generating test...</Message>
@@ -44,7 +64,7 @@
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>..\..\Projects\librclientcore;..\..\Projects\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\cxxtest;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(OPENSSL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CONSOLE;WIN32;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;LIBCONFIG_STATIC;LIBCONFIGXX_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CONSOLE;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T;LIBCONFIG_STATIC;LIBCONFIGXX_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -52,7 +72,7 @@
       <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;libconfig++.lib;libyaml-cppmd.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;crypt32.lib;winhttp.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;libconfig++.lib;libyaml-cppmd.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;crypt32.lib;winhttp.lib;libcurl.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\Common\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(BOOST_SERIALIZE_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -60,6 +80,68 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <LinkTimeCodeGeneration />
       <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <Manifest>
+      <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
+    <PostBuildEvent>
+      <Message>Copying files...</Message>
+      <Command>copy "..\..\..\SysInfra\Projects\Export\libtalogger.dll" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy log.conf "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\resept.ini.win32" "$(OutDir)resept.ini"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\user.ini" "$(OutDir)user.ini.orig"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\tasks.ini" "$(OutDir)tasks.ini.orig"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\master.ini" "$(OutDir)master.ini.orig"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\*.p12" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\*.pem" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\*pass.txt" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy "test.psm1" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy "..\..\Projects\librclientcore\KeyTalkUtils.psm1" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\master.ini.from_rccdv2_0_1" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\user.ini.from_rccdv2_0_2" "$(OutDir)"
+IF %25ERRORLEVEL%25 NEQ 0 exit 1
+copy ".\master.ini.from_rccdv2_0_2" "$(OutDir)"
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PreBuildEvent>
+      <Message>Generating test...</Message>
+      <Command>call TestGen.bat</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>..\..\Projects\librclientcore;..\..\Projects\libtaclientcommon;..\..\..\Common\Projects\libreseptcommon;..\..\..\SysInfra\Projects\libtacommon;..\..\..\SysInfra\Projects\libtalogger;..\..\..\Import\cxxtest;..\..\..\Import\$(BOOST_INCLUDE_DIR);..\..\..\Import\$(OPENSSL_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CONSOLE;NDEBUG;_LIB;WINVER=_WIN32_WINNT_WS08;_WIN32_WINNT=_WIN32_WINNT_WS08;_CRT_SECURE_NO_DEPRECATE;LIBCONFIG_STATIC;LIBCONFIGXX_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>librclientcore.lib;libreseptcommon.lib;libtaclientcommon.lib;libtacommon.lib;libtalogger.lib;libconfig++.lib;libyaml-cppmd.lib;setupapi.lib;Iphlpapi.lib;Dbghelp.lib;User32.lib;shell32.lib;Psapi.lib;Rpcrt4.lib;Advapi32.lib;Gdi32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;crypt32.lib;winhttp.lib;libcurl_a.lib;Winscard.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\Projects\Export;..\..\..\Common\Projects\Export;..\..\..\SysInfra\Projects\Export;..\..\..\Import\$(BOOST_SYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_FILESYSTEM_LIB_DIR);..\..\..\Import\$(BOOST_THREAD_LIB_DIR);..\..\..\Import\$(BOOST_REGEX_LIB_DIR);..\..\..\Import\$(BOOST_DATETIME_LIB_DIR);..\..\..\Import\$(BOOST_CHRONO_LIB_DIR);..\..\..\Import\$(BOOST_SERIALIZE_LIB_DIR);..\..\..\Import\$(LIBCONFIG_LIB_DIR);..\..\..\Import\$(YAMLCPP_LIB_DIR);..\..\..\Import\$(OPENSSL_LIB_DIR);..\..\..\Import\$(CURL_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>$(SolutionDir)app.windows.compatibility.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>

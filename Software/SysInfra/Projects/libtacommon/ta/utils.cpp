@@ -2,13 +2,6 @@
 #include "strings.h"
 #include "url.h"
 #include "scopedresource.hpp"
-
-#include "boost/format.hpp"
-#include "boost/regex.hpp"
-#include "boost/filesystem/operations.hpp"
-#include "boost/range/algorithm_ext/erase.hpp"
-#include "boost/algorithm/string.hpp"
-#include "boost/uuid/uuid_generators.hpp"
 #include <locale>
 #ifdef _WIN32
 #include <windows.h>
@@ -19,6 +12,13 @@
 #include <dirent.h>
 #include <pwd.h>
 #endif
+
+#include "boost/format.hpp"
+#include "boost/regex.hpp"
+#include "boost/filesystem/operations.hpp"
+#include "boost/range/algorithm_ext/erase.hpp"
+#include "boost/algorithm/string.hpp"
+#include "boost/uuid/uuid_generators.hpp"
 
 using std::string;
 
@@ -272,13 +272,13 @@ namespace ta
         {
             if (!::CryptGenRandom(myProv, sizeof(myRandom), (BYTE*)&myRandom))
             {
-                ::CryptReleaseContext(myProv, 0);
+                ::CryptReleaseContext(myProv, (DWORD)0);
                 TA_THROW_MSG(std::runtime_error, boost::format("::CryptGenRandom failed. Last error: %d") % ::GetLastError());
             }
             if (myRandom >= myMin)
                 break;
         }
-        ::CryptReleaseContext(myProv, 0);
+        ::CryptReleaseContext(myProv, (DWORD)0);
 
         return myRandom % anUpperBound;
 #else
@@ -309,11 +309,11 @@ namespace ta
 
         if (!::CryptGenRandom(myProv, (DWORD)aBufSize, (BYTE*)getSafeBuf(randomDataBuffer)))
         {
-            ::CryptReleaseContext(myProv, 0);
+            ::CryptReleaseContext(myProv, (DWORD)0);
             TA_THROW_MSG(std::runtime_error, boost::format("::CryptGenRandom failed. Last error: %d") % ::GetLastError());
         }
 
-        ::CryptReleaseContext(myProv, 0);
+        ::CryptReleaseContext(myProv, (DWORD)0);
 
 #else
         foreach (unsigned char& ch, randomDataBuffer)

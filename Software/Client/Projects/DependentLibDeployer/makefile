@@ -11,7 +11,7 @@ clean:
 deploylibs:
 	@IF NOT EXIST "$(OutDir)\" MKDIR "$(OutDir)"
 	@echo Deploying VC runtime libs...
-	@FOR %I IN (msvcp120.dll msvcr120.dll vccorlib120.dll) DO @COPY "$(VcInstallDir)redist\x86\Microsoft.VC120.CRT\%I" "$(OutDir)" >NUL || (@ECHO "$(VcInstallDir)redist\x86\Microsoft.VC120.CRT\%I" does not exist! & EXIT 1)
+	@FOR %I IN (msvcp120.dll msvcr120.dll vccorlib120.dll) DO @COPY "$(VcInstallDir)redist\$(_Platform)\Microsoft.VC120.CRT\%I" "$(OutDir)" >NUL || (@ECHO "$(VcInstallDir)redist\$(_Platform)\Microsoft.VC120.CRT\%I" does not exist! & EXIT 1)
 	@echo Deploying Qt libs...
 	@IF NOT EXIST "$(OutDir)\platforms" MKDIR "$(OutDir)\platforms"
 	@COPY $(QTDIR)\plugins\platforms\qwindows.dll "$(OutDir)\platforms" >NUL

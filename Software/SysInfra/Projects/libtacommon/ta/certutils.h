@@ -537,6 +537,9 @@ namespace ta
         //  ["DNS:example.com", "IP: 192.168.33.1"] => ["example.com", "192.168.33.1"]
         ta::StringArray extractSAN_Values(const ta::StringArray& aSAN);
 
+        boost::optional<std::string> findSanValue(const std::string& aSerializedSANs, const std::string& aKey);
+        boost::optional<std::string> findSanValue(const ta::StringArray& aSANs, const std::string& aKey);
+
         // Check whether the given certificate is revoked by checking CRL included in the certificate if any
         // @param [in] PEM-encoded certificate
         bool isCertFileRevoked(X509* aCert, std::string* aWarnings = NULL);

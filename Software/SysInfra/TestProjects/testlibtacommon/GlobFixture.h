@@ -17,7 +17,7 @@ static void* memleak_cb(unsigned long, const char*, int, int, void *)
 }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
 #include <crtdbg.h>
@@ -36,7 +36,7 @@ class GlobFixture : public CxxTest::GlobalFixture
         CRYPTO_dbg_set_options(V_CRYPTO_MDEBUG_ALL);
 #endif
         CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
-#ifdef WIN32
+#ifdef _WIN32
         _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
         _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE);
         _CrtSetReportFile( _CRT_WARN, _CRTDBG_FILE_STDOUT );

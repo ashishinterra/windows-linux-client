@@ -12,18 +12,17 @@
 
 #ifdef _WIN32
 #include <Ws2tcpip.h>
+#undef X509_NAME
 #else
 #include <arpa/inet.h>
 #endif
 
-#include "openssl/x509.h"
 #include "openssl/x509v3.h"
 #include "openssl/err.h"
 #include "openssl/pem.h"
 #include "openssl/evp.h"
 #include "openssl/objects.h"
 #include "openssl/obj_mac.h"// for NIDs
-#include "openssl/bio.h"
 #include "openssl/pkcs12.h"
 #include "openssl/crypto.h"
 
@@ -410,7 +409,7 @@ namespace ta
                 {
                     // challenge password should be in ASN printable string format
                     ScopedResource<ASN1_PRINTABLESTRING *> myAsn1Pass(ASN1_PRINTABLESTRING_new(), ASN1_PRINTABLESTRING_free);
-                    const size_t myPassLen = aPassword.size();
+                    const int myPassLen = boost::numeric_cast<int>(aPassword.size());
                     ASN1_STRING_set(myAsn1Pass, (const unsigned char *)aPassword.c_str(), myPassLen);
 
                     const int ret = X509_REQ_add1_attr_by_NID(aReq, NID_pkcs9_challengePassword, myAsn1Pass->type, myAsn1Pass->data, myPassLen);
@@ -2630,16 +2629,22 @@ namespace ta
                                      ta::Strings::emptyStringsSkip);
         }
 
-        bool doesSANContainKey(const string& aSANs, const string& aKey)
+        boost::optional<string> findSanValue(const string& aSerializedSANs, const string& aKey)
         {
-            foreach (const string& san, deserializeSAN(aSANs))
+            return findSanValue(deserializeSAN(aSerializedSANs), aKey);
+        }
+
+        boost::optional<string> findSanValue(const ta::StringArray& aSANs, const string& aKey)
+        {
+            foreach (const string& san, aSANs)
             {
-                if (parseSingleSAN(san).get<0>() == aKey)
+                const boost::tuple<string, string> kv = parseSingleSAN(san);
+                if (kv.get<0>() == aKey)
                 {
-                    return true;
+                    return kv.get<1>();
                 }
             }
-            return false;
+            return boost::none;
         }
 
         ta::StringArray deserializeSAN(const string& aSANs)
@@ -2762,7 +2767,7 @@ namespace ta
 
             const CertInfo myCertInfo = getCertInfo(aPemCert);
             string mySAN;
-            if (!ta::findValueByKey(SN_subject_alt_name, myCertInfo.optionalExtensions, mySAN) || !doesSANContainKey(mySAN, "email"))
+            if (!ta::findValueByKey(SN_subject_alt_name, myCertInfo.optionalExtensions, mySAN) || !findSanValue(mySAN, "email"))
             {
                 if (aReasonWhenNot)
                 {
@@ -2838,14 +2843,14 @@ namespace ta
                 TA_THROW_MSG(std::invalid_argument, myNotFoundError);
             }
 
-            foreach (const string& san, deserializeSAN(mySAN))
+            if (const boost::optional<string> email = findSanValue(mySAN, "email"))
             {
-                if (parseSingleSAN(san).get<0>() == "email")
-                {
-                    return parseSingleSAN(san).get<1>();
-                }
+                return *email;
             }
-            TA_THROW_MSG(std::invalid_argument, myNotFoundError);
+            else
+            {
+                TA_THROW_MSG(std::invalid_argument, myNotFoundError);
+            }
         }
 
         string tryExtractHostName(const string& aPemCertPath)

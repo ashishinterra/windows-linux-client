@@ -115,6 +115,17 @@ namespace rclient
         ta::StringArray response_names;
     };
 
+    struct AddressBookConfig
+    {
+        AddressBookConfig() : applyAddressBooks(false) {}
+        AddressBookConfig(resept::AddressBooks anAddressBooks, bool anApplyAddressBooks) :
+            addressBooks(anAddressBooks),
+            applyAddressBooks(anApplyAddressBooks) {}
+
+        resept::AddressBooks addressBooks;
+        bool applyAddressBooks;
+    };
+
     struct Message
     {
         Message(): utc(0) {}
@@ -133,6 +144,7 @@ namespace rclient
         CertResponse(): execute_sync(false) {}
         std::vector<unsigned char> cert;
         std::string password;
+        AddressBookConfig address_book_config;
         bool execute_sync;
     };
 

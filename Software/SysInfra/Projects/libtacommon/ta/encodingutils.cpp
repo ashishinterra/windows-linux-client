@@ -24,8 +24,12 @@ namespace ta
         //
         namespace
         {
-            const char* AsciiSpecialHtmlEntities[][2] = {
-                {"&", "&amp;"},{"\"", "&quot;"},{"<", "&lt;"},{">", "&gt;"}
+            const char* AsciiSpecialHtmlEntities[][2] =
+            {
+                {"&", "&amp;"},
+                {"\"", "&quot;"},
+                {"<", "&lt;"},
+                {">", "&gt;"}
             };
             static const char SafeUrlEncodingChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.-/";
 
@@ -240,14 +244,16 @@ namespace ta
         {
             string myEncoded = anSrc;
             for (size_t i = 0; i < sizeof(AsciiSpecialHtmlEntities)/sizeof(AsciiSpecialHtmlEntities[0]); ++i)
+            {
                 boost::replace_all(myEncoded, AsciiSpecialHtmlEntities[i][0], AsciiSpecialHtmlEntities[i][1]);
+            }
             return myEncoded;
         }
 
         ptree toTree(const ta::StringArray& anArray)
         {
             ptree tree;
-            foreach(const string& elem, anArray)
+            foreach (const string& elem, anArray)
             {
                 ptree treeElem;
                 treeElem.put_value(elem);

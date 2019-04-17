@@ -1,0 +1,99 @@
+Building hardened OpenSSL-1.1.1b static libraries for KeyTalk client on Windows
+-----------------------------------
+
+This folder contains Windows build (static library and includes) of OpenSSL-1.1.1b hardened to enable extra security as demanded by KeyTalk project
+
+Prerequisites:
+------------------
+- MS Windows 7 or 10 32-bit / 64-bit
+- MS Visual Studio 2013
+- Perl (e.g. ActivePerl)
+- NASM installed & in path
+- Downloaded and extracted OpenSSL source archive
+
+
+Build libraries
+------------------
+
+1. Open command prompt and call vcvarsall.bat from VS directory to expand VC environment variables e.g.
+"C:\Program Files\Microsoft Visual Studio 12.0\VC\vcvarsall.bat [x86 / amd64]"
+
+  Create makefile
+
+> pushd <openssl-extract-dir>
+> perl Configure [VC-WIN32 / VC-WIN64A]
+
+2. Edit the generated makefile:
+- Replace /MT compiler flag (static CRT) with /MD (shared CRT)
+- Remove /debug from LFLAGS
+Only for 32-bit: - Add /SAFESEH to LFLAGS
+
+3. Build libraries with
+
+> nmake
+
+Copy all Windows include files found in include/openssl subdirectory to <KeyTalk-Import-openssl-directory>/inc32/openssl
+Static libraries are created in the <openssl-extract-dir> named with a _static suffix. Copy these files to <KeyTalk-Import-openssl-directory>/lib/[win32 or x64]/shared_crt/ and remove the _static suffixes
+Copy pdb ossl_static.pdb to <KeyTalk-Import-openssl-directory>/lib/[win32 or x64]/shared_crt/ as well
+
+4. Change OPENSSL_LIB_VERSION_DIR for KeyTalk Windows Client Common Property page:
+   - VC -> View -> Property Manger -> <Select any project> -> KeyTalk Windows Client Common -> Double Click -> User Macros
+   - alternatively you can edit WinClientCommon.props by hand and reload VC solution afterwards
+Rebuild and retest KeyTalk Windows client
+
+
+To clean the build when something fails or do a new build:
+> nmake clean
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

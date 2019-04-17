@@ -12,7 +12,7 @@
 #include "boost/assign/list_of.hpp"
 #include "boost/regex.hpp"
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>   //getch
 #include <termios.h>  //getch
 #else
@@ -38,7 +38,7 @@ namespace
         maskEchoNo, maskEchoYes
     };
 
-#ifndef WIN32
+#ifndef _WIN32
     int getch()
     {
         static int ch = -1, fd = 0;
@@ -62,7 +62,7 @@ namespace
         if(mask==maskEchoNo)
         {
             std::cin >> input;
-#ifndef WIN32
+#ifndef _WIN32
             key = getch(); // get cr
 #endif
         }
@@ -70,7 +70,7 @@ namespace
         {
             do
             {
-#ifdef WIN32
+#ifdef _WIN32
                 key = (char)_getch();
 #else
                 key = getch();

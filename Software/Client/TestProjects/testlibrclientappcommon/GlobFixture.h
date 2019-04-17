@@ -8,7 +8,7 @@
 
 #define HUNT_FOR_MEM_LEAKS
 
-#if defined(WIN32) && defined (HUNT_FOR_MEM_LEAKS)
+#if defined(_WIN32) && defined (HUNT_FOR_MEM_LEAKS)
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
 #include <crtdbg.h>
@@ -20,7 +20,7 @@ class GlobFixture : public CxxTest::GlobalFixture
 
     static void enableMemLeakHunting()
     {
-#if defined(WIN32) && defined (HUNT_FOR_MEM_LEAKS)
+#if defined(_WIN32) && defined (HUNT_FOR_MEM_LEAKS)
         _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
         _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE);
         _CrtSetReportFile( _CRT_WARN, _CRTDBG_FILE_STDOUT );

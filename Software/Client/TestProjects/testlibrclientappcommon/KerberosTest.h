@@ -56,7 +56,8 @@ public:
     {
         TS_SKIP("Skip until server is setup correctly for Kerberos");
         int myDelay = 0;
-        TS_ASSERT_EQUALS(rclient::KerberosAuthenticator::authenticateAndInstall(myDelay), rclient::KerberosAuthenticator::Result::success);
+        rclient::AddressBookConfig myAddressBookConfig; // UNUSED
+        TS_ASSERT_EQUALS(rclient::KerberosAuthenticator::authenticateAndInstall(myDelay, myAddressBookConfig), rclient::KerberosAuthenticator::Result::success);
     }
 
     void test_incorrect_ticket()

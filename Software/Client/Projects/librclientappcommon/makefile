@@ -1,6 +1,6 @@
 include ../../../mk/keytalk.common.mk
 
-SRCS=CommonUtils.cpp ContentConfig.cpp ReseptClientApp.cpp CRFile.cpp
+SRCS=CommonUtils.cpp ContentConfig.cpp ReseptClientApp.cpp CRFile.cpp EmailUtils.cpp
 DEPS:=$(SRCS:.cpp=.h)
 
 EXT_LIBS_DIR=../../../Import

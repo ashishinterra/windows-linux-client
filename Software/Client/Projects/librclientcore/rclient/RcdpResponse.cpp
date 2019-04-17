@@ -97,6 +97,24 @@ namespace rclient
                 }
                 return myResponseTree;
             }
+
+            AddressBookConfig parseAddressBookConfig(const ptree& aResponseTree)
+            {
+                using namespace resept::rcdpv2;
+
+                resept::AddressBooks myAddressBooks;
+                const ta::StringDictArray myAddressBooksStr = parseStringDictArray(aResponseTree, responseParamNameAddressBooks);
+                foreach(const ta::StringDict& address_book, myAddressBooksStr)
+                {
+                    const string myLdapSvrUrl = ta::getValueByKey(responseParamNameLdapSvrUrl, address_book);
+                    const string mySearchBase = ta::getValueByKey(responseParamNameSearchBase, address_book);
+                    const string myVerificationCas = ta::getValueByKeyWithDefault(responseParamNameVerificationCa, address_book, "");
+                    resept::AddressBook myAddressBook(myLdapSvrUrl, mySearchBase, myVerificationCas);
+                    myAddressBooks.push_back(myAddressBook);
+                }
+                const bool myApplyAddressBooks = parseBoolVal(aResponseTree, responseParamNameApplyAddressBooks);
+                return AddressBookConfig(myAddressBooks, myApplyAddressBooks);
+            }
         }
 
 
@@ -373,6 +391,7 @@ namespace rclient
                 myCertResponse.execute_sync = (isScalarParamExist<bool>(myResponseTree, responseParamNameExecuteSync))
                                               ? parseBoolVal(myResponseTree, responseParamNameExecuteSync)
                                               : false;
+                myCertResponse.address_book_config = parseAddressBookConfig(myResponseTree);
 
                 return myCertResponse;
             }
@@ -397,6 +416,7 @@ namespace rclient
                 myCertResponse.execute_sync = (isScalarParamExist<bool>(myResponseTree, responseParamNameExecuteSync))
                                               ? parseBoolVal(myResponseTree, responseParamNameExecuteSync)
                                               : false;
+                myCertResponse.address_book_config = parseAddressBookConfig(myResponseTree);
 
                 return myCertResponse;
             }

@@ -1,0 +1,11 @@
+--- src/modules/stable.orig	2013-12-06 14:07:09.000000000 +0100
++++ src/modules/stable	2013-12-04 02:23:46.000000000 +0100
+@@ -40,6 +40,8 @@
+ rlm_sql
+ rlm_sqlcounter
+ rlm_sqlippool
+ rlm_sql_log
+ rlm_unix
+ rlm_wimax
++rlm_securid
++rlm_sim_files

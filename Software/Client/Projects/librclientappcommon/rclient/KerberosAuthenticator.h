@@ -8,6 +8,7 @@
 
 namespace rclient
 {
+    struct AddressBookConfig;
     namespace ReseptBrokerService
     {
         struct KerberosExternalTicket;
@@ -25,7 +26,7 @@ namespace rclient
             defaultFailure
         };
 
-        Result authenticateAndInstall(int& aDelaySec);
+        Result authenticateAndInstall(int& aDelaySec, AddressBookConfig& anAddressBookConfig);
 
 #ifdef TEST_KERBEROS
         AuthResponse authenticate(const ReseptBrokerService::KerberosExternalTicket& aTicket, RcdpHandler& anRcdpClient);

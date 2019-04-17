@@ -4,7 +4,7 @@
 
 3. Choose a build version, currently either WindowsClient or Windows10SmartCardClient and replace it with [version] below
 
-4. Make sure paths in ContinuousIntegration\cc.net\[version]\ccnet.config and ContinuousIntegration\cc.net\[version]\ccservice.exe.config are correct, create directories for build logs and build state is necessary
+4. Make sure paths in ContinuousIntegration\cc.net\[version]\ccnet.config and ContinuousIntegration\cc.net\[version]\ccservice.exe.config are correct, create directories for build logs and build state if necessary
 
 5. Copy/merge ContinuousIntegration\cc.net\[version]\ccservice.exe.config to the one installed by CruiseControl.NET (typically in C:\Program Files\CruiseControl.NET\server), backing up the original one first.
 
@@ -15,7 +15,7 @@
     - This key allows read-only access to KeyTalk git repository
     - make sure repository URL with key authentication is used: ssh://git@stash.keytalk.com:7999/keytalk/core.git
 
-8. Configure CruiseControl.net service to start automatically under current user account instead of default LocalSystem.
+8. Configure CruiseControl.net service to start automatically & under current user account instead of default LocalSystem.
    -  LocalSystem account would not allow using ssh key and installing client ini files to the user profile
 	- see %tmp%\ccnet.log for troubleshooting
 
@@ -24,7 +24,8 @@
   - Import CertKeys\CommunicationAndSigning\pcacert.der to the "Trusted Root" Windows certificate store
   - Import CertKeys\CommunicationAndSigning\signingcacert.der and CertKeys\CommunicationAndSigning\commcacert.der to the "Intermediate" Windows certificate store.
 
-10. [optionally] Download, install and configure CcTray tool (from http://sourceforge.net/projects/ccnet/files/CruiseControl.NET%20Releases/CruiseControl.NET%201.8.5/ or later version)
+10. [optionally] Download, install and configure CcTray tool. Install file can be found in [CruiseControl.net install directory]\webdashboard\cctray
+   - If not present download from http://sourceforge.net/projects/ccnet/files/CruiseControl.NET%20Releases/CruiseControl.NET%201.8.5/ or later version
    - make sure to allow firewall to allow monitoring of CC.NET server from the outside
    
 11. In CcTray go to Settings -> Build Projects. Add server using 'Connect directly using .NET remoting' to the desired host (likely localhost)

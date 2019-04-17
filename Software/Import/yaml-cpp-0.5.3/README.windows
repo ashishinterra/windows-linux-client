@@ -5,7 +5,7 @@ Building and installing yaml-cpp static library on MSVS 2013 for KeyTalk Windows
 
 2. Download and unzip yaml-cpp from https://github.com/jbeder/yaml-cpp/archive/release-0.5.3.zip
 
-3. Open MSVS command prompt (from Tools > Visual Studio Command Prompt or call C:\Program Files\Microsoft Visual Studio 12.0\Common7\Tools\vsvars32.bat in your command prompt)
+3. Open MSVS command prompt (from Tools > Visual Studio Command Prompt or call "C:\Program Files[ (x86)]\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" in your command prompt)
 
 4. cd to yaml-cpp sources directory
 
@@ -22,13 +22,15 @@ mkdir build
 cd build
 cmake ..\
 
+or use Cmake GUI
+
 Open YAML_CPP.sln in MSVS 2013 and build for RelWidhDebInfo or for Release configuration
 
 7. Deploy
 
 Copy the resulted static library from RelWithDebInfo\libyaml-cppmd.lib 
 and optionally yaml-cpp.dir\RelWithDebInfo\vc12.pdb
-to D:\keytalk\Software\Import\yaml-cpp-0.5.3\lib\win32\shared_crt\
+to D:\keytalk\Software\Import\yaml-cpp-0.5.3\lib\[win32 or x64]\shared_crt\
 
 Copy include files if necessary as well
 
