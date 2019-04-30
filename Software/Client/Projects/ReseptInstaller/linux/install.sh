@@ -225,6 +225,8 @@ function check_platform_compatibility()
         return 0 # ok
     elif [ x"${build_distro_name}" == x"Ubuntu" -a ${build_distro_version_major} -eq 18 ]; then
         return 0 # ok
+    elif [ x"${build_distro_name}" == x"Ubuntu" -a ${build_distro_version_major} -eq 19 ]; then
+        return 0 # ok
     elif [ x"${build_distro_name}" == x"CentOS" -a ${build_distro_version_major} -eq 7 ]; then
         return 0 # ok
     elif [ x"${build_distro_name}" == x"RedHatEnterpriseServer" -a ${build_distro_version_major} -eq 7 ]; then

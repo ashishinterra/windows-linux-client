@@ -12,6 +12,8 @@ else ifeq ($(BUILD_PLATFORM),Ubuntu-16-x86_64)
   OUT_FILE_PLATFORM:=ubuntu16-x64
 else ifeq ($(BUILD_PLATFORM),Ubuntu-18-x86_64)
   OUT_FILE_PLATFORM:=ubuntu18-x64
+else ifeq ($(BUILD_PLATFORM),Ubuntu-19-x86_64)
+  OUT_FILE_PLATFORM:=ubuntu19-x64
 else ifeq ($(BUILD_PLATFORM),CentOS-6-x86_64)
   OUT_FILE_PLATFORM:=centos6-x64
 else ifeq ($(BUILD_PLATFORM),CentOS-7-x86_64)

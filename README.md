@@ -18,7 +18,7 @@ Notice: thanks to binary compatibility between CentOS and RHEL we limit ourselve
 - 512 MB RAM
 
 
-### _Setting up development environment for Debian 8/9, Ubuntu 16.04/18.04 Client_
+### _Setting up development environment for Debian 8/9, Ubuntu 16.04/18.04/19.04 Client_
 
 Become root
 
@@ -39,9 +39,16 @@ Install packages
     # apt -y install gdb vim git curl apache2 build-essential expect libexpat1-dev libssl-dev pandoc xvfb xfonts-75dpi wkhtmltopdf tmux zlib1g-dev libxml2-dev libxslt1-dev python-dev python-pip pylint python3 hdparm zip clang lsb-release
     # pip2 install lxml pyopenssl
     # a2enmod ssl
+    
+Ubuntu 18/19 and Debian 9:
+    
+    # apt install python3-pip
+
+Ubuntu 16 and Debian 8:
+    
     # curl -s https://bootstrap.pypa.io/get-pip.py | python3
 
-Ubuntu 18 and Debain 9:
+Ubuntu 18/19 and Debain 9:
 
     # apt -y install tomcat8 tomcat8-*
     # systemctl daemon-reload
